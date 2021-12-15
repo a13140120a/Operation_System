@@ -26,9 +26,9 @@
 
   * 演進: Batch -> Multi-programming -> Time-sharing 
     * batch: 一次只能一個user 執行一個process
-    * Multi-programming: 一次可以執行多個process，不會因為IO 而idle 在那邊，但是沒有跟user 的interactive
-    * Time-sharing: 可以來回在很多個process 之間切換，讓人產生好像一次執行多個process，可以的interactive，使用的是interrupt 的技術
-    [(詳細資訊)](https://jeffery12366yahoo-com.medium.com/os-chapter-0-base-inf-38636044ccdf)
+    * Multi-programming: 一次可以執行多個process，不會因為IO 而idle 在那邊，使用的是interrupt 的技術，但是沒有跟user 的interactive
+    * Time-sharing: 可以來回在很多個process 之間切換，讓人產生好像一次執行多個process的錯覺，可以interactive。  
+    * [更多詳細資訊](https://medium.com/@a131401203/%E4%B8%AD%E6%96%87%E7%B3%BB%E4%B9%8B%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1%E6%BC%94%E9%80%B2%E5%8F%B2-610986e9ee3c)
 
 
 
