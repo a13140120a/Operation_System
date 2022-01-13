@@ -60,6 +60,10 @@
 
 * 為了防止user program摧毀硬體，OS會分成兩種mode: 分別是user mode跟kernel mode
 * 有Hardware support的硬體會有一個bit, 當進入到kernel mode的時候OS會先把這個bit設為0，回到user mode之後會再設回1。
+* 只要發生interrupt就代表進入kernel mode
+* Privileged instruction只能在kernel mode 時候執行，在cpu設計的時候privieleged instruction就已經定義好了
+* 一但在user mode執行priviledged instruction cpu會通知OS使OS產生錯誤訊息並阻擋執行。
+* Privileged instruction只能藉由呼叫System Call之後OS觸發interrupt然後轉換到kernel mode執行。
 
 <h2 id="0012">Component 名詞定義</h2>   
 
