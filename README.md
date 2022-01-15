@@ -1,6 +1,7 @@
 # Operation_System
 
 * ## [Overview](#001) #
+* ## [OS Structure](#002) #
 
 * ## [Process Management](#002) 
 * ## [Process Coordination](#003) #
@@ -10,7 +11,6 @@
 * ## [Distributed Systems](#007) #
 * ## [Special Purpose Systems](#008) #
 * ## [Case Studies](#009) # 
-
 
 
 <h1 id="001">Overview</h1> 
@@ -71,6 +71,123 @@
 * Processor: 一個實體晶片，包含一個或多個CPU
 * Core: CPU的基本計算單位
 * Muti-Core: 同一個CPU上包含多個Core
+
+
+<h1 id="002">OS structure</h1> 
+
+<h2 id="0021">Services</h2>   
+
+* 一套作業系統服務通常會提供下列功能:
+  * UI(使用者介面:User Interface):
+    * GUI: 圖形化介面(graphical user interface)
+    * CLI: 命令行介面(command-line interface)，
+      CLI通常會有一個命令解譯器(command interperter)來解譯指令  
+      shell就是一種command interperter  
+      command interperter有分兩種，一種是本身含有執行指令的程式碼，另一種是利用尋找檔案的方式(UNIX系統)
+    * touch-screen interface
+  * Program execution
+  * I/O operations
+  * File systemmanipulation
+  * communication: 
+    * error detection: zero devision, over flow等等
+  * resource allocation: 分配memory, cpu等等
+  * accounting(keep track紀錄等等)
+  * Protection ans Security
+    * protection: 保護devices不會被互相干擾或者被user破壞
+    * security: 保護電腦或系統不被有心人士不當使用
+
+<h2 id="0022">System Call</h2>   
+
+* System Call: 提供作業系統服務的介面，一般以C/C++或組合語言撰寫，其類型可分為以下幾種(以下的system call皆為通用的例子，每種OS的system call都不盡相同):
+  * process control: 
+    * 執行中的process可能會正常終止(`end()`)或不正常終止(`abort()`)，
+    * 也可能需要載入(`load()`)或執行(`execute()`)另一個process, 
+    * 如果是mutiprocess的話就會有(`create_process()`)然後把原本程式在記憶體內的**image**保存起來，
+    * 為了控制process，例如priority，或執行時間，我們必須要有(`get_process_attributes()`)或(`set_process_attributes()`)，
+    * 我們可能想要終止程式(`terminate_process()`)
+    * 或者等待事件發生(`wait_event()`)，等待時間到(`wait_time()`)，當事件發生時process應該發出訊號(`signal_event()`)。
+    * mutiprocess的process之間含需要有能夠保護資源的lock，通常會包含(`acquire_lock`)和(`release_lock()`)
+  * file management: 
+    * 首先需要能夠建立(`create()`)和刪除檔案(`delete()`)
+    * 建立了檔案之後需要開啟(`open()`)、讀(`read()`)寫(`write()`)及重定位(`reposition`)(檔案倒轉或跳到結尾)，之後還會需要關閉(`close()`)檔案。
+    * 檔案的屬性包含檔案名稱、檔案類型、保護碼(protection)、帳號資訊等等
+    * 為了此目的還需要取得檔案屬性(`get_file_attributes()`)，設定檔案(`set_file_attributes()`)
+  * devices management
+    * 裝置可以是實體的(硬碟或其他設備)或者抽象的(檔案)
+    * 多使用者的系統需要先對裝置提出(`request()`)，使用完之後就必須將其釋放(`release()`)
+    * 一旦request device之後，就可以做讀(`read()`)寫(`write()`)及重定位(`reposition`)，
+    * 因為IO devices與檔案系統非常相似，有些作業系統(例如UNIX)會將兩個併在一起，一system call會同時用在檔案跟device上，將IO devices 定義成特殊的檔案或目錄
+  * information maintenance:
+    * 大多數系統都會有傳回時間(`time()`)和日期(`date()`)的system call
+    * 也有一些事傳回系統版本、可用記憶體空間或磁碟空間等等
+  * communication:
+    * message-passing model:
+      * 較慢，適合傳輸較小的數據，需要經過kernel傳遞到另一個process
+      * 如同網路之間有hostname, IP address, Process之間也會有process name會轉換成 processID
+      * 作業系統會根據id找到該process, 例如(`get_processid()`)以及網路的(`get_hostid()`)
+      * id會傳入(`open()`)或者(`close()`)的system call，或傳入(`open_connection()`)或(`close_connection()`)的system call
+      * 接受者的process通常會以(`accept_connection()`)
+      * 大部分接收連接的process都是daemons(守護程序)，daemons是提供該用途的process
+      * daemon 執行(`wait_for_connection()`)，並在連接時甦醒。
+      * 通訊的來源稱為client(客戶端)，接收的daemon稱為server,兩者藉由(`read_message()`)及(`write_message()`)來溝通，並透過(`close_connection()`)關閉連接。
+    * shared-memory model:
+      * 較快，但會有sysnc的問題
+      * 由OS分配一個可以共享的記憶體
+      * process使用(`shared_memory_create()`)和(`shared_memory_attach()`)來產生和取得其他process的記憶體存取權(thread的話不用額外分配，預設就友共享記憶體空間)
+    * 大多數作業系統同時擁有兩種模式
+  * protection
+    * 包括(`set_permission()`)以及(`get_permission()`)
+    * 針對使用者則有(`allow_user()`)以及(`deny_user()`)
+
+<h2 id="0022">API</h2>   
+
+* API(application porgramming interface): OS提供的程式設計介面，API會去呼叫System Call, 一個API可對應到0或多個System Call
+  * Linux 的Api可以藉由man api_function查看:例如man read 可以查看read()這個api的資訊
+  * UNIX系列的API叫做POSIX
+  * Windows 就叫windows api
+  * JAVA的API: Java Api(與jvm的interface)
+
+* Windows and UNIX API example:
+  | Class | Windows | UNIX |
+  | --- | --- | --- |
+  | process control | CreateProcess() | fork() |
+  |  | ExitProcess() | exit() |
+  |  | WaitForSingleObject() | wait() |
+  | file management | CreateFile() | open() |
+  |  | ReadFile() | read() |
+  |  | WriteFile() | write() |
+  |  | CloseHandle() | close() |
+  | devices management | SetConsoleMode | ioctl() |
+  |  | ReadConsole() | read() |
+  |  | WriteConsole() | write() |
+  | information maintenance | GetCurrentProcessID() | getpid() |
+  |  | SetTimer() | alarm() |
+  |  | Sleep() | sleep() |
+  | communication | CreatePipe() | pipe() |
+  |  | CreateFileMapping() | shm_open() |
+  |  | MapViewOfFile() | mmap |
+  | protection | SetFileSecurity() | chmod() |
+  |  | InitializeSecurityDescriptor() | umask() |
+  |  | SetSecurityDescriptorGroup() | chown() |
+
+* 傳遞參數至作業系統有三種方式:
+  * 使用register
+  * 使用存放在memory中的block或table
+  * 使用stack
+
+<h2 id="0023">loader and linker</h2>   
+
+* 通常程式以二進制可執行檔(如a.out或 b.exe)的形式存在磁碟中
+* 其編譯到載入的過程如下:
+  * source code 被編譯成物件檔(目的檔)object file，object file可以被載入到實體記憶體的任何位置，而這種格式被稱為relocatabel object file(可重定位物件檔案)
+  * 接下來linker會將這些relocatabel object file組合成單一個可執行(executable)檔
+  * 在連結的期間可以指定包含其他的物件檔或程式庫(-l\*就是链接lib\*.a文件，-lm 就是連結C的標準數學函式庫libm.a(靜態函式庫)。  [詳細](https://bbs.csdn.net/topics/20023165))
+  * loader 則會將二進制可執行檔載入到記憶體中執行
+  * 動態連結函式庫(DLL)允許執行時動態的載入，windows為.dll檔，linux則為.so檔
+  * ![compile](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
+
+
+
 
 
 
