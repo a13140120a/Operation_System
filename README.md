@@ -147,6 +147,9 @@
   * Windows 就叫windows api
   * JAVA的API: Java Api(與jvm的interface)
 
+* api與system call比較圖:
+  ![api與system call比較圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/sys_api.PNG)
+
 * Windows and UNIX API example:
   | Class | Windows | UNIX |
   | --- | --- | --- |
@@ -186,7 +189,58 @@
   * 動態連結函式庫(DLL)允許執行時動態的載入，windows為.dll檔，linux則為.so檔
   * ![compile](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
 
+* 物件檔與執行檔通常具有標準格式:
+  * linux系統中，此標準格式為[ELF格式](https://zh.wikipedia.org/wiki/%E5%8F%AF%E5%9F%B7%E8%A1%8C%E8%88%87%E5%8F%AF%E9%8F%88%E6%8E%A5%E6%A0%BC%E5%BC%8F)
+  * Windows中，則使用[PE格式](https://ithelp.ithome.com.tw/articles/10187490)
+  * Linux當中可用file test.o來查看，以下可以看到test.o為elf 64位元可重定位檔，test為elf可執行檔(也可用readelf進行評估)
+    ![file](https://github.com/a13140120a/Operation_System/blob/main/imgs/%E6%93%B7%E5%8F%960.PNG)
+    
+* 應用程式specify on OS，其原因如下:
+  * 每個OS具有不同的二進制格式
+  * CPU具有不同的指令集
+  * Sustem call不同
 
+* API 是在應用曾架構中指定某些功能，[ABI](https://zh.wikipedia.org/wiki/%E5%BA%94%E7%94%A8%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%8E%A5%E5%8F%A3)(應用二進位介面 application binary interface)則是用於指定底層詳細資訊，包括位址寬度，參數傳遞給System call的方法、執行時堆疊架構等等，一個ABI常見的樣貌即是調用約定(又稱呼叫約定 Calling Conventions)
+
+
+<h2 id="0023">OS設計與製作</h2>   
+
+* OS的設計目標大致上可分為以下兩種類:
+  * user goal(使用者目的): 就使用者而言，OS的設計必須easy to use, easy to learn, reliable, fast, safe
+  * system goal(系統目的): 而對於設計、維護OS的人，OS的設計必須要easy to design, implement, maintain, reliable, no error, efficient
+* Policy and mechanism:
+  * mechanism(機制):決定如何做某些事
+  * Policy(策略):決定做什麼
+  * 例如作為cpu保護的機制(mechanism)，[Timer](#0012)就是一種策略(Policy)
+  * microkernel 為mechanism與Policy分離的極端例子
+* 早期作業系統都是由組合語言撰寫，而現今大多都是以C/C++撰寫，少部分較瓶頸的常式(routine)則是用組合語言替換重構，以實現較好的效率。
+* Android 使用一種以上的語言撰寫而成，其大部分系統程式庫都是以C/C++撰寫，而應用程式框架以及API則都是以Java撰寫而成。
+
+<h2 id="0023">Structure</h2>   
+
+* Simple OS Architecture(單一結構):]
+  * 又稱為緊密耦合(tightly coupled)系統，會因為更改一部分而對其他部分產生廣泛影響。
+  * 所謂單一架構其實就是沒有架構，所有功能都放到單一的位址空間中的靜態二進制檔案當中
+  * 缺點是難以design, 修改困難，漏洞多，優點是效能非常快，windows and UNIX Linux仍然存在此種架構
+  * 原始UNIX系統為此架構
+    ![https://github.com/a13140120a/Operation_System/blob/main/imgs/2_12_UNIX_Structure.jpg]
+* Layered OS Architecture(分層架構)
+  * 又稱為鬆散耦合(loosely coupled)，系統可分為許多具有特定功能的較小單獨元件
+  * 速度較慢，但更好更改系統
+  * 是模組化(Modular)的方法之一
+  * 第0層為硬體，最高層為使用者介面
+  * 非常好除錯與維護，因為每層只能使用較低層的服務
+  * 分層系統常用於網路(如TCP/IP)
+  * ![Laered_OS](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_13_Laered_OS.jpg)
+* Microkernel
+  * kernel 的部分只保留一些基礎(如記憶體管理和process),其他都在使用者空間
+  * 主要採用message passing 溝通
+  * 優點是容易擴展，所有新的service 都加入使用者空間，所以不需修改核心，而當核心修改時，因為核心很小，所以不會牽涉到太多東西
+  * 效能非常低弱，因為當兩個service 要溝通時必須要經過kernel, 產生許多複製訊息的動作
+  * 最有名的Darwin是macOS 和IOS 的核心，Darwin是由兩個kernel所組成，其中一個是Mach
+    ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_14_microkernelArchitecture.jpg)
+* Modules(模組化):
+  * 
 
 
 
