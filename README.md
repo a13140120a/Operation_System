@@ -150,7 +150,7 @@
 * api與system call比較圖:
   ![api與system call比較圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/sys_api.PNG)
 
-* Windows and UNIX API example:
+* Windows and UNIX system call example:
   | Class | Windows | UNIX |
   | --- | --- | --- |
   | process control | CreateProcess() | fork() |
@@ -240,9 +240,25 @@
   * 最有名的Darwin是macOS 和IOS 的核心，Darwin是由兩個kernel所組成，其中一個是Mach
     ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_14_microkernelArchitecture.jpg)
 * Modules(模組化):
-  * 
+  * kernel提供主要服務，其他服務則在執行時被動態載入，就不必每次將新特性加入kernel都必須從新編譯
+  * 比Layered OS更有彈性，因為任何module都可以呼叫其他module
+  * 全部的module都在kernel裡面，所以速度不會太慢。
+  * kernel裡面會有system table, 會有許多空的entry, 可以讓使用者insert
+  * linux 也適用該技術，稱為[LKM](https://zh.wikipedia.org/wiki/%E5%8F%AF%E8%BC%89%E5%85%A5%E6%A0%B8%E5%BF%83%E6%A8%A1%E7%B5%84)
+    ![Solaris_Modules](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_15_Solaris_Modules.jpg)
 
+* 混和系統
+  * 作業系統通常不會使用單一的系統結構，會組合不同架構，以強調性能、安全及可用性等問題
+  * Linux是單核心，但模組化
+  * Windows是單核心，但保留一些microkernel架構，支援subsystem，但同時也可以動態載入module
 
+* macOS and IOS
+  * user experience: 該層定義設備與使用者之間的互動，macOS使用的是[Aqua](https://zh.wikipedia.org/wiki/Aqua_(GUI))，IOS使用的則是[Springboard](https://zh.wikipedia.org/zh-tw/SpringBoard)
+  * application frameworks: 這層包刮了用於開發MacOS應用程式的Cocoa 以及開發OS的Cocoa Touch framework，他們為Objected-C以及swift編程語言提供API。
+  * core frameworks: 定義了支援圖形和多媒體的框架，包括Quicktime和OpenGL
+  * Kernel enviroment: 這種環境也稱為Darwin, 包括Mach為核心和[BSD](https://zh.wikipedia.org/wiki/BSD) UNIX核心 
+  * 這樣的結構可以直接利用各層的優點
+    ![macOSiOS](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_16macOS%2BiOS.jpg)  ![D](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_17Darwin.jpg)
 
 
 <h1 id="002">Process Management</h1> 
