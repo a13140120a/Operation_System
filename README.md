@@ -308,7 +308,7 @@
   * stack section:呼叫函數時的臨時資料儲存(包括函數參數，return值以及區域變數)
   * ![c_process_memory](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_process_memory.png)
 * `size [filename]`可以查看Linux 二進位檔的資訊，data顯示的是未初始化的資料，bss是已初始化的資料，dec跟hex分別表示十進位與16進位的三個階段的總和
-* [objdump](https://wangchujiang.com/linux-command/c/objdump.html)可查看linux執行檔的反組譯碼，符號表等資訊。
+* [objdump](https://wangchujiang.com/linux-command/c/objdump.html)是gcc工具，可查看執行檔的反組譯碼，符號表等資訊。
 * process的狀態可分為以下幾種:
   * new:process正在產生中
   * ready:已經在memory裡面等待被執行
