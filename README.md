@@ -3,7 +3,7 @@
 * ## [Overview](#001) #
 * ## [OS Structure](#002) #
 
-* ## [Process Management](#002) 
+* ## [Process Concept](#002) 
 * ## [Process Coordination](#003) #
 * ## [Memory Management](#004) #
 * ## [Storage Management](#005) #
@@ -296,7 +296,37 @@
 * `strace`可以查看任何process調用的system call,例如`strace ls`可查看ls調用的那些system call以及狀況，[gdb](https://jasonblog.github.io/note/gdb/gdbshi_yong_jiao_xue_ff1a_zi_dong_hua_ni_de_debug.html)指令可以原始碼除錯，`perf`為Linux性能工具包，`tcpdump`網路封包擷取。
 * BCC: BCC是[eBPF](https://hackmd.io/@sysprog/linux-ebpf)工具的前端介面，而eBPF是擴展的[BPF](https://zh.wikipedia.org/wiki/BPF)，eBPF可動態插入正在運行的Linux系統，其指令可讀取特定事件(例如正在呼叫某個system call)，或者監視系統效能(例如IO時間)，BCC提供了python的前端介面，並嵌入了eBPF工具連接的C程式碼，而eBPF又與核心連接，BCC提供的許多工具均可用於特定應用程式，例如MySQL, Java或Python 程式
 
-<h1 id="002">Process Management</h1> 
+<h1 id="002">Process Concept</h1> 
+
+* process: 執行中的程式(動態，存在memory)
+* program: 未執行的程式(靜態，存在disk)
+* process的活動可由當前的register以及Program Counter表示
+* process的記憶體配置通常會包括以下四個section:
+  * text section :存放程式碼，大小固定
+  * data section :存放全域變數，大小固定，又分初始化及未初始化區域。
+  * heap section :process執行時動態分配的記憶體
+  * stack section:呼叫函數時的臨時資料儲存(包括函數參數，return值以及區域變數)
+  * ![c_process_memory](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_process_memory.png)
+* `size [filename]`可以查看Linux 二進位檔的資訊，data顯示的是未初始化的資料，bss是已初始化的資料，dec跟hex分別表示十進位與16進位的三個階段的總和
+* [objdump](https://wangchujiang.com/linux-command/c/objdump.html)可查看linux執行檔的反組譯碼，符號表等資訊。
+* process的狀態可分為以下幾種:
+  * new:process正在產生中
+  * ready:已經在memory裡面等待被執行
+  * running:正在執行
+  * waiting:正在等待event發生，例如等待IO結束或收到signal
+  * terminated:已完成
+* PCB:每個作業系統都存在一個process control block(PCB)，其所記載之process相關資訊包括:
+  * pointer to next PCB
+  * process state
+  * program counter
+  * CPU register
+  * Scheduling information:ex priority
+  * memory management information:ex base register, limit register, page table, segment table
+  * IO status information
+  * accounting information: 包括帳號，cpu使用時間及數量，時限等等，開了多少file等等。
+
+
+
 
 * Interrupt: 
 * nonpreemptive: process 可自願放棄cpu
