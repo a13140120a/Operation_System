@@ -2,8 +2,8 @@
 
 * ## [Overview](#001) #
 * ## [OS Structure](#002) #
-
-* ## [Process Concept](#002) 
+* ## [Process Concept](#003)
+ 
 * ## [Process Coordination](#003) #
 * ## [Memory Management](#004) #
 * ## [Storage Management](#005) #
@@ -296,7 +296,10 @@
 * `strace`可以查看任何process調用的system call,例如`strace ls`可查看ls調用的那些system call以及狀況，[gdb](https://jasonblog.github.io/note/gdb/gdbshi_yong_jiao_xue_ff1a_zi_dong_hua_ni_de_debug.html)指令可以原始碼除錯，`perf`為Linux性能工具包，`tcpdump`網路封包擷取。
 * BCC: BCC是[eBPF](https://hackmd.io/@sysprog/linux-ebpf)工具的前端介面，而eBPF是擴展的[BPF](https://zh.wikipedia.org/wiki/BPF)，eBPF可動態插入正在運行的Linux系統，其指令可讀取特定事件(例如正在呼叫某個system call)，或者監視系統效能(例如IO時間)，BCC提供了python的前端介面，並嵌入了eBPF工具連接的C程式碼，而eBPF又與核心連接，BCC提供的許多工具均可用於特定應用程式，例如MySQL, Java或Python 程式
 
-<h1 id="002">Process Concept</h1> 
+<h1 id="003">Process Concept</h1> 
+
+
+<h2 id="0031">Concept</h2> 
 
 * process: 執行中的程式(動態，存在memory)
 * program: 未執行的程式(靜態，存在disk)
@@ -312,7 +315,7 @@
 * process的狀態可分為以下幾種:
   * new:process正在產生中
   * ready:已經在memory裡面等待被執行
-  * running:正在執行
+  * running:正在執行，interrupt之後會回到ready狀態
   * waiting:正在等待event發生，例如等待IO結束或收到signal
   * terminated:已完成
 * PCB:每個作業系統都存在一個process control block(PCB)，其所記載之process相關資訊包括:
@@ -324,6 +327,78 @@
   * memory management information:ex base register, limit register, page table, segment table
   * IO status information
   * accounting information: 包括帳號，cpu使用時間及數量，時限等等，開了多少file等等。
+  * linux pcb是以C的[task_struct](http://lienguang.com/task_struct/) 結構表示，所有的process是以Double Link List的task_struct表示，[請參考詳細說明](https://www.itread01.com/content/1548075798.html)。
+* degree of multiprogramming: 目前在記憶體的process數量
+* IO bound:較IO傾向的process
+* CPU bound:較CPU傾向的process
+* queue: 各種scheduling會放在queue裡面
+  * Job queue:早期memory比較有限的時候，決定誰能夠load進memory
+  * Ready queue:已經在memory，準備等待被執行
+  * Device queue:sleep, interrupt或IO時會被踢進device queue，device queue通常不只一種
+* swap in/out: virtual memory放進/岀disk
+* context switch:當cpu要切換running process的時候需要把process的資訊記錄下來(如PC以及其他暫存器)，這種動作就叫context switch
+* Linux 的systemd 這個process的ID永遠是1，是系統啟動時的第一個user process，然後會再create 許多子process
+  * ![linux_tree](https://github.com/a13140120a/Operation_System/blob/main/imgs/linux_tree.png)
+  * `ps -el`可以看到系統中所有process的完整訊息:
+  * PPID代表parent pid(父process id), [NI及PRI代表的意義請看這裡](https://kknews.cc/zh-tw/tech/j85ngl.html), [其他](https://dywang.csie.cyut.edu.tw/dywang/linuxSystem/node77.html)
+  * Linux的init 就是 systemd
+
+
+<h2 id="0031">Process Creation</h2> 
+
+* create process的時候，其resouece可能是:
+  * child共享所有parent的資源(如file handle, io device handler)
+  * child共享部分parent的資源
+  * child不共享parent的資源
+* create process的時候，其執順序可能是:
+  * parent繼續與child同時執行
+  * parent等child執行完之後才繼續執行
+* create process的時候，新process 的記憶體空間有可能是:
+  * 完全複製parent的process跟資料例如(UNIX的fork()):[example](https://github.com/a13140120a/Operation_System/blob/main/linux_create_process_example.c)
+  * create的同時直接將program載入進去child。(例如windows的CreateProcess()):[example](https://github.com/a13140120a/Operation_System/blob/main/win_createprocess_example.cpp)
+* parent會因為以下原因殺死child:
+  * child使用超過分配的resource
+  * 工作結束
+  * parent結束
+* 呼叫system call `exit()`來結束process
+* 殭屍進程:child完成執行(通過exit()，或運行時發生致命錯誤或收到終止信號所致)，但在作業系統的進程表中仍然存在其PCB，其state處於terminated狀態的process，通常會發生在chhild需要保留表項以允許其parent讀取child的退出狀態，也就是在等待parent call `wait()`的process稱為zombie process(殭屍進程)，如果parent沒有呼叫wait就結束的話，child就會變成孤兒進程(orphan)，這時候Linux就會把該orphan設定為init(systemd)的child，並由init處理。
+
+<h2 id="0031">Process Communication</h2> 
+
+* Purpose:
+  * information sharing
+  * computation speedup: 多執行緒，multicore等等要加速運算就需要彼此溝通
+  * modularity: 就像modular的kernel一樣，module, subsystem都需要彼此溝通
+* IPC(interprocess communication)指的是process彼此之間的溝通
+* google chrome是一個multiprocess的例子，其分成以下三個process
+  * browser:process負責管理UI以及磁碟和網路IO
+  * renderer(渲染器):process負責處理呈現的網頁邏輯，包含HTML, JasaScript, 影像等邏輯，每個新的分頁都會有一個renderer
+  * plug-in(插件):例如flash, QuickTime
+* producer生產資訊，comsumer消耗資訊。
+* 製作comsumer跟producer的共通buffer:
+* ![ipc_buffer](https://github.com/a13140120a/Operation_System/blob/main/imgs/ipc_buffer.PNG)
+  ```c
+  /* 製作buffer */
+  # define BUFFER_SIZE 10
+  item buffer[BUFFER_SIZE]
+  int in = out = 0;
+  
+  /* producer */
+  whie(1){
+      while(((in+1) % BUFFER_SIZE) == out); //buffer滿了則等待
+      buffer[in] = nextProduced;
+      in = (in+1) % BUFFER_SIZE;
+  }
+  
+    /* comsumer */
+  whie(1){
+      while(in == out); //buffer空了則等待
+      nextComsumed = buffer[out];
+      out = (out+1) % BUFFER_SIZE;
+  }
+  
+  
+  ```
 
 
 
