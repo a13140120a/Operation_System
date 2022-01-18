@@ -13,7 +13,7 @@ int main()
 
 	}else{
 		printf("this is from parent process\n");
-		int pid = wait(&status);
+		pid_t pid = wait(&status);
 		printf("child %d complete",pid);
 	}
 
