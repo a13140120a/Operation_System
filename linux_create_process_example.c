@@ -5,7 +5,7 @@ int main()
 {
 	int A;
 	A=fork();
-	int status;
+	pid_t status;
 	if(A==0)
 	{
 		printf("this is from child process\n");
