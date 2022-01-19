@@ -19,14 +19,15 @@ int main()
 	int fd;
 
 	char* ptr;
-	/* ²£¥Íshared-memoryª«¥ó¡A¦bLinux¤¤¦¹ª«¥ó¥i©ó/dev/shm¸Ì­±¬İ¨ì */
+	/* ç”¢ç”Ÿshared-memoryç‰©ä»¶ï¼Œåœ¨Linuxä¸­æ­¤ç‰©ä»¶å¯æ–¼/dev/shmè£¡é¢çœ‹åˆ° */
+	/* æœƒå›å‚³ä¸€å€‹file descriptor(æª”æ¡ˆæè¿°ç¬¦) */
 	fd = shm_open(name, O_CREAT | O_RDWR, 0666);
-	/* ³]©wª«¥ó¤j¤p¡Aftruncate¥i¥H¨Ï¥Î¦b¥ô¦ó¥´¶}ªº¤å¥ó¤W */
+	/* è¨­å®šç‰©ä»¶å¤§å°ï¼Œftruncateå¯ä»¥ä½¿ç”¨åœ¨ä»»ä½•æ‰“é–‹çš„æ–‡ä»¶ä¸Š */
 	ftruncate(fd, SIZE);
-	/* ±Nshared-memoryª«¥ó map¨ìmemory*/
-	/* ª`·N:¦pªGshm_openªº²Ä¤G­Ó°Ñ¼Æ¬OO_RDONLYªº¸Ümmapªº²Ä¤T­Ó°Ñ¼Æ´N¥u¯à¦³PROT_READ¡A§_«h·|¦³Perrmission denied*/
+	/* å°‡shared-memoryç‰©ä»¶ mapåˆ°memory*/
+	/* æ³¨æ„:å¦‚æœshm_opençš„ç¬¬äºŒå€‹åƒæ•¸æ˜¯O_RDONLYçš„è©±mmapçš„ç¬¬ä¸‰å€‹åƒæ•¸å°±åªèƒ½æœ‰PROT_READï¼Œå¦å‰‡æœƒæœ‰Perrmission denied*/
 	ptr = (char*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	/* §âmessageªº¤º®e¼g¨ìptrªº¦ì§}¸Ì­± */ 
+	/* æŠŠmessageçš„å…§å®¹å¯«åˆ°ptrçš„ä½å€è£¡é¢ */ 
 	sprintf(ptr, "%s", message_0); 
 	ptr += strlen(message_0);
 	sprintf(ptr, "%s", message_1);
