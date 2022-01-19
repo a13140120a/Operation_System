@@ -29,13 +29,13 @@ int main() {
 	if (pid > 0) {  /* parent */
 		close(fd[READ_END]);
 
-		write(fd[WRITE_END], write_msg, strlen(write_msg) + 1); //strlen§£≠p∫‚\0©“•H≠n+1
+		write(fd[WRITE_END], write_msg, strlen(write_msg) + 1); //strlen‰∏çË®àÁÆó\0ÊâÄ‰ª•Ë¶Å+1
 		close(fd[WRITE_END]);
-	}else {/* child */
+	}else {  /* child */
 		
 		close(fd[WRITE_END]);
 
-		read(fd[READ_END], read_msg, BUFFER_SIZE); //strlen§£≠p∫‚\0©“•H≠n+1
+		read(fd[READ_END], read_msg, BUFFER_SIZE); 
 		printf("%s", read_msg);
 		close(fd[READ_END]);
 	}
