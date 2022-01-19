@@ -369,41 +369,81 @@
   * information sharing
   * computation speedup: 多執行緒，multicore等等要加速運算就需要彼此溝通
   * modularity: 就像modular的kernel一樣，module, subsystem都需要彼此溝通
-* IPC(interprocess communication)指的是process彼此之間的溝通
 * google chrome是一個multiprocess的例子，其分成以下三個process
   * browser:process負責管理UI以及磁碟和網路IO
   * renderer(渲染器):process負責處理呈現的網頁邏輯，包含HTML, JasaScript, 影像等邏輯，每個新的分頁都會有一個renderer
   * plug-in(插件):例如flash, QuickTime
+* IPC(interprocess communication)指的是process彼此之間的溝通
 * producer生產資訊，comsumer消耗資訊。
-* 製作comsumer跟producer的共通buffer:
-* ![ipc_buffer](https://github.com/a13140120a/Operation_System/blob/main/imgs/ipc_buffer.PNG)
-  ```c
-  /* 製作buffer */
-  # define BUFFER_SIZE 10
-  item buffer[BUFFER_SIZE]
-  int in = out = 0;
-  
-  /* producer */
-  whie(1){
-      while(((in+1) % BUFFER_SIZE) == out); //buffer滿了則等待
-      buffer[in] = nextProduced;
-      in = (in+1) % BUFFER_SIZE;
-  }
-  
-    /* comsumer */
-  whie(1){
-      while(in == out); //buffer空了則等待
-      nextComsumed = buffer[out];
-      out = (out+1) % BUFFER_SIZE;
-  }
-  
-  
-  ```
+* shared memory IPC:
+  * 製作comsumer跟producer的共通buffer:
+  * ![ipc_buffer](https://github.com/a13140120a/Operation_System/blob/main/imgs/ipc_buffer.PNG)
+  * 
+    ```c
+    /* 如果沒有犧牲掉一個位置的話，當in==out會不知道是空了還是滿了。 */
+    /* 製作buffer */
+    /* 使用環狀陣列 */
+    # define BUFFER_SIZE 10
+    item buffer[BUFFER_SIZE]
+    int in = out = 0;
+
+    /* producer */
+    whie(1){
+        while(((in+1) % BUFFER_SIZE) == out); //buffer滿了則等待
+        buffer[in] = nextProduced;
+        in = (in+1) % BUFFER_SIZE;
+    }
+
+      /* comsumer */
+    whie(1){
+        while(in == out); //buffer空了則等待
+        nextComsumed = buffer[out];
+        out = (out+1) % BUFFER_SIZE;
+    }
+    ```
+* message passing IPC:
+  * 至少具備以下兩種操作:
+    ```
+    send(message)
+
+    receive(message)
+    ```
+  * process P跟process Q溝通，則communication link(通訊鏈) implementation可分為以下幾種:
+    1. Direct or indirect communication:
+       * Direct communication: 
+         * Hard-coding, 較缺乏彈性
+         * 又可分symmetric(對稱)與asymmetric(非對稱)
+         * 如下所示，symmetric代表說雙方都要指定傳輸方向，不能修改。
+         * 而asymmetric則是send方要指定，而receive方不用指定，可以接收任何process的message
+         ```
+         # symmetric
+         send(P, message)
+         receive(Q, message)
+         
+         # asymmetric
+         send(P, message)
+         receive(id, message)
+         ```
+       * indirect communication:
+         * mailbox可能是為process或者OS所擁有，如果process是owner，那麼只有owner可以receive。
+         * 藉由一個mailbox(或稱port)，
+         * 每個mailbox都有一個id，只有雙方有共用的mailbox的時候才能溝通
+         * 一個link可以和兩個以上的process相結合，
+         * 假設P1,P2,P3共用一個mailbox, 當P1傳送訊息至A,而P2,P3都要執行來自A的receive()，有幾種方法可以決定誰可以收到訊息:1. 允許一個link最多只能與兩個process結合(簡化成1to1)。2. 同一時間只有一個process可以call mailbox的receive()。3. 為了選擇能接收的process而使用某種演算法。
+    2. blocking(sychronous 同步) or nonblocking(asychronous 非同步):
+      * blocking send: 等待直到return
+      * nonblocking send: 不等待直接return
+      * blocking reveive: 等待直到接到訊息
+      * nonblocking reveive: 不論有無都不等待
+    3. buffer:
+      * zero capacity:buffer size為零，此種情況下，producer必須等待直到comsumer收到資料。
+      * bounded capacity:有限buffer size，當buffer滿時producer需等待，當buffer空時comsumer需等待。
+      * unbounded capacity:無限buffer size，從不阻塞。
+* POSIX IPC:
+  * POSIX shared memory的範例:[producer](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[](https://github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)
 
 
 
-
-* Interrupt: 
 * nonpreemptive: process 可自願放棄cpu
 
 
