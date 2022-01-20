@@ -401,6 +401,7 @@
         out = (out+1) % BUFFER_SIZE;
     }
     ```
+  * POSIX shared memory的範例:[producer](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[consumer](https://github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)
 * message passing IPC:
   * 至少具備以下兩種操作:
     ```
@@ -439,6 +440,8 @@
       * zero capacity:buffer size為零，此種情況下，producer必須等待直到comsumer收到資料。
       * bounded capacity:有限buffer size，當buffer滿時producer需等待，當buffer空時comsumer需等待。
       * unbounded capacity:無限buffer size，從不阻塞。
+* Windows中提供的內部進程間通信方式為[ALPC](https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9C%B0%E8%BF%87%E7%A8%8B%E8%B0%83%E7%94%A8#%E5%AE%9E%E7%8E%B0)，只能於同一台機器中使用。
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/3_19_ALPC_Windows.jpg)
 * Pipe:
   * 早期的UNIX系統所使用的IPC機制
   * implement pipe時，有四個議題必須考慮:
@@ -447,25 +450,33 @@
     * 通信的兩個process是否必須存在關係(parent-child)
     * 是否可以通過網路，或者必須在同一台機器上?
   * Ordinary pipe(普通管道):
+    * 必須是是parent-child的關係，所以只能備用在同一台機器上
     * UNIX 的 Ordinary pipe create方法就是`pipe(int fd[])`
     * producer從write end(寫入端)寫入，consumer從read end(讀取端)讀取
-    * fd[0]表示write endㄝ，fd[1]表示read end
+    * fd[0]表示write end，fd[1]表示read end
     * UNIX 的Ordinary pipe不能從產生這個pipe外的process存取
     * 基本上，UNIX的parent透過ordinary pipe和`fork()`出來的child溝通
     * UNIX把pipe當成一個特殊的檔案型態，可以使用普通的`read()`或`write()`來操作。
-  * Windows的Ordinary pipe叫做anonymous pipe:
+    * 完成通訊之後就會消失
+    * [UNIX Ordinary pipe example](https://github.com/a13140120a/Operation_System/blob/main/unix_pipe.c)
+  * Windows的Ordinary pipe叫做anonymous pipe(匿名管道):
     * 如同UNIX是parent-child的關係
     * 可以使用普通的`readFile()`或`writeFile()`來操作。
     * create的API是`CreatePipe()`
-
+    * windows anonymous pipe example: [parent](https://github.com/a13140120a/Operation_System/blob/main/win_pipe_parent.cpp), [child](https://github.com/a13140120a/Operation_System/blob/main/win_pipe_child.cpp)
+  * Named Pipes(命名管道):
+    * 可以雙向，不需是parent-child的關係，可以多個process一起使用。
+    * 完成通訊之後依然可以持續存在
+    * UNIX的Named Pipes被稱為FIFO, Create的方法是`mkfifo()`,使用檔案系統的`read()``write()``open()``close()`來操作，並會持續存在直到被作業系統刪除，允許雙向通信但使用半雙工，如果要同時雙向傳輸，通常會建立兩個FIFO，必須在同一台機器上。
+    * Windows的Named Pipes比UNIX更豐富，允許全雙工，可以在不同機器間傳輸，Create的方法是`CreateNamedPipe()`，client端可以使用`ConnectNamedPiped()`連接到Named Pipes，然後透過`ReadFile()`與`WriteFile()`還通信。
 
 * POSIX IPC:
-  * POSIX shared memory的範例:[producer](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[consumer](https://github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)
-  * [UNIX Ordinary pipe example](https://github.com/a13140120a/Operation_System/blob/main/unix_pipe.c)
+  
+  
 * Windows:
-  * [ALPC](https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9C%B0%E8%BF%87%E7%A8%8B%E8%B0%83%E7%94%A8#%E5%AE%9E%E7%8E%B0)
-  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/3_19_ALPC_Windows.jpg)
-  * windows anonymous pipe example: [parent](https://github.com/a13140120a/Operation_System/blob/main/win_pipe_parent.cpp), [child](https://github.com/a13140120a/Operation_System/blob/main/win_pipe_child.cpp)
+  
+  
+  
 
 
 * nonpreemptive: process 可自願放棄cpu
