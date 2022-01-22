@@ -444,6 +444,7 @@
   * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/3_19_ALPC_Windows.jpg)
 * Pipe:
   * 早期的UNIX系統所使用的IPC機制
+  * Linux pipe:`ls|less`相等於Windows的`dir|more`
   * implement pipe時，有四個議題必須考慮:
     * 允許單向通信或雙向通訊?
     * 若允許雙向通訊，則是半雙工(同時間只能單方向)，還是全雙工(同時間可以雙向)
@@ -470,13 +471,43 @@
     * UNIX的Named Pipes被稱為FIFO, Create的方法是`mkfifo()`,使用檔案系統的`read()``write()``open()``close()`來操作，並會持續存在直到被作業系統刪除，允許雙向通信但使用半雙工，如果要同時雙向傳輸，通常會建立兩個FIFO，必須在同一台機器上。
     * Windows的Named Pipes比UNIX更豐富，允許全雙工，可以在不同機器間傳輸，Create的方法是`CreateNamedPipe()`，client端可以使用`ConnectNamedPiped()`連接到Named Pipes，然後透過`ReadFile()`與`WriteFile()`還通信。
 
-* POSIX IPC:
-  
-  
-* Windows:
-  
-  
-  
+* Socket:
+  * 由IP和port number組成
+  * 分為TCP以及UDP兩種。
+  * port 22為ssh, port21為FTP, port 80為http
+  * 只能使用1024以上的port，因為1024以內都定義好了。
+  * 127.0.0.1稱為loopback
+  * 傳輸的data可以是任何東西，由programmer自行parse
+  * Socket 運作方式:
+    * ![Socket](https://github.com/a13140120a/Operation_System/blob/main/imgs/20220120.PNG)
+* PRC(Remote procedure call)
+  * RPC的底層也是使用Socket實現
+  * client端會有一個stub的process負責處理parsing，server端則稱為(skeleton)
+  * 當client端呼叫一個remote procedure時，RPC會找到適當的stub, 並且mashaling(重排) parameter，封裝成[XDR(External Data Representation)](https://zh.wikipedia.org/wiki/%E5%A4%96%E9%83%A8%E6%95%B0%E6%8D%AE%E8%A1%A8%E7%A4%BA%E6%B3%95)格式，送到server端處理。
+  * Windows的stub程式碼是由使用MIDL(微軟介面定義語言 Microsoft Interface Definition Language)所撰寫編譯而成
+  * 遇到Pointer的傳輸時會有複雜的解決方法，其中可以參考微軟的[MIDL Pointers and RPC](https://docs.microsoft.com/en-us/windows/win32/rpc/pointers-and-rpc)
+  * 概念圖:
+    * ![RPC](https://github.com/a13140120a/Operation_System/blob/main/imgs/20220120-2.PNG)
+* Android RPC:
+  * Android OS中的binder framework包含龐大的IPC機制，其中就包含RPC
+  * [Application components](https://www.techplayon.com/applications-component/)是Android app 的基本block，而Service就是其中一個Application components
+  * 當Client端app呼叫`bindService()`時，該app的service(例如背景播放音樂)將會被bind(綁定)，而被綁定的service將會extend(Java的繼承) Service這個父類別`public class MyService extends Service {}`
+  * 要提供RPC，`onBind()`必須要有一個返回介面，該介面由Java撰寫，並使用Android Interface Definition Language (AIDL Android介面定義語言)創建stub文件。
+  * [詳細資訊](https://www.itread01.com/p/585471.html)
+
+<h1 id="003">Thread</h1> 
+
+ 
+
+
+
+
+
+
+
+
+
+
 
 
 * nonpreemptive: process 可自願放棄cpu
