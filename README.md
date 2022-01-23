@@ -401,7 +401,7 @@
         out = (out+1) % BUFFER_SIZE;
     }
     ```
-  * POSIX shared memory的範例:[producer](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[consumer](https://github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)
+  * POSIX shared memory的範例:[producer](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[consumer](https://github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)，gcc command`gcc -o consumer posix_producer.c -lrt`
 * message passing IPC:
   * 至少具備以下兩種操作:
     ```
@@ -497,14 +497,48 @@
 
 <h1 id="003">Thread</h1> 
 
- 
-
-
-
-
-
-
-
+ * a lightweight process
+ * 網頁伺服器是一個multithread 的例子(一個繼續監聽，一個處理request)
+ * code section, data section(靜態或全域), OS resource(handle etc)是share的
+ * thread有自己的ID, program counter, register set, stack
+ * 好處:
+   * Responsiveness:可以即時應對user
+   * Resource sharing
+   * Economy:相較create process可以不用消耗那麼多的時間，記憶體及其他資源
+   * Scalability:可以隨意擴增執行緒數量。
+* Concurrency(並行)是指藉由快速切換達到好像一起執行的錯覺，Parallelism(平行)才是真正一起執行
+* Challenge:
+  * Dividing tasks
+  * Data spliting
+  * Data dependency:(後面依賴前面的資料)
+  * Balance
+  * Testing and Debugging
+* 分成user thread和kernel thread，user thread會傳給kernel thread去執行:
+  * user thread:
+    * 較快速
+    * 例如Pthread(Linux, Mac), Win32 thread, Java thread
+  * kernel thread
+    * 因為較複雜，較多檢查以及保護機制，所以較慢
+* 分成三種mode:
+  * many to one:
+    * 一個process 指有一個kernel thread(有很多user thread)
+    * 優點是因為resource都sharing所以很快，缺點是一旦被blocking會導致系統停滯
+    * ![many_to_one](https://github.com/a13140120a/Operation_System/blob/main/imgs/many_to_one.PNG)
+  * one to one:
+    * 一個thread被blocking的話，對其他thread沒有影響
+    * 缺點是消耗太多資源，但現在電腦不缺資源，所以現代大多數OS(包括Linux和Windows)都是使用此種模式。
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/1to1.PNG)
+  * Many to many:
+    * 可以有many to one的resource sharing的快速的優點
+    * 又可以有one to one那種不容易被blocking導致系統停滯的缺點
+    * 難以實現，問題出在於如何mapping, 如果使用情境很單純，mapping的演算法可能會導致產生過多的overhead。
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/many_to_many.PNG)
+* 又分成asynchronous threading(非同步)和synchronous threading(同步)
+  * asynchronous threading:不必等child thread結束，才能繼續
+  * synchronous threading:必須等child thread結束，才能繼續
+* [Pthread example](https://github.com/a13140120a/Operation_System/blob/main/pthread_exm.c), gcc command:`gcc -pthread -o pthread_exm pthread_exm.c`
+* [Windows thread example]()
+* [Java thread example]()
 
 
 
