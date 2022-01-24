@@ -537,9 +537,78 @@
   * asynchronous threading:不必等child thread結束，才能繼續
   * synchronous threading:必須等child thread結束，才能繼續
 * [Pthread example](https://github.com/a13140120a/Operation_System/blob/main/pthread_exm.c), gcc command:`gcc -pthread -o pthread_exm pthread_exm.c`
-* [Windows thread example]()
-* [Java thread example]()
+* [Windows thread example](https://github.com/a13140120a/Operation_System/blob/main/win_createthread.c)
 
+* Implicit Threading: 由compiler和runtime libraries負責管理與新增執行緒，並非由程式負責，分成以下幾種方法:
+  * Thread pool
+    * 先Create 一個thread，節省去產生一個thread的成本。
+    * 可以把資源使用量控制在一定的範圍之內
+    * Window threadpool: [QueueUserWorkItem](https://docs.microsoft.com/en-us/windows/win32/api/threadpoollegacyapiset/nf-threadpoollegacyapiset-queueuserworkitem)
+    * Java threadpool
+  * Fork-join: thread並不是在fork的時候被create，而是在task真正執行的時候才被create，library負責分配建立thread的數量，以及分配task給thread
+    * java的fork join: `ForkJoinPool()`
+  * [OpenMP](https://zh.wikipedia.org/wiki/OpenMP):是一套支援跨平台共享記憶體方式的多執行緒並行的編程API，支援C,C++和Fortran
+    * example:
+    * ```c
+      #include <omp.h>
+      #include <studio.h>
+      
+      int main()
+      {
+          /* 當OpenMP遇到#program omp parallel時會產生和系統core數一樣多的thread */
+          #program omp parallel
+          {
+              printf("i am a parallel region"); 
+          }
+          
+          /* 當OpenMP遇到#program omp parallel for時會將回圈內的指令分給不同的thread進行平行運算 */
+          #program omp parallel for
+          for (i=0;i<N;i++)
+              c[i] = a[i] + b[i]
+              
+          return 0;
+      }
+      ```
+
+  * GCD(Grand Central Disoatch):MacOS和IOS作業系統的一項技術
+    * 和OpenM類似，允許開發人員區分出要平行執行的程式碼區塊
+    * GCD會將區塊放進dispatch queue, 當一個區塊從queue pop出去時，會分配thread pool中的一個thread給這個區塊執行
+    * 在GCD內部的thread pool由POSIX組成，並由GCD管理pool決定增減thread數量
+    * GDC由libdispatch這個程式庫實現，並且以一直到FreeBSD作業系統當中
+    * dispatch queue又分成serial和concurrency，serial一次只能pop一個區塊，而concurrency一次可以pop多個區塊並且可以同時執行，兩者都是以FIFO順序pop
+      * concurrency又分成以下幾種類別:
+        * QOS_CLASS_USER_INTERACTIVE:與USER互動
+        * QOS_CLASS_USER_INITIATED:需要USER來啟動，但並不需要像USER_INTERACTIVE一樣快速回應
+        * QOS_CLASS_UTILITY:需要較長時間才能完成，但不要求立即獲得結果
+        * QOS_CLASS_BACKGROUND:對時間的敏感度不高，例如:信箱備份
+    * 對於C/C++/Objective-C語言的簡單區塊範例:
+      * ```C
+        ^{ printf("hello block!"); }
+        ```
+    * 對於Swift而已，以下範例示範將task push進dispatch queue:
+      * ```C
+        let queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)
+        dispatch_async(queue, { printf("hello block!") })
+        ```
+  * [TBB(Intel threading building blocks)](https://en.wikipedia.org/wiki/Threading_Building_Blocks):
+    * 是一個 C++ template library，TBB提供任務排班、負載平衡以及支援快取。
+    * 也提供平行迴圈、Atomicity操作、互斥鎖等豐富功能。
+    * 範例:
+    * ```C
+      # c迴圈
+      for (int i =0; i<n; i++)
+          apply(v[i]);
+      ```
+    * ```C
+      # 使用TBB
+      parallel_for(size_t(0), n, [=](size_t) { apply(v[i]); });
+      ```
+* Threading Issues
+  * fork and exec:
+    * UNIX的`fork()`有兩種版本: 1. 複製process的所有thread(整個process)。 2. 指複製呼叫`fork()`的那個thread。
+    * 而`exec()`則是會取代整個process(包括所有thread)，所以如果呼叫上2的`fork()`再呼叫`exec()`是沒有意義的。
+  * signal:
+    * 所有的signal都遵循相同的過程:由於event發生而產生 > 產生的signal被送到一個process > 送達後交給signal handler處理
 
 
 
