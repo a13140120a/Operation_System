@@ -344,7 +344,7 @@
   * Linux的init 就是 systemd
 
 
-<h2 id="0031">Process Creation</h2> 
+<h2 id="0032">Process Creation</h2> 
 
 * create process的時候，其resouece可能是:
   * child共享所有parent的資源(如file handle, io device handler)
@@ -363,7 +363,7 @@
 * 呼叫system call `exit()`來結束process
 * 殭屍進程:child完成執行(通過exit()，或運行時發生致命錯誤或收到終止信號所致)，但在作業系統的進程表中仍然存在其PCB，其state處於terminated狀態的process，通常會發生在chhild需要保留表項以允許其parent讀取child的退出狀態，也就是在等待parent call `wait()`的process稱為zombie process(殭屍進程)，如果parent沒有呼叫wait就結束的話，child就會變成孤兒進程(orphan)，這時候Linux就會把該orphan設定為init(systemd)的child，並由init處理。
 
-<h2 id="0031">Process Communication</h2> 
+<h2 id="0033">Process Communication</h2> 
 
 * Purpose:
   * information sharing
@@ -495,7 +495,10 @@
   * 要提供RPC，`onBind()`必須要有一個返回介面，該介面由Java撰寫，並使用Android Interface Definition Language (AIDL Android介面定義語言)創建stub文件。
   * [詳細資訊](https://www.itread01.com/p/585471.html)
 
-<h1 id="003">Thread</h1> 
+<h1 id="004">Thread</h1> 
+
+
+<h2 id="0041">Concept</h2> 
 
  * a lightweight process
  * 網頁伺服器是一個multithread 的例子(一個繼續監聽，一個處理request)
@@ -519,6 +522,9 @@
     * 例如Pthread(Linux, Mac), Win32 thread, Java thread
   * kernel thread
     * 因為較複雜，較多檢查以及保護機制，所以較慢
+
+
+<h2 id="0042">Mode</h2> 
 * 分成三種mode:
   * many to one:
     * 一個process 指有一個kernel thread(有很多user thread)
@@ -533,6 +539,9 @@
     * 又可以有one to one那種不容易被blocking導致系統停滯的缺點
     * 難以實現，問題出在於如何mapping, 如果使用情境很單純，mapping的演算法可能會導致產生過多的overhead。
     * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/many_to_many.PNG)
+
+<h2 id="0042">Library</h2> 
+
 * 又分成asynchronous threading(非同步)和synchronous threading(同步)
   * asynchronous threading:不必等child thread結束，才能繼續
   * synchronous threading:必須等child thread結束，才能繼續
@@ -603,14 +612,58 @@
       # 使用TBB
       parallel_for(size_t(0), n, [=](size_t) { apply(v[i]); });
       ```
-* Threading Issues
-  * fork and exec:
-    * UNIX的`fork()`有兩種版本: 1. 複製process的所有thread(整個process)。 2. 指複製呼叫`fork()`的那個thread。
-    * 而`exec()`則是會取代整個process(包括所有thread)，所以如果呼叫上2的`fork()`再呼叫`exec()`是沒有意義的。
-  * signal:
-    * 所有的signal都遵循相同的過程:由於event發生而產生 > 產生的signal被送到一個process > 送達後交給signal handler處理
+      
+<h2 id="0042">Threading Issues</h2> 
+      
 
-
+* fork and exec:
+  * UNIX的`fork()`有兩種版本: 1. 複製process的所有thread(整個process)。 2. 指複製呼叫`fork()`的那個thread。
+  * 而`exec()`則是會取代整個process(包括所有thread)，所以如果呼叫上2的`fork()`再呼叫`exec()`是沒有意義的。
+* signal:
+  * 所有的signal都遵循相同的過程: 由於event發生而產生 > 產生的signal被送到一個process > 送達後交給signal handler處理
+  * signal又分成同步跟非同步，同步包括:記憶體存取違規或除以0，非同步包括ctrl+c或者 timer時間到了。通常非同步signal會被送到另一個process
+  * signal handler 又分成default signal handler 以及 user-defined signal handler，default signal handler是在kernel執行，但有可能被user-defined所覆蓋。
+  * signal有可能會被傳送到以下幾種選擇:
+    * 把訊號傳到有應用的執行緒上。
+    * 把訊號直接傳到所有的執行緒上。
+    * 把訊號傳到行程中特定的執行緒中。
+    * 選一個執行緒，負責接收所有的訊號。
+  * [Windows APC](https://docs.microsoft.com/zh-tw/windows/win32/sync/asynchronous-procedure-calls):windows沒有signal，但有APC，允許使用者執行緒設定一個函數, 當一個event發生時就呼叫此函數
+* Thread cancellation: 意思是一個thread在完成工作之前結束他，例如多執行緒搜尋資料庫，其中一個找到，其他就都該結束，被取消的thread稱為target thread, target thread又可分成兩種:
+  * Asynchronous cancellation(非同步取消):立即終止，有可能會無法釋放所有資源
+  * Deferred cancellation(延遲取消):會執行到一個check point才取消，例如:ctrl+c，允許執行緒安全的被取消。
+  * Pthread: `pthread_cancel(tid)`或`pthread_cancel(pthread_self())`，pthread支援[三種取銷模式](https://man7.org/linux/man-pages/man3/pthread_setcancelstate.3.html)
+  * java的Thread cancellation只要把thread的interrupt狀態設成true就可以了`Thread worker; worker.interrupr()`，檢查:`while(!Thread.currentThread().isInterrupr())`
+* TLS(Thread local storage): 
+  * 每個thread的各自的獨一無二的資料，不會干擾或影響到別人
+  * local variable：只能在自己的function中被看見，而TLS中的資料可以被自己以外的function看見。
+* Schedular Activations:
+  * 在Many-to-Many跟Two-level通訊要求間，維持適當的kernel threads的數量，再分配給應用程式。
+  * LWP：在user thread跟kernel thread中間的資料結構，提供虛擬執行緒的排程。
+* Windows thread
+  * 使用One-to-One模組。
+  * 每個執行緒包含：
+    * 執行緒ID
+    * 儲存處理器表現狀態的暫存器組
+    * program counter
+    * 一個user stack跟kernel stack
+    * 由runtime libraries與dyanamic link libraries所使用的私有儲存區域
+  * context: 儲存處理器表現狀態的暫存器組+stack+私有儲存區域
+  * 在Windows中thread的主要資料結構：
+    * ETHREAD：包含thread所屬process的指標，執行緒起始位址，還有一個指標指向KTHREAD。
+    * KTHREAD：包含排班跟同步的資料，kernel stack跟指向TEB的指標。
+    * TEB(Thread Envrionent block)：包含ID、use stack、TLS。 
+* Linux Thread:
+  * Linux沒有區分process跟thread，在Linux中，threads被稱作為tasks。
+  * Linux not support mulltithreading，而是使用Pthread實現user-level的thread
+  * `fork()`create a new process and **copy** assciated data of parent process
+  * `clone()`create a new process and **link** assciated data of parent process(有些memory是share的)，clone 中第三個參數flag有以下幾種選擇
+    * CLONE_FS: 共用檔案系統訊息
+    * CLONE_VM:share相同的Memory space
+    * CLONE_SIGHAND:共用signal handler的函數
+    * CLONE_FILES:共用開啟的檔案
+  * 當`clone()`沒有Flag設定，就與`fork()`相似，
+  * task_struct(見3章PCB)結構中存在許多指標指向儲存這些資料的其他struct，如開啟檔案的linked-list、signal處理訊息和virtual memory的資料結構等，當`fork()`被呼叫時會clone這些data, 而`clone()`則會根據flag指向parent的儲存這些資料的struct，`clone()`技術也造就了虛擬化技術。
 
 
 * nonpreemptive: process 可自願放棄cpu
