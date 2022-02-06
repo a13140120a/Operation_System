@@ -540,7 +540,7 @@
     * 難以實現，問題出在於如何mapping, 如果使用情境很單純，mapping的演算法可能會導致產生過多的overhead。
     * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/many_to_many.PNG)
 
-<h2 id="0042">Library</h2> 
+<h2 id="0043">Library</h2> 
 
 * 又分成asynchronous threading(非同步)和synchronous threading(同步)
   * asynchronous threading:不必等child thread結束，才能繼續
@@ -613,7 +613,7 @@
       parallel_for(size_t(0), n, [=](size_t) { apply(v[i]); });
       ```
       
-<h2 id="0042">Threading Issues</h2> 
+<h2 id="0044">Threading Issues</h2> 
       
 
 * fork and exec:
@@ -666,12 +666,14 @@
   * task_struct(見3章PCB)結構中存在許多指標指向儲存這些資料的其他struct，如開啟檔案的linked-list、signal處理訊息和virtual memory的資料結構等，當`fork()`被呼叫時會clone這些data, 而`clone()`則會根據flag指向parent的儲存這些資料的struct，`clone()`技術也造就了虛擬化技術。
 
 
+
+<h1 id="005">CPU Scheduling</h1> 
+
+<h2 id="0051">Concept</h2> 
+
+* 
+
 * nonpreemptive: process 可自願放棄cpu
-
-
-<h1 id="003">Process Coordination</h1> 
-
-
 
 
 
