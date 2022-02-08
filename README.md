@@ -639,7 +639,14 @@
   * local variable：只能在自己的function中被看見，而TLS中的資料可以被自己以外的function看見。
 * Schedular Activations:
   * 在Many-to-Many跟Two-level通訊要求間，維持適當的kernel threads的數量，再分配給應用程式。
-  * LWP：在user thread跟kernel thread中間的資料結構，提供虛擬執行緒的排程。
+  * <p id="lwp">LWP(lightweight process)：在user thread跟kernel thread中間屬於kernel的資料結構</p>  
+  
+    * 提供虛擬執行緒的排程，
+    * LWP看起來像是一個Virtual processor，應用程式可以排班一個process在其上執行，
+    * 每個LWP連接到一個kernel thread，然後OS安排這些Kernel thread在實體processor執行，
+    * 如果Kernel thread被block，LWP也會被block。
+    * 一個應用程式可以要求任何數目的LWP，IO bound的應用程式通常需要多個LWP來執行，例如一次開啟五個檔案讀寫就需要五個LWP，因為他們可能都在Waiting，如果這時應用程式只有4個LWP，其中一個就必須等待。
+    * LWP與普通行程的區別也在於它只有一個最小的執行上下文和排程程式所需的統計資訊，而這也是它之所以被稱為輕量級的原因
 * Windows thread
   * 使用One-to-One模組。
   * 每個執行緒包含：
@@ -671,15 +678,84 @@
 
 <h2 id="0051">Concept</h2> 
 
-* 
+* CPU burst: 一連串的instruction都在使用CPU的狀態
+* IO burst : 一連串的instruction都在做IO的狀態
+* CPU bound: CPU burst較多的(process)
+* IO bound : IO 較多的(process)
+* CPU 的Schedule發生在以下四種狀況  
+  1.從running到waiting(例如發生IO)  
+  2.從running到ready(例如發生interrupt)  
+  3.從waiting到ready(例如IO結束)  
+  4.terminates  
+* non-preemptive: CPU 的Schedule只發生在上述1跟4的情況，non-preemptive的kernel結構較簡單，對於即時計算較差
+* preemptive: CPU 的Schedule可以發生在上述所有的狀況，需要額外的方法防止race condition(競爭情況)
+* Linux環境可使用[vmstat](https://ithelp.ithome.com.tw/articles/10100636)來查看每秒context switch以及interrupt的數量
+* Linux環境可以利用`cat /proc/254/status`來查看pid=254的process狀態，最後兩行顯示voluntary-ctxt-switches(自願context switch，如IO)以及nonvoluntary-ctxt-switches(非自願，如被preempt)數量。
 
-* nonpreemptive: process 可自願放棄cpu
+<h2 id="0044">Scheduling Algorithms</h2> 
 
+* Scheduling Algorithms通常有以下幾種評估標準(Scheduling Criteria):
+  * CPU utilization:理論上0~100%，實際上會介於40~90%，可用[top](https://david50.pixnet.net/blog/post/45252072-%5B%E7%AD%86%E8%A8%98%5Dlinux---top%E8%B3%87%E8%A8%8A)查看
+  * Throughput: (以系統的角度)每單位時間內完成的工作量，對於cpu scheduling而言就是每單位時間完成的process數量。
+  * Turnaround Time: (以single job的角度)submission~cpmpletion的時間
+  * wait time:在ready queue的時間
+  * response time: (對於interactive很重要)從submission到第一個cpu burst開始的時間。
 
+* FCFS(First Come First Serve):
+  * 製作容易，average wait time通常很長，並且會因為cpu burst的變化而有極大差異
+  * 不管是non-preemptive還是preemptive都不會改變結果，一樣都是先來先做完。
+  * ![fcfs_scheduling](https://github.com/a13140120a/Operation_System/blob/main/imgs/fcfs_scheduling.PNG)
+* SJF(Shortest Job First):
+  * 可以證明是最小wait time的演算法
+  * non-preemptive跟preemptive會得到不同的結果
+  * 無法預知下一個cpu burst的長度(但可以使用一些time serious的方式預測，例如[EMA](https://zh.wikipedia.org/wiki/%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87#%E6%8C%87%E6%95%B8%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87))
+  * [詳細解說](https://www.youtube.com/watch?v=scp5vRE3yVw&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=32)
+* RR(Round robin):
+  * 每個process會得到一個固定的time quantum，通常是10~100毫秒。
+  * 時間越短，overhead越高，時間越長則就變成FCFS
+* Priority Scheduling:
+  * 每個process會有一個priority, priority越高則越先執行
+  * Priority Scheduling也有分non-preemptive跟preemptive，non-preemptive的話在priority較高的process出現時，較低的會被preempt
+  * priority可以是內部或外部定義的，內部的包含依據時間限制、記憶體需求、開啟檔案數量、IO burst與CPU burst的比例來計算priority，外部則是由作業系統的一些標準所定義，例如process的重要性等等。
+  * 會有starvation的問題，解決的方法是aging，逐漸提高在系統中停留時間較長的process的priority。
+  * SJF是按照cpu burst的長度來決定priority的Priority Scheduling
+* multilevel queue:
+  * 有多個queue, 每個queue有不同的Scheduling Algorithms，也有不同的Priority，通常會放不同類型的process
+  * process不能在queue之間移動
+  * 要定義如何選擇哪一個queue，通常有兩種做法:
+    * 除非priority較高的queue空了，否則不會執行較低的queue
+    * 每個queue分到不同比例的cpu時間，譬如priority較高的分到80%做RR Schdule，而較低的分到20%做FCFS等等。
+  * ![multilevel_queue](https://github.com/a13140120a/Operation_System/blob/main/imgs/multilevel_queue.PNG)
+* multilevel feedback queue:
+  * 最通用的Scheduling Algorithm
+  * process可以在queue之間移動
+  * 會在run time的時候觀察process的behavior來判斷應該要如何在queue之間移動
+  * 如果一個process使用cpu的時間太長，就會被排到較低priority的queue，讓IO bound和interative的process放在較高priority的queue
+  * 而較低priority的process也會隨著時間增加而增加priority(aging)來避免starvation
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/multilevel_feedback_queue.PNG)
+  * 上圖例子當中，最上層queue分配到的time quantum是8ms，如果8ms內未完工的process就會被安排到第二層的queue，這時候如果最上層queue裡面沒有任何process就會開始執行第二層的queue，如果還是執行不完，就會再被安排到最下層的queue，而為了避免starvation，如果在較低priority的queue待太久則會被安排到較高的queue
+  * multilevel feedback queue必須決定以下幾種參數:
+    * queue的數量
+    * 每個queue的Algorithm
+    * 何時把porcess提升到較高priority的queue
+    * 降低高priority的process到較低queue的方法
+    * 當process需要serve的時候該進入哪個queue
 
+<h2 id="0044">Thread Scheduling</h2> 
 
-
-
+* 分成user-level 和 kernel-level
+* 因為當thread支援得時候,不是只有process要Scheduling, thread也要
+* PCS:如果在Many-to-one 和many-to-many model，user-level就必須經過Scheduling，這個過程稱為process-contention scope (PCS)由programmar來做
+* SCS:另外一個是由Kernel thread 來schedule，被稱為system-contention scope (SCS)由系統來做
+* Pthread中允許process產生期間指定PCS和SCS
+  * 預設情況下，對於一個擁有n個執行緒的程式，啟動多少LWP，由哪些LWP來控制哪些執行緒由作業系統來控制，這種狀態被稱為非繫結的。
+  * 那麼繫結的含義就很好理解了，只要指定了某個執行緒“綁”在某個LWP上，就可以稱之為繫結的了。
+  * `int pthread_attr_setscope(pthread_attr_t *attr, int scope);`的第二個參數scope是[繫結型別](https://www.796t.com/article.php?id=63046)，擁有兩個取值，PTHREAD_SCOPE_SYSTEM（繫結的）和PTHREAD_SCOPE_PROCESS（非繫結的）。
+  * Linux採用了one-to-one的方案，這也就是說，Linux的執行緒永遠都是繫結，所以PTHREAD_SCOPE_PROCESS在Linux中不管用，而且會返回ENOTSUP錯誤。
+  * 在many-to-many中，PTHREAD_SCOPE_PROCESS使用PCS排班法排班執行緒，將策略地排班user mode的thread在可用的LWP中，而LWP的數目是由library所控制，
+  * PTHREAD_SCOPE_SYSTEM則是使用SCS排班法排班執行緒，將產生和連結一個LWP給每個user mode的thread，並使用1對1有效的map thread。
+  * [wiki](https://zh.wikipedia.org/wiki/POSIX%E7%BA%BF%E7%A8%8B#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B)
+  * [EXAMPLE]()
 
 
 
