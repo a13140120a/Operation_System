@@ -7,12 +7,13 @@ void* runner(void* param);
 
 int main() {
 
+	char* arg="100";
 	pthread_t tid;
 	pthread_attr_t attr;
 
 	pthread_attr_init(&attr);
 	
-	pthread_create(&tid, &attr, runner, 100);
+	pthread_create(&tid, &attr, runner, arg);
 
 	pthread_join(tid, NULL);
 
