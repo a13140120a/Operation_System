@@ -69,8 +69,9 @@
 
 * CPU: 執行instruction的硬體,通常內含暫存器以及L1 cache
 * Processor: 一個實體晶片，包含一個或多個CPU
-* Core: CPU的基本計算單位
+* Core: CPU的基本計算單位，或CPU中執行指令和暫存器儲存資料的地方
 * Muti-Core: 同一個CPU上包含多個Core
+* ![DualCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/DualCore.jpg)
 
 
 <h1 id="002">OS structure</h1> 
@@ -691,8 +692,9 @@
 * preemptive: CPU 的Schedule可以發生在上述所有的狀況，需要額外的方法防止race condition(競爭情況)
 * Linux環境可使用[vmstat](https://ithelp.ithome.com.tw/articles/10100636)來查看每秒context switch以及interrupt的數量
 * Linux環境可以利用`cat /proc/254/status`來查看pid=254的process狀態，最後兩行顯示voluntary-ctxt-switches(自願context switch，如IO)以及nonvoluntary-ctxt-switches(非自願，如被preempt)數量。
+* ready queue並不一定是FIFO queue。
 
-<h2 id="0044">Scheduling Algorithms</h2> 
+<h2 id="0052">Scheduling Algorithms</h2> 
 
 * Scheduling Algorithms通常有以下幾種評估標準(Scheduling Criteria):
   * CPU utilization:理論上0~100%，實際上會介於40~90%，可用[top](https://david50.pixnet.net/blog/post/45252072-%5B%E7%AD%86%E8%A8%98%5Dlinux---top%E8%B3%87%E8%A8%8A)查看
@@ -741,7 +743,7 @@
     * 降低高priority的process到較低queue的方法
     * 當process需要serve的時候該進入哪個queue
 
-<h2 id="0044">Thread Scheduling</h2> 
+<h2 id="0053">Thread Scheduling</h2> 
 
 * 分成user-level 和 kernel-level
 * 因為當thread支援得時候,不是只有process要Scheduling, thread也要
@@ -755,14 +757,24 @@
   * 在many-to-many中，PTHREAD_SCOPE_PROCESS使用PCS排班法排班執行緒，將策略地排班user mode的thread在可用的LWP中，而LWP的數目是由library所控制，
   * PTHREAD_SCOPE_SYSTEM則是使用SCS排班法排班執行緒，將產生和連結一個LWP給每個user mode的thread，並使用1對1有效的map thread。
   * [wiki](https://zh.wikipedia.org/wiki/POSIX%E7%BA%BF%E7%A8%8B#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B)
-  * [EXAMPLE]()
+  * [EXAMPLE](https://github.com/a13140120a/Operation_System/blob/main/set_scope.c)
 
+<h2 id="0054">Multi-Processor Scheduling</h2> 
 
-
-
-
-
-
+* 又分成asymmetric multiprocessing(非對稱)和symmetric multiprocessing(對稱):
+  * asymmetric multiprocessing(AMP):其中一顆cpu為master，負責管理整台電腦上的所有processor，也因為所有的OS code都run在同一個cpu上，同一時間只會有一顆cpu去access system data structure，所以不會有synchronization的問題，scale能力很強，用於大型電腦當中，缺點是浪費一顆cpu不做運算，以及master可能是效能瓶頸。
+  * symmetric multiprocessing(SMP): 每個processor的功能都一樣，能自行排班，OS的code run在所有的processor上，同一時間有可能會有多個cpu去access system data structure，所以會有synchronization的問題，能夠scale的能力較弱。
+  * SMP又可分為兩種策略:
+    * all processes in common ready queue:所有cpu的排班程式去競爭一個ready queue，會有synchronization的問題
+    * separate ready queues for each processor:可能會有load balancing不平衡的問題。
+* multicore processor:
+  * 將多個核心(core)放在同一個實體晶片上，每個core維持它的架構，因此對作業系統來說好像是一個獨立的processor
+  * 當processor存取memory時，需耗費大量的時間，這種情況稱為**Memory Stall**(例如cache miss)
+  * ![MemStall](https://github.com/a13140120a/Operation_System/blob/main/imgs/MemStall.jpg)
+  * 核心多緒化，多個hardware threads被分配到一個core
+  * ![TwoThrdCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/TwoThrdCore.jpg)
+  * ![processor_vs_os](https://github.com/a13140120a/Operation_System/blob/main/imgs/processor_vs_os.jpg)
+  * Intel使用hyper-threading(或稱simultaneous multithreading,SMT)來將
 
 
 
