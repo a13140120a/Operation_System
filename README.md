@@ -73,6 +73,16 @@
 * Muti-Core: 同一個CPU上包含多個Core
 * ![DualCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/DualCore.jpg)
 
+<h2 id="0012">Memory Access Architecture</h2> 
+
+* Uniform Memory Access (UMA):
+  * 適合[SMP](#0054)架構
+  * 每個processor accesses memory的速度都是一樣的，程式師不用在意程式執行在哪個processor，因為都一樣
+* Non-Uniform Memory Access (NUMA):
+  * 是一個hierarchy的架構，通常由許多SMP架構組成，可以建構更大的架構
+  * 每個processor accesses memory的速度不一樣，local的比較快，remote access會較慢
+  * 程式師需管理process run在哪個processor以提升效能
+
 
 <h1 id="002">OS structure</h1> 
 
@@ -690,7 +700,7 @@
   4.terminates  
 * non-preemptive: CPU 的Schedule只發生在上述1跟4的情況，non-preemptive的kernel結構較簡單，對於即時計算較差
 * preemptive: CPU 的Schedule可以發生在上述所有的狀況，需要額外的方法防止race condition(競爭情況)
-* Linux環境可使用[vmstat](https://ithelp.ithome.com.tw/articles/10100636)來查看每秒context switch以及interrupt的數量
+* Linux環境可使用[vmstat](https://charleslin74.pixnet.net/blog/post/434428316)來查看每秒context switch以及interrupt的數量，例如`vmstat 5 6`每五秒統計一次，總共統計六次。
 * Linux環境可以利用`cat /proc/254/status`來查看pid=254的process狀態，最後兩行顯示voluntary-ctxt-switches(自願context switch，如IO)以及nonvoluntary-ctxt-switches(非自願，如被preempt)數量。
 * ready queue並不一定是FIFO queue。
 
@@ -766,15 +776,43 @@
   * symmetric multiprocessing(SMP): 每個processor的功能都一樣，能自行排班，OS的code run在所有的processor上，同一時間有可能會有多個cpu去access system data structure，所以會有synchronization的問題，能夠scale的能力較弱。
   * SMP又可分為兩種策略:
     * all processes in common ready queue:所有cpu的排班程式去競爭一個ready queue，會有synchronization的問題
-    * separate ready queues for each processor:可能會有load balancing不平衡的問題。
-* multicore processor:
-  * 將多個核心(core)放在同一個實體晶片上，每個core維持它的架構，因此對作業系統來說好像是一個獨立的processor
-  * 當processor存取memory時，需耗費大量的時間，這種情況稱為**Memory Stall**(例如cache miss)
-  * ![MemStall](https://github.com/a13140120a/Operation_System/blob/main/imgs/MemStall.jpg)
-  * 核心多緒化，多個hardware threads被分配到一個core
+    * separate ready queues for each processor:可能會有load balancing不平衡的問題(例如一個cpu的queue滿載，另一個則空)。
+* multicore processor將多個核心(core)放在同一個實體晶片上，每個core維持它的架構，因此對作業系統來說好像是一個獨立的processor
+* ![processor_vs_os](https://github.com/a13140120a/Operation_System/blob/main/imgs/processor_vs_os.jpg)
+* 當processor存取memory時，需耗費大量的時間，這種情況稱為**Memory Stall**(例如cache miss)
+* ![MemStall](https://github.com/a13140120a/Operation_System/blob/main/imgs/MemStall.jpg)
+* 核心多執行緒化
+  * 核心多緒化，多個hardware threads被分配到一個core  
   * ![TwoThrdCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/TwoThrdCore.jpg)
-  * ![processor_vs_os](https://github.com/a13140120a/Operation_System/blob/main/imgs/processor_vs_os.jpg)
-  * Intel使用hyper-threading(或稱simultaneous multithreading,SMT)來將
+  * Intel使用hyper-threading(或稱simultaneous multithreading,SMT)來將hardware thread分配給一個core
+  * 核心多執行緒化有兩種方法:
+    * Coarse-grained(粗糙):會執行一條執行緒一直到出現long-latency event(例如Memory stall)，才進行切換並清空(flush)管線，context switch代價較大。
+    * fine-grained(精緻):在更小的granularity上面switch thread，例如每個指令之間，fine-grained的架構設計包含thread切換的邏輯(例如一次儲存兩個thread的cache)，因此context switch代價較小。(註:granularity是指在並行計算中，對該任務執行的工作量（或計算量）的度量)
+  * 實體的core同一時間只能執行一個hardware thread，因此需要兩種層級的排班，分別是**軟體執行緒**與**硬體執行緒**的排班
+* Load balancing:
+  * push migration: 某個task會會檢查不同processor上的loading，如果不平衡的話就把processes移動(適合整個系統的processor的loading都很低)。
+  * pull migration: idle的processor去拉waiting task(適合整個系統的processor的loading都很高)
+  * 兩種方法並不互斥，通常會一起使用這兩種方法。
+* affinity:
+  * process由一個processor轉移到另一個processor上需要將轉移前的processor cache清空，並將轉移後的processor cache填滿，這會造成很大的cost
+  * Proccessor affinity:大部分SMP系統會嘗試讓一個process一直在同一個processor上執行，避免process由一個processor轉移到另一個processor上，也就是process對目前執行的processor有affinity(親和性)
+  * soft affinity可以轉移到其他processor，hard affinity不行
+  * 許多系統同時提供soft affinity和hard affinity
+  * linux提供支援affinity的system call:`sched_setaffinity()`
+* Load balancing會抵消affinity帶來的bonus
+* heterogeneous multiprocessing(HMP):
+  * 對於某些系統而言，每個核心使用相同的instruction來執行，但他們有著不同的時脈以及電源管理，這樣的系統稱為HMP。
+  * 例如ARM使用[big.LITTLE](https://zh.wikipedia.org/wiki/Big.LITTLE)，高性能的big core與較節能的LITTLE core結合，big core消耗更多的能量，因此只能使用較短的時間，LITTLE消耗較少的能量，所以能夠更長時間使用。
+  * CPU scheduler可以將較低耗能(例如背景程式)分配給little，可以節省電量，如果行動裝置組於省電模式，則禁止使用big，windows允許支援HMP。
+
+
+
+
+
+
+
+
+
 
 
 
