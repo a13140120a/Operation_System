@@ -82,6 +82,7 @@
   * 是一個hierarchy的架構，通常由許多SMP架構組成，可以建構更大的架構
   * 每個processor accesses memory的速度不一樣，local的比較快，remote access會較慢
   * 程式師需管理process run在哪個processor以提升效能
+* ![NUMA](https://github.com/a13140120a/Operation_System/blob/main/imgs/NUMA-Architecture.png)
 
 
 <h1 id="002">OS structure</h1> 
@@ -767,7 +768,7 @@
   * 在many-to-many中，PTHREAD_SCOPE_PROCESS使用PCS排班法排班執行緒，將策略地排班user mode的thread在可用的LWP中，而LWP的數目是由library所控制，
   * PTHREAD_SCOPE_SYSTEM則是使用SCS排班法排班執行緒，將產生和連結一個LWP給每個user mode的thread，並使用1對1有效的map thread。
   * [wiki](https://zh.wikipedia.org/wiki/POSIX%E7%BA%BF%E7%A8%8B#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B)
-  * [EXAMPLE](https://github.com/a13140120a/Operation_System/blob/main/set_scope.c)
+  * [EXAMPLE](https://github.com/a13140120a/Operation_System/blob/main/set_scope.c)，GCC:`gcc -o set_scope set_scope.c -lpthread`
 
 <h2 id="0054">Multi-Processor Scheduling</h2> 
 
@@ -788,6 +789,7 @@
   * 核心多執行緒化有兩種方法:
     * Coarse-grained(粗糙):會執行一條執行緒一直到出現long-latency event(例如Memory stall)，才進行切換並清空(flush)管線，context switch代價較大。
     * fine-grained(精緻):在更小的granularity上面switch thread，例如每個指令之間，fine-grained的架構設計包含thread切換的邏輯(例如一次儲存兩個thread的cache)，因此context switch代價較小。(註:granularity是指在並行計算中，對該任務執行的工作量（或計算量）的度量)
+    * [參考](http://ccckmit.wikidot.com/qa:osthread)
   * 實體的core同一時間只能執行一個hardware thread，因此需要兩種層級的排班，分別是**軟體執行緒**與**硬體執行緒**的排班
 * Load balancing:
   * push migration: 某個task會會檢查不同processor上的loading，如果不平衡的話就把processes移動(適合整個系統的processor的loading都很低)。
@@ -806,15 +808,66 @@
   * CPU scheduler可以將較低耗能(例如背景程式)分配給little，可以節省電量，如果行動裝置組於省電模式，則禁止使用big，windows允許支援HMP。
 
 
+<h2 id="0055">Real-time Scheduling</h2> 
+
+* 必須在deadline之前完成
+* 又分成soft real-time和hard real-time，soft real-time如果miss deadline的話不會造成嚴重的後果，hard real-time必須保證一定要在deadline之前完成(如煞車系統)。
+* Event latency: event發生到被處理的延遲時間。
+* 影響real-time system的主要因素為interrupt latency(中斷延遲)以及dispatch latency(調度延遲)：
+  * interrupt latency包含決定interrupt類型以及context switch的時間
+  * dispatch latency包含以下兩個部分:
+    * Preemption of any process running in the kernel.
+    * Release by low-priority processes resources required by the high-priority process.  
+* Real-time Scheduling的scheduler必須要support preemptive以及prioritybased scheduling，並要求週期p必須是固定的，但只能保證soft real-time。
+* 設process的執行時間是t、deadline是d、週期時間是p，如果t < d < p，週期任務的頻率就是1/p，
+* T1 = (0,4,10)=(Ready, Execution, Period)
+* Rate-Monotonic (RM) Scheduling:
+  * Shorter period, higher priority
+  * priority是固定的
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/RM.PNG)
+* Early Deadline First (EDF) Scheduler
+  * Task’s priority is determined by deadline.
+  * priority會變動
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/EDF.PNG)
+* Proportional Share Scheduling：
+  * 假設CPU時間總共有T個**shares**、process有N個shares(N < T)，這樣每個process都被分配到N/T時間，
+  * 必須事前需要把資源比例分配好，例如總共有100個share，已經分配了85個share，若有新的process需要30個share，則拒絕進入系統。
+* POSIX Real-Time Scheduling:
+  * 設定執行緒排程演算法的介面是`pthread_attr_setschedpolicy()`，它的完整定義是：`pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy);`
+  * 第二個參數的選項有SCHED_RR、SCHED_FIFO和SCHED_OTHER(預設)
+  * [EXAMPLE](https://github.com/a13140120a/Operation_System/blob/main/set_schedule_policy.c)，GCC:`gcc -o set_schedule_policy set_schedule_policy.c -lpthread`
 
 
+<h2 id="0056">OS Example</h2> 
+
+* Linux:
+  * Linux系統的schedule是base on scheduling class，每個scheduling class會有不同的priority以及不同的algorithms以應對不同的需求。
+  * 標準的Linux系統會有兩種scheduling class: default(CFS)和real-time，亦可自行加入新的scheduling class。
+  * [CFS](https://blog.xuite.net/ian11832/blogg/23745751)於Linux kernel 2.6.23開始正式被採用，讓所有工作平等的被執行便是這排程的目標
+  * CFS將每個thread的負載記錄下來，結合priority以及cpu使用率，較高priority但是IO bound的程式通常負載較低，使用此方法可以確保所有queue都有相近的負載
+  * Linux也定義scheduling domain的階層系統，scheduling domain是根據他們共享的資源下去分組的，每個core可能擁有L1 Cache, core之間也可能共享L2 cache, 包含L2 cache的一組被分為domain0和domain1，而這兩個scheduling domain共享L3 cache，並且組成一個**NUMA node**，CFS最初只會在同一個domain裡面做thread的搬移(即domain0或domain1)，下一個層級的load balancing會發生在domain0跟domain1之間，如果整個系統處於忙碌狀態，則CFS不會在每隔Core之間進行load balancing。
+* windows
+  * 使用以priority為基礎的preemptive排班演算法來排班thread
+  * 確保最高priority的thread將一直執行
+  * windows kernel處理schedule的部分叫做dispatcher，被dispatcher選到的thread將一直執行直到被更高priority的thread preempt或是遇到IO、終止、或time quantum用完才會停止
+  * 使用32層的priority技巧，variable class包含1~15，real-time包含16~31，priority為0的thread被用於記憶體管理。
+  * dispatcher為每個priority提供一個queue，從最高到最低traverse，直到發現有ready的thread為止，如果沒有發現任何ready thread，會執行一個叫做idle thread的特殊thread。
+  * process通常是NORMAL_PRIORITY_CLASS，除非父process是其他類別或者使用者特別設定。
+  * 可使用`SetPriorityClass()`以及`SetThreadPriority()`，其API對應的priority請[參考](https://docs.microsoft.com/zh-tw/windows/win32/procthread/scheduling-priorities#base-priority)
+  * 每個thread都會有一個基本優先權，預設是該class中NORMAL的數值。
+  * 當thread的time quantum用完之後會被interrupt，並且如果此thread是variable class，他的priority會被降低，但不會被降到低於基本優先權，如果從waiting狀態中被釋放出來，就會提升priority，提升量取決於等待的是什麼，例如鍵盤IO將獲得大幅提升，若是磁碟IO則適量提升。
+  * windows對於foreground process(前景)和background process(背景)有所區別，當一個process由background移動到foreground時，windows會增加其排班量(通常是3)
+  * windows 7引入了[user-mode scheduling(UMS)](https://zhuanlan.zhihu.com/p/43652554)，允許user獨立於kernel外自行產生以及管理thread，對於大量產生 thread的process，在user mode排班會比在kernel mode排班更有效率，因為不需要介入kernel。
+  * 早期版本的windows提供類似的特性，稱為[fiber](https://docs.microsoft.com/zh-tw/windows/win32/procthread/fibers)，[(fiber wiki)](https://zh.wikipedia.org/wiki/%E7%BA%96%E7%A8%8B)，允許user mode的thread(纖程)被map到單一的kernel thread，fiber不能呼叫windows API，因為所有fiber都必須分享他們執行之thread的**TEB**[(Thread Environment Block 執行緒環境區塊)](https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-teb)，如果windows api 將資訊狀態放入一個fiber的TEB，會讓此資訊被另一個fiber覆蓋，UMS藉由提供每個user thread自己的執行緒內容來克服此障礙。
+  * Windows也支援multicore processor系統來進行thread在processor上的排程，使用的技術是建立[SMT Set(邏輯處理器集)](https://docs.microsoft.com/zh-tw/windows-hardware/drivers/debugger/-smt)，例如四核二緒(8 logic processor)包括四個SMT集:{0,1}{2,3}{4,5}{6,7}，Windows能夠維持同一個SMT set中logic processor上的執行緒執行，為了在不同processor之間load balancing，每個thread會分配給一個ideal processor(理想處理器)，每個process都會有一個初始種子值，用於標示屬於該process的thread的理想CPU，該process每建立一個thread，種子值的數字就會增加，藉此分散負載在不同的logic processor上，在SMT系統中，下一個ideal processor的增量會在下一個SMT set中，例如某個process的thread的ideal processor為0,2,4,6,0,2...，如果第二個process的種子值為1，則分配1,3,5,7,1,3....。
 
 
+<h2 id="0056">Evaluation Methods</h2> 
 
-
-
-
-
+* Deterministic modeling:依照performance metric去選擇、製作model，可能是要response time最小，還是wait time，或者是real time。
+* Queueing model:去設計演算法，分析並且證明。
+* Simulation:
+* Implementation:
 
 
 
