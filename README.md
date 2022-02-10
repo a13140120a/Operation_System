@@ -3,27 +3,33 @@
 * ## [Overview](#001) #
 * ## [OS Structure](#002) #
 * ## [Process Concept](#003)
- 
-* ## [Process Coordination](#003) #
+* ## [Thread](#004) #
+* ## [CPU Scheduling](#005) #
 * ## [Memory Management](#004) #
 * ## [Storage Management](#005) #
 * ## [Protection and Security](#006) #
 * ## [Distributed Systems](#007) #
 * ## [Special Purpose Systems](#008) #
 * ## [Case Studies](#009) # 
-
+****
 
 <h1 id="001">Overview</h1> 
 
   * ## [Definition](#0011) #
-  
+  * ## [History](#0012) #
+  * ## [Interrupt](#0013) #
+  * ## [Timer](#0014) #
+  * ## [Duel-Mode Operation](#0015) #
+  * ## [Component 名詞定義](#0016) #
+  * ## [Memory Access Architecture](#0017) #
+ 
 <h2 id="0011">Definition</h2> 
 
   *  **Resource allocator**: 能有效的分配及管理資源，並且滿足公平性，即時性等要求。 
   *  **Control program**: 控制user program 的執行以及控制hardware，避免電腦因不當操作產生error 或崩潰。
   *  **Kernel**: 一個always running 的核心程式。
   *  作業系統是屬於event-driven(事件驅動)，也就是他依據命令、應用程式、IO devices以及interrupt來工作。 
-<h2 id="0011">History</h2>   
+<h2 id="0012">History</h2>   
 
   * 演進: Batch -> Multi-programming -> Time-sharing 
     * batch: 一次只能一個user 執行一個process
@@ -31,7 +37,7 @@
     * Time-sharing: 可以來回在很多個process 之間切換，讓人產生好像一次執行多個process的錯覺，可以interactive。  
     * [更多詳細資訊](https://medium.com/@a131401203/%E4%B8%AD%E6%96%87%E7%B3%BB%E4%B9%8B%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1%E6%BC%94%E9%80%B2%E5%8F%B2-610986e9ee3c)
 
-<h2 id="0011">Interrupt</h2>   
+<h2 id="0013">Interrupt</h2>   
 
 * 對於傳統的電腦，IO的運作方式是驅動程式會先載入到控制器中適合的暫存器，然後controler會從暫存器的內容來決定要進行的動作。
   * ![cONTROLER](https://github.com/a13140120a/Operation_System/blob/main/imgs/controler.PNG)
@@ -48,7 +54,7 @@
 * Software的interrupt叫做trap或exception，software產生interrupt之後可以跳轉到自己定義的module當中
 
 
-<h2 id="0012">Timer</h2>   
+<h2 id="0014">Timer</h2>   
 
 * 通常在mother board上
 * 每隔一段時間會導致interrupt
@@ -56,7 +62,7 @@
 * 用來implement Time-sharing
 * 透過load-timer這個privileged instruction可以修改間隔時間
 
-<h2 id="001">Duel-Mode Operation</h2> 
+<h2 id="0015">Duel-Mode Operation</h2> 
 
 * 為了防止user program摧毀硬體，OS會分成兩種mode: 分別是user mode跟kernel mode
 * 有Hardware support的硬體會有一個bit, 當進入到kernel mode的時候OS會先把這個bit設為0，回到user mode之後會再設回1。
@@ -65,7 +71,7 @@
 * 一但在user mode執行priviledged instruction cpu會通知OS使OS產生錯誤訊息並阻擋執行。
 * Privileged instruction只能藉由呼叫System Call之後OS觸發interrupt然後轉換到kernel mode執行。
 
-<h2 id="0012">Component 名詞定義</h2>   
+<h2 id="0016">Component 名詞定義</h2>   
 
 * CPU: 執行instruction的硬體,通常內含暫存器以及L1 cache
 * Processor: 一個實體晶片，包含一個或多個CPU
@@ -73,7 +79,7 @@
 * Muti-Core: 同一個CPU上包含多個Core
 * ![DualCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/DualCore.jpg)
 
-<h2 id="0012">Memory Access Architecture</h2> 
+<h2 id="0017">Memory Access Architecture</h2> 
 
 * Uniform Memory Access (UMA):
   * 適合[SMP](#0054)架構
@@ -84,8 +90,17 @@
   * 程式師需管理process run在哪個processor以提升效能
 * ![NUMA](https://github.com/a13140120a/Operation_System/blob/main/imgs/NUMA-Architecture.png)
 
-
+****
 <h1 id="002">OS structure</h1> 
+
+  * ## [Services](#0021) #
+  * ## [System Call](#0022) #
+  * ## [API](#0023) #
+  * ## [loader and linker](#0024) #
+  * ## [OS設計與製作](#0025) #
+  * ## [Structure](#0026) #
+  * ## [系統啟動](#0027) #
+  * ## [除錯](#0028) #
 
 <h2 id="0021">Services</h2>   
 
@@ -151,17 +166,6 @@
     * 包括(`set_permission()`)以及(`get_permission()`)
     * 針對使用者則有(`allow_user()`)以及(`deny_user()`)
 
-<h2 id="0022">API</h2>   
-
-* API(application porgramming interface): OS提供的程式設計介面，API會去呼叫System Call, 一個API可對應到0或多個System Call
-  * Linux 的Api可以藉由man api_function查看:例如man read 可以查看read()這個api的資訊
-  * UNIX系列的API叫做POSIX
-  * Windows 就叫windows api
-  * JAVA的API: Java Api(與jvm的interface)
-
-* api與system call比較圖:
-  ![api與system call比較圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/sys_api.PNG)
-
 * Windows and UNIX system call example:
   | Class | Windows | UNIX |
   | --- | --- | --- |
@@ -185,12 +189,23 @@
   |  | InitializeSecurityDescriptor() | umask() |
   |  | SetSecurityDescriptorGroup() | chown() |
 
+<h2 id="0023">API</h2>   
+
+* API(application porgramming interface): OS提供的程式設計介面，API會去呼叫System Call, 一個API可對應到0或多個System Call
+  * Linux 的Api可以藉由man api_function查看:例如man read 可以查看read()這個api的資訊
+  * UNIX系列的API叫做POSIX
+  * Windows 就叫windows api
+  * JAVA的API: Java Api(與jvm的interface)
+
+* api與system call比較圖:
+  ![api與system call比較圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/sys_api.PNG)
+
 * 傳遞參數至作業系統有三種方式:
   * 使用register
   * 使用存放在memory中的block或table
   * 使用stack
 
-<h2 id="0023">loader and linker</h2>   
+<h2 id="0024">loader and linker</h2>   
 
 * 通常程式以二進制可執行檔(如a.out或 b.exe)的形式存在磁碟中
 * 其編譯到載入的過程如下:
@@ -215,7 +230,7 @@
 * API 是在應用曾架構中指定某些功能，[ABI](https://zh.wikipedia.org/wiki/%E5%BA%94%E7%94%A8%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%8E%A5%E5%8F%A3)(應用二進位介面 application binary interface)則是用於指定底層詳細資訊，包括位址寬度，參數傳遞給System call的方法、執行時堆疊架構等等，一個ABI常見的樣貌即是調用約定(又稱呼叫約定 Calling Conventions)
 
 
-<h2 id="0023">OS設計與製作</h2>   
+<h2 id="0025">OS設計與製作</h2>   
 
 * OS的設計目標大致上可分為以下兩種類:
   * user goal(使用者目的): 就使用者而言，OS的設計必須easy to use, easy to learn, reliable, fast, safe
@@ -228,7 +243,7 @@
 * 早期作業系統都是由組合語言撰寫，而現今大多都是以C/C++撰寫，少部分較瓶頸的常式(routine)則是用組合語言替換重構，以實現較好的效率。
 * Android 使用一種以上的語言撰寫而成，其大部分系統程式庫都是以C/C++撰寫，而應用程式框架以及API則都是以Java撰寫而成。
 
-<h2 id="0023">Structure</h2>   
+<h2 id="0026">Structure</h2>   
 
 * Simple OS Architecture(單一結構):]
   * 又稱為緊密耦合(tightly coupled)系統，會因為更改一部分而對其他部分產生廣泛影響。
@@ -290,7 +305,7 @@
 
 * [WSL](https://hackmd.io/@billsun/Bkh8oAmGX?type=view): 使windows 可以允許Linux的ELF執行檔在Windows 10 上執行。
 
-<h2 id="0024">系統啟動</h2>  
+<h2 id="0027">系統啟動</h2>  
 
 * [啟動程式](https://zh.wikipedia.org/wiki/%E5%95%9F%E5%8B%95%E7%A8%8B%E5%BC%8F):
   * BIOS的作用是初始化和測試硬體元件，以及從大容量儲存裝置（如硬碟）載入啟動程式，並由啟動程式載入作業系統
@@ -299,7 +314,7 @@
   * GRUB是一個用於UNIX系統的開源啟動程式，非常靈活，可在啟動時修改kernel參數，甚至可以選擇啟動不同的kernel，例如Linux的/proc/cmdline中的BOOT_INAGE是要載入到記憶體的核心映象檔的名稱，而root指定根檔案系統的唯一標識符
   * Android不使用GRUB，最常見的啟動程式是[LK](https://baike.baidu.hk/item/lk/623671)  [(LK詳細)](https://www.itread01.com/content/1502160009.html)
 
-<h2 id="0024">除錯</h2>  
+<h2 id="0028">除錯</h2>  
 
 * core dump: 當程序運行的過程中異常終止或崩潰，作業系統會將程序當時的內存狀態記錄下來，保存在一個文件中，這種行為就叫做Core Dump
 * crush dump: 當系統crash 的時候就要 collecting data for crash dump
@@ -308,7 +323,12 @@
 * `strace`可以查看任何process調用的system call,例如`strace ls`可查看ls調用的那些system call以及狀況，[gdb](https://jasonblog.github.io/note/gdb/gdbshi_yong_jiao_xue_ff1a_zi_dong_hua_ni_de_debug.html)指令可以原始碼除錯，`perf`為Linux性能工具包，`tcpdump`網路封包擷取。
 * BCC: BCC是[eBPF](https://hackmd.io/@sysprog/linux-ebpf)工具的前端介面，而eBPF是擴展的[BPF](https://zh.wikipedia.org/wiki/BPF)，eBPF可動態插入正在運行的Linux系統，其指令可讀取特定事件(例如正在呼叫某個system call)，或者監視系統效能(例如IO時間)，BCC提供了python的前端介面，並嵌入了eBPF工具連接的C程式碼，而eBPF又與核心連接，BCC提供的許多工具均可用於特定應用程式，例如MySQL, Java或Python 程式
 
+****
 <h1 id="003">Process Concept</h1> 
+
+  * ## [Concept](#0031) #
+  * ## [Process Creation](#0032) #
+  * ## [Process Communication](#0033) #
 
 
 <h2 id="0031">Concept</h2> 
@@ -507,8 +527,14 @@
   * 要提供RPC，`onBind()`必須要有一個返回介面，該介面由Java撰寫，並使用Android Interface Definition Language (AIDL Android介面定義語言)創建stub文件。
   * [詳細資訊](https://www.itread01.com/p/585471.html)
 
+****
 <h1 id="004">Thread</h1> 
 
+  * ## [Concept](#0041) #
+  * ## [Mode](#0042) #
+  * ## [Library](#0043) #
+  * ## [Threading Issues](#0044) #
+  * ## [OS Example](#0045) #
 
 <h2 id="0041">Concept</h2> 
 
@@ -627,7 +653,6 @@
       
 <h2 id="0044">Threading Issues</h2> 
       
-
 * fork and exec:
   * UNIX的`fork()`有兩種版本: 1. 複製process的所有thread(整個process)。 2. 指複製呼叫`fork()`的那個thread。
   * 而`exec()`則是會取代整個process(包括所有thread)，所以如果呼叫上2的`fork()`再呼叫`exec()`是沒有意義的。
@@ -659,6 +684,9 @@
     * 如果Kernel thread被block，LWP也會被block。
     * 一個應用程式可以要求任何數目的LWP，IO bound的應用程式通常需要多個LWP來執行，例如一次開啟五個檔案讀寫就需要五個LWP，因為他們可能都在Waiting，如果這時應用程式只有4個LWP，其中一個就必須等待。
     * LWP與普通行程的區別也在於它只有一個最小的執行上下文和排程程式所需的統計資訊，而這也是它之所以被稱為輕量級的原因
+
+<h2 id="0045">OS Example</h2> 
+
 * Windows thread
   * 使用One-to-One模組。
   * 每個執行緒包含：
@@ -684,9 +712,16 @@
   * 當`clone()`沒有Flag設定，就與`fork()`相似，
   * task_struct(見3章PCB)結構中存在許多指標指向儲存這些資料的其他struct，如開啟檔案的linked-list、signal處理訊息和virtual memory的資料結構等，當`fork()`被呼叫時會clone這些data, 而`clone()`則會根據flag指向parent的儲存這些資料的struct，`clone()`技術也造就了虛擬化技術。
 
-
-
+****
 <h1 id="005">CPU Scheduling</h1> 
+
+  * ## [Concept](#0051) #
+  * ## [Scheduling Algorithms](#0052) #
+  * ## [Thread Scheduling](#0053) #
+  * ## [Multi-Processor Scheduling](#0054) #
+  * ## [Real-time Scheduling](#0055) #
+  * ## [OS Example](#0056) #
+  * ## [Evaluation Methods](#0057) #
 
 <h2 id="0051">Concept</h2> 
 
@@ -862,7 +897,7 @@
   * Windows也支援multicore processor系統來進行thread在processor上的排程，使用的技術是建立[SMT Set(邏輯處理器集)](https://docs.microsoft.com/zh-tw/windows-hardware/drivers/debugger/-smt)，例如四核二緒(8 logic processor)包括四個SMT集:{0,1}{2,3}{4,5}{6,7}，Windows能夠維持同一個SMT set中logic processor上的執行緒執行，為了在不同processor之間load balancing，每個thread會分配給一個ideal processor(理想處理器)，每個process都會有一個初始種子值，用於標示屬於該process的thread的理想CPU，該process每建立一個thread，種子值的數字就會增加，藉此分散負載在不同的logic processor上，在SMT系統中，下一個ideal processor的增量會在下一個SMT set中，例如某個process的thread的ideal processor為0,2,4,6,0,2...，如果第二個process的種子值為1，則分配1,3,5,7,1,3....。
 
 
-<h2 id="0056">Evaluation Methods</h2> 
+<h2 id="0057">Evaluation Methods</h2> 
 
 * Deterministic modeling:依照performance metric去選擇、製作model，可能是要response time最小，還是wait time，或者是real time。
 * Queueing model:去設計演算法，分析並且證明。
