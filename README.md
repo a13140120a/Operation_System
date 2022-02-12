@@ -5,7 +5,7 @@
 * ## [Process Concept](#003)
 * ## [Thread](#004) #
 * ## [CPU Scheduling](#005) #
-* ## [Memory Management](#004) #
+* ## [Synchronization](#006) #
 * ## [Storage Management](#005) #
 * ## [Protection and Security](#006) #
 * ## [Distributed Systems](#007) #
@@ -900,9 +900,58 @@
 <h2 id="0057">Evaluation Methods</h2> 
 
 * Deterministic modeling:依照performance metric去選擇、製作model，可能是要response time最小，還是wait time，或者是real time。
-* Queueing model:去設計演算法，分析並且證明。
-* Simulation:
-* Implementation:
+* Queueing model:設計演算法，分析並且證明，[little's law](https://wiki.mbalib.com/zh-tw/%E5%88%A9%E7%89%B9%E5%B0%94%E6%B3%95%E5%88%99)認為，系統中的平均存貨等於存貨單位離開系統的比率（亦即平均需求率）與存貨單位在系統中平均時間的乘積。
+* Simulation:以應用程式的方式設計一個電腦系統的模型，用來驅動模型的資料產生可以是隨機分布、常態分布、指數分布、卜瓦松分布等等，並且收集LOG、workload等資料
+* Implementation:即使是模擬，也沒辦法得到完全正確的評估，因此還需要Implementation。
+
+<h1 id="006">Synchronization</h1> 
+
+* race condition:
+  * [process communication](#0033)裡頭提到的producer與consumer的例子可以修改如下:
+  * ```
+    # define BUFFER_SIZE 10
+    item buffer[BUFFER_SIZE]
+    int in = out = 0 , count=0;
+
+    /* producer */
+    whie(1){
+        while(((in+1) % BUFFER_SIZE) == out); //buffer滿了則等待
+        buffer[in] = nextProduced;
+        in = (in+1) % BUFFER_SIZE;
+        count++;
+    }
+
+      /* comsumer */
+    whie(1){
+        while(in == out); //buffer空了則等待
+        nextComsumed = buffer[out];
+        out = (out+1) % BUFFER_SIZE;
+        count--
+    }
+    ```
+  * 出現問題:
+  * ```
+    /* producer */
+    register1 = count
+    register1 = register1 + 1
+    count = register1
+
+    /* consumer */
+    register2 = count
+    register2 = register2 - 1
+    count = register2
+
+    /* all */
+    register1 = count                     {count=5}
+    register1 = register1 + 1             {count=6}
+    register2 = count  // context switch  {count=5}
+    register2 = register2 - 1             {count=4}
+    count = register1  // context switch  {count=6}
+    count = register2  // context switch  {count=4}
+    ``` 
+* 
+
+
 
 
 
