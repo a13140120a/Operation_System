@@ -941,7 +941,7 @@
     register2 = register2 - 1
     count = register2
 
-    /* all */
+    /* instruction interleaving */
     register1 = count                     {count=5}
     register1 = register1 + 1             {count=6}
     register2 = count  // context switch  {count=5}
@@ -949,7 +949,319 @@
     count = register1  // context switch  {count=6}
     count = register2  // context switch  {count=4}
     ``` 
-* 
+* critical section: 設系統含有多個process，每個process都有一段critical section，critical section可能被存取或者更新，但同一時間內只能有一個process進入。
+* remain section:除了critical section以外的程式碼區段。
+* 解決critical section problem必須滿足以下三個條件:
+  * mutual exclusion: 不能兩個process同時在critical section內
+  * progress: 如果cirtical section裡面沒有任何process，此時有一個process想要進入(或本來就在waiting)，應該要可以進入，不應無限的搶先進入。
+  * bounded waiting: 一個process已經在waiting進入critical section，而在這個process進入之前應該限制其他process不能無限的搶先進入(應限制其他process進入的次數)
+* 可以disable interrupt來防止race condition，對於單核心還好，但對於多核心就會嚴重影響效能，也會影響電腦的clock interrupt
+
+
+<h2 id="0061">Algorithm for Two Processes</h2> 
+
+* initially turn = 0
+* turn = i ⇒ Pi can enter its critical section
+
+  ```c
+   /* Process 0 */                  /* Process 1 */
+  do {                             do {
+    while (turn != 0) ;              while (turn != 1) ;
+     /* critical section */           /* critical section */
+    turn = 1;                        turn = 0;
+     /*remainder section */            /* remainder section */
+  } while (1)                      } while (1)
+  ```
+* Mutual exclusion:Yes 
+* Progress:No，p0離開之後再進入會無法進入，這時p1可能也根本沒有想要進入。
+* Bounded-Wait:Yes，p0離開之後一定要先讓p1進入才可以再進入。
+
+<h2 id="0062">Peterson’s Solution for Two Processes</h2> 
+
+* 多一個boolean flag[2]; //initially flag [0] = flag [1] = false //用來表示process想不想進去
+
+  ```c
+   /* Process 0 */                         /* Process 1 */
+  do {                                    do {
+    flag[0]=true;                           flag[1]=true;
+    turn = 1 ;                              turn = 0 ;
+    while (flag [1] && turn == 1 ) ;        while (flag [0] && turn == 0 ) ;
+     /* critical section */                  /* critical section */
+    flag [0] = FALSE ;                      flag [1] = FALSE ;
+     /*remainder section */                  /* remainder section */
+  } while (1)                             } while (1)
+  ```
+* Mutual exclusion:Yes 
+* Progress:Yes，當p0想進去的時候，p1若已經離開，則flag[1]會設成flase，那麼p0就可以進入
+* Bounded-Wait:Yes，當p0想進去的時候flag[0]會設成true，這時如果p1想要重複一直進入便會被擋住，反之亦然
+
+<h2 id="0063">Synchronization Hardware Support</h2> 
+
+* 因為是hardware，所以是Atomic
+* memory barriers(或稱memory fences):
+  * 大多數現代電腦為了提高效能而採取亂序執行，這使得記憶體屏障成為必須。
+  * Peterson’s Solution的亂序執行影響:
+  * ![memory_barrier](https://github.com/a13140120a/Operation_System/blob/main/imgs/memory_barrier.PNG)
+  * 最終會導致p1跟p2同時進入CS
+  * 以下例子，預期的output是x=100:
+    ```c
+    boolean flag = false;
+    int x = 0;
+    
+    /* p0 */
+    while (!flag) ;
+    print x;
+    
+    /* p1 */
+    x=100;
+    flag=true
+    ```
+  * 為了確保能夠獲得預期的output，我們加上memory_barrier
+    ```c
+    boolean flag = false;
+    int x = 0;
+    
+    /* p0 */
+    while (!flag) ;
+      memory_barrier();
+    print x;
+    
+    /* p1 */
+    x=100;
+    memory_barrier();
+    flag=true
+    ```
+  * 這樣就能夠確保載入x之前先載入flag的值。
+* test_and_set():
+  * ```
+    boolean TestAndSet ( bool &lock) {
+        bool value = *lock ;
+        *lock = TRUE ;
+        return value ;
+    }
+    ```
+  * ```c
+     /* Process 0 */                  /* Process 1 */
+    do {                             do {
+      while (TestAndSet(lock)) ;        while (TestAndSet(lock)) ;
+      /* critical section */            /* critical section */
+      lock = false;                     lock = false;
+       /*remainder section */            /* remainder section */
+    } while (1)                      } while (1)
+    ```
+  * Mutual exclusion:Yes 
+  * Progress:Yes，任何一個process離開之後，其他正在waiting的process都可以進入
+  * Bounded-Wait:No，假如p0先進到CS，p0結束後p1正在waiting，但p0結束馬上又搶先進到CS導致無限循環，p1 starvation(反之亦然)。
+* compare_and_swap():(CAS)
+  * ```c
+    int compare_and_swap(int *value, int expected, int new_value){
+        int tmp = *value;
+        if (*value == expected)
+            *value = new_value
+        return tmp;
+    }
+    ```
+  * ```c
+    lock = 0;
+
+     /* Process 0 */                                  /* Process 1 */
+    do {                                             do {
+      while (compare_and_swap(&lock, 0, 1)!=0) ;       while (compare_and_swap(&lock, 0, 1)!=0) ;
+      /* critical section */                            /* critical section */
+      lock = 0;                                        lock = 0;
+       /*remainder section */                           /* remainder section */
+    } while (1)                                      } while (1)
+    ```
+  * Mutual exclusion:Yes 
+  * Progress:Yes，任何一個process離開之後，其他正在waiting的process都可以進入
+  * Bounded-Wait:No，假如p0先進到CS，p0結束後p1正在waiting，但p0結束馬上又搶先進到CS導致無限循環，p1 starvation(反之亦然)。
+  * 滿足Bounded-Wait的有限等待互斥compare_and_swap():(令有n個process)
+  * ```c
+    lock = 0;
+
+    while (true){
+      waiting[i] = true;
+      key = 1;
+      while (waiting[i] && key ==1)
+        key = compare_and_swap(&lock, 0, 1); //if lock==0, then unblock, after that, lock will be 1, therefore, other cant not enter
+      waiting[[i] = false;
+        
+        /* critical section */   
+        
+      j = (i+1) % n;  //start from next process
+      while ((j!=i) && waitinf[j])  //search if any process is waiting
+        j = (j+1) %n;
+        
+      if (j==i)  // if no one waiting
+        lock=0;  // unlock
+      else
+        waiting[j] = false;  // if any process is waiting then unlock line 4, pi second time will block in line 4
+        
+        /*remainder section */  
+        
+    }
+    ```
+
+<h2 id="0063">Mutex lock</h2> 
+
+* 這是一種programmer可以用的方式，利用`acquire()`和`release()`來取用，兩個function都必須是atomic，可以使用Mutex lock來保護CS。
+* Mutex lock通常使用CAS來操作實現
+* 主要缺點是busy waiting，也因為會一直重複執行(盤旋)while loop而又稱為spinlock(自旋鎖)
+
+<h2 id="0064">Semaphores</h2> 
+
+* 一種用來解決synchronization problem的tool(可以比較好理解的比喻成一種類似int的資料型態，只能透過`wait()`跟`signal()`操作)
+* 可以用來表示資源的數量，`wait()`跟`signal()`都是atomic
+* 又分成couting semaphore 跟binary semaphore，
+  * binary semaphore只能是0或1，性質類似mutex lock。
+  * couting semaphore的值則可以不受限制。
+* SMP必須提供代替鎖的技術來確保atomic，例如上述的`compare_and_swap()`與`test_and_set()`
+* 又可以有兩種實作:
+  * busy waiting的方法:會浪費cycle，但不會有context switch，所以如果waiting的時間小於兩次context switch的時間的話busy waiting是較好的選擇
+    * wait():
+      ```c
+      wait(S){
+          while (S <=0); // busy waiting
+          S--;
+      }
+      ```
+    * signal():
+      ```c
+      signal(S){
+          S++;
+      }
+      ```
+  * 使用queue的方法:不會浪費cycle，但會有context switch(system call)，system call通常會花費較大的cycle，使用情境於將會waiting很久的process。
+    * 先定義semaphore:
+      ```c
+      typedef struct{
+          int value;
+          struct process * list;
+      } semaphore;
+      ```
+    * wait():
+      ```c
+      // S->list通常是PCB的list
+      wait(semaphore *S){
+          S->value--;
+          if (S->value < 0)
+            /* add this process to S->list */ ; 
+            sleep();
+      }
+      ```
+    * signal():
+      ```c
+      signal(semaphore *S){
+          S++;
+          if (S->value <= 0)
+          /* remove a process(P) from S->list */ ; 
+          wakeup(P);
+      }
+      ```
+* 假設p0具有程式碼s0，p1具有程式碼s1，我們要求s1必須在s0完成之後才可以執行，可以使用一個共同的semaphpre synch:
+  ```c
+  /* p0 */                  /* p1 */
+  s0;                       wait(synch);
+  signal(synch);            s1;
+  ```
+* 使用semaphore處理CS problem:
+   ```c
+   do {
+     wait(mutex);
+   
+        /* critical section */  
+     
+     signal(synch);  
+   
+       /*remainder section */ 
+   }while (1) 
+   ```
+  * Mutual exclusion:Yes 
+  * Progress:Yes，任何一個process離開之後，其他正在waiting的process都可以進入
+  * Bounded-Wait:Yes/No，假如p0先進到CS，p0結束後p1正在waiting，但p0結束馬上又搶先進到CS導致無限循環，p1 starvation(反之亦然)，但實作上其實進入critical section會先進入到一個queue，所以p0結束馬上又搶先到CS的話其實還是要等原本就在waiting的process執行完之後才能進去。
+      
+<h2 id="0064">Monitor</h2> 
+
+* 因為semaphoer的使用非常的複雜，若是有出錯，有可能造成程式錯誤或者deadlock，為了可以讓programmer可以更方便的處理`wait()`及`signal()`的問題而誕生
+* 是一種ADT(abstract data type, 抽象資料型態)
+* 類似 OO(物件導向) Language的概念
+* 屬於hight level的synchronization處理方式
+* Monitor內部的local variable只能由內部的method存取，並確保同一時間只能有一個process在Monitor的內部活動(active)
+* Monitor提供特殊的資料型態: condition variable來處理同步問題。
+  * condition variable代表的就是某些event發生時他可以trigger其他process(或thread)，或者使一個process(或thread)wait一個event發生
+  * condition variable可以透過`wait()`及`signal()`來操作，與semaphoer不同的是，若Monitor內部沒有任何process等待存取該condition variable，則`signal()`會沒有作用，與之相比semaphoer的`signal()`必定會改變semaphoer的狀態。
+  * Pthread的condition variable有`broadcast()`方法，可以wakeup所有正在waiting的process(或thread)。
+  * condition variable的`wait()`及`signal()`就像
+  * 一旦Monitor內部的condition variable call了`wait()`等於是把process加到waiting queue裡面，並且變成inactive，外面的process就可以進入，或者內部本來在wait的process會active
+  * `signal()`會dequeue並且wakeup 一個正在waiting的process
+*  Monitor implementation using semaphore:
+  *  for the process accessing the monitor:
+    ```c
+    semaphore mutex; // initially = 1  // mutex lock to control processes accessing the monitor
+    semaphore next;  // initially = 0  // index of inactive process
+    int next_count = 0;                // number of inactive process that want to get into the monitor
+     
+    wait(mutex);
+    
+      /* body of process */
+    
+    if (next_count > 0)  // if any process is inactive, 
+      signal(next);      // up(next), unblock one of the inactive process
+    else
+      signal(mutex)      //if you are the only one then up mutex so someone else get in
+    ```
+    
+  * for the wait(condition) and signal(condition) implementation using semaphore:
+    * x.wait()
+      ```c
+      semaphore x_sem;     // initially = 0
+      int x_count = 0;     //number of process waiting for this condition,
+
+      x_count++;           // you sleep, so resource of x increment by one
+      if (next_count > 0)  // if any process is inactive, 
+        signal(next);      // up(next), unblock one of the inactive process
+      else
+        signal(mutex)      // if you are the only one then up mutex so someone else get in
+      wait(x_sem)          // wait(block) for someone to wake you up
+      x_count--;           // you wakeup, so resource of x decrement by one
+      ```
+    * x.signal()
+      ```c
+      if (x_count > 0){    // if still processes waiting for this condition
+        next_count++;      // number of inactive process increment by one because you signal(x_sem)
+        signal(x_sem);     // wakeup(unblock) one of the process waiting for this condition
+        wait(next);        // put yourself to sleep and get block(inactive) and join list of waiting processes, if a spot is available, down this
+        next_count--;      // you wake up and leave so number of inactive process decrement by one
+      }
+      ```
+      
+  * condition-wait(條件等待) Monitor with one resource:
+    ```c
+    monitor ResourceAllocator
+    {
+        boolean busy;
+        condition x
+    }
+    ```
+
+
+
+
+<h2 id="0064">Monitor</h2> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
