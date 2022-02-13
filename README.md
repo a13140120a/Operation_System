@@ -1102,13 +1102,13 @@
     }
     ```
 
-<h2 id="0063">Mutex lock</h2> 
+<h2 id="0064">Mutex lock</h2> 
 
 * 這是一種programmer可以用的方式，利用`acquire()`和`release()`來取用，兩個function都必須是atomic，可以使用Mutex lock來保護CS。
 * Mutex lock通常使用CAS來操作實現
 * 主要缺點是busy waiting，也因為會一直重複執行(盤旋)while loop而又稱為spinlock(自旋鎖)
 
-<h2 id="0064">Semaphores</h2> 
+<h2 id="0065">Semaphores</h2> 
 
 * 一種用來解決synchronization problem的tool(可以比較好理解的比喻成一種類似int的資料型態，只能透過`wait()`跟`signal()`操作)
 * 可以用來表示資源的數量，`wait()`跟`signal()`都是atomic
@@ -1180,7 +1180,7 @@
   * Progress:Yes，任何一個process離開之後，其他正在waiting的process都可以進入
   * Bounded-Wait:Yes/No，假如p0先進到CS，p0結束後p1正在waiting，但p0結束馬上又搶先進到CS導致無限循環，p1 starvation(反之亦然)，但實作上其實進入critical section會先進入到一個queue，所以p0結束馬上又搶先到CS的話其實還是要等原本就在waiting的process執行完之後才能進去。
       
-<h2 id="0064">Monitor</h2> 
+<h2 id="0066">Monitor</h2> 
 
 * 因為semaphoer的使用非常的複雜，若是有出錯，有可能造成程式錯誤或者deadlock，為了可以讓programmer可以更方便的處理`wait()`及`signal()`的問題而誕生
 * 是一種ADT(abstract data type, 抽象資料型態)
@@ -1196,34 +1196,34 @@
   * `signal()`會dequeue並且wakeup 一個正在waiting的process
 *  Monitor implementation using semaphore:
   *  for the process accessing the monitor:
-    ```c
-    semaphore mutex; // initially = 1  // mutex lock to control processes accessing the monitor
-    semaphore next;  // initially = 0  // index of inactive process
-    int next_count = 0;                // number of inactive process that want to get into the monitor
-     
-    wait(mutex);
+      ```c
+      semaphore mutex; // initially = 1  // mutex lock to control processes accessing the monitor
+      semaphore next;  // initially = 0  // a counting semaphore "next" on which processes can suspend themselves after they are already "inside" the monitor
+      int next_count = 0;                // number of inactive process that want to get into the monitor
+
+      wait(mutex);
+
+        /* body of process */
+
+      if (next_count > 0)  // after done, if any process is inactive, 
+        signal(next);      // up(next), unblock one of the inactive process
+      else
+        signal(mutex)      //if you are the only one then up mutex so someone else get in
+      ```
     
-      /* body of process */
-    
-    if (next_count > 0)  // if any process is inactive, 
-      signal(next);      // up(next), unblock one of the inactive process
-    else
-      signal(mutex)      //if you are the only one then up mutex so someone else get in
-    ```
-    
-  * for the wait(condition) and signal(condition) implementation using semaphore:
+  * for the wait(condition) and signal(condition) implementation using semaphore[參考解說](http://learningnote321235.blogspot.com/2018/01/10214-hoare-monitor.html):
     * x.wait()
       ```c
       semaphore x_sem;     // initially = 0
       int x_count = 0;     //number of process waiting for this condition,
 
-      x_count++;           // you sleep, so resource of x increment by one
+      x_count++;           // number of process waiting for this condition increment by one
       if (next_count > 0)  // if any process is inactive, 
-        signal(next);      // up(next), unblock one of the inactive process
+        signal(next);      // up(next), unblock one of the inactive process(including self)
       else
         signal(mutex)      // if you are the only one then up mutex so someone else get in
       wait(x_sem)          // wait(block) for someone to wake you up
-      x_count--;           // you wakeup, so resource of x decrement by one
+      x_count--;           // you wakeup, so number of process waiting for this condition decrement by one
       ```
     * x.signal()
       ```c
@@ -1241,13 +1241,30 @@
     {
         boolean busy;
         condition x
+        
+        void acquire(int time){  // time為使用資源的最大時間，亦或者可以帶入優先權等等控制誰先恢復active
+            if (busy)
+                x.wait(time);
+            busy = true;
+        }
+        
+        void release(){
+            busy = false;
+            x.signal()
+        }
+        
+        iniyialization_code(){
+            busy = false;
+        }
     }
     ```
 
+* prioirty inersion: 
+  * 假設有三個process，L, M, H，其prioirty L<M<H，假設H 想存取正在被L存取的Semaphore S，這時H必須等待L使用完S，然而此時M突然變得可執行，因此L被context switch到M，但S仍未被釋放，間接導致低優先權M，影響到較高優先權H，必須等待L。
+  * 解決的方法是Priority-inheritance protocol，根據這個protocal，所有要存取資源的process必須繼承最高priority的process的priority，上述例子中，L將繼承H的priority，因此就可以阻止M把L preempt，當L使用完S之後priority會恢復到原本的樣子，並context switch到M。
 
 
 
-<h2 id="0064">Monitor</h2> 
 
 
 
