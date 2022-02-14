@@ -1228,10 +1228,10 @@
     * x.signal()
       ```c
       if (x_count > 0){    // if still processes waiting for this condition
-        next_count++;      // number of inactive process increment by one because you signal(x_sem)
+        next_count++;      // number of inactive process increment by one because you wait(next) so you inactive
         signal(x_sem);     // wakeup(unblock) one of the process waiting for this condition
         wait(next);        // put yourself to sleep and get block(inactive) and join list of waiting processes, if a spot is available, down this
-        next_count--;      // you wake up and leave so number of inactive process decrement by one
+        next_count--;      // you wake up and(or) leave so number of inactive process decrement by one
       }
       ```
       
