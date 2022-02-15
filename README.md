@@ -1107,6 +1107,9 @@
 * 這是一種programmer可以用的方式，利用`acquire()`和`release()`來取用，兩個function都必須是atomic，可以使用Mutex lock來保護CS。
 * Mutex lock通常使用CAS來操作實現
 * 主要缺點是busy waiting，也因為會一直重複執行(盤旋)while loop而又稱為spinlock(自旋鎖)
+* 在SMP系統上，spinlock較優，而在單一processor系統上，則是使用進用preemption的方法會比較好。
+* 當lock持續時間較短時，使用spin lock才會被用在kernel，而當lock必須被保持一段很長的時間時，mutex lock和Semaphore會比較適合。
+
 
 <h2 id="0065">Semaphores</h2> 
 
@@ -1194,7 +1197,7 @@
   * condition variable的`wait()`及`signal()`就像
   * 一旦Monitor內部的condition variable call了`wait()`等於是把process加到waiting queue裡面，並且變成inactive，外面的process就可以進入，或者內部本來在wait的process會active
   * `signal()`會dequeue並且wakeup 一個正在waiting的process
-*  Monitor implementation using semaphore:
+*  Hoare Monitor implementation using semaphore:
   *  for the process accessing the monitor:
       ```c
       semaphore mutex; // initially = 1  // mutex lock to control processes accessing the monitor
@@ -1211,7 +1214,7 @@
         signal(mutex)      //if you are the only one then up mutex so someone else get in
       ```
     
-  * for the wait(condition) and signal(condition) implementation using semaphore[參考解說](http://learningnote321235.blogspot.com/2018/01/10214-hoare-monitor.html):
+  * for the wait(condition) and signal(condition) implementation using semaphore[參考解說](http://learningnote321235.blogspot.com/2018/01/10214-hoare-monitor.html)和[參考2](https://wangwilly.github.io/willywangkaa/2018/08/04/Operating-System-Process-Synchronization-2/):
     * x.wait()
       ```c
       semaphore x_sem;     // initially = 0
@@ -1262,6 +1265,229 @@
 * prioirty inersion: 
   * 假設有三個process，L, M, H，其prioirty L<M<H，假設H 想存取正在被L存取的Semaphore S，這時H必須等待L使用完S，然而此時M突然變得可執行，因此L被context switch到M，但S仍未被釋放，間接導致低優先權M，影響到較高優先權H，必須等待L。
   * 解決的方法是Priority-inheritance protocol，根據這個protocal，所有要存取資源的process必須繼承最高priority的process的priority，上述例子中，L將繼承H的priority，因此就可以阻止M把L preempt，當L使用完S之後priority會恢復到原本的樣子，並context switch到M。
+
+
+<h2 id="0067">Classical Problem</h2> 
+
+* bounded-buffer problem:
+  * 設buffer有n個儲存空間
+  * ```c
+    semaphore mutex = 1; // 對buffer的互斥鎖
+    semaphore empty = n; // buffer內現有的空格數(有多少空間)
+    semaphore full = 0;  //buffer存放資料的格子數
+    
+    /* producer */
+    while (true){
+    
+        /* produce an item */
+        
+        wait(empty); // wait if empty=0(means buffer full)
+        wait(mutex);
+        
+        /* add item to the buffer */
+        
+        signal(mutex);
+        signal(full); // because you put an item on buffer so increment full by one
+    }
+    
+    /* consumer */
+    while (true){
+        wait(full); //wait if buffer full=0(means buffer empty)
+        wait(mutex);
+        
+        /* remove item from the buffer */
+        
+        signal(mutex);
+        signal(empty); // because you take an item from buffer so decrement empty by one
+        
+        /* cocnsume an item */
+    }
+    ```
+
+
+* Readers-Writers Problem:
+  * first RW problem:
+    * reader不需要等待其他的reader結束(reader可以pass lock給下一個reader)，而writer要等待reader結束，有可能會造成writer starvation。
+    * init:
+      ```c
+      semaphore rw_mutex = 1;  // reader跟writer共用
+      semaphore mutex = 1;     // 用來保護read_count作加減
+      int read_count = 0;      // 目前有多少個reader
+      ```
+    * reader:
+      ```c
+      while(true){
+          wait(rw_mutex);  // wait if some one read or write
+          
+          /* **writing** */
+          
+          signal(rw_mutex);
+      }
+      
+      ```
+    * writer:
+      ```c
+      while(true){
+          wait(mutex);           // protect read_count++ and if
+          read_count++;
+          if (read_count ==1)    // if only me
+              wait(rw_mutex);    // if writer is writing, wait, else go on(if not only me, just go on, because someone else must be reading, so its impossible that a writer is writing)
+          signal(mutex);         // protect read_count++ and if-condition
+          
+          /* **reading** */
+          
+          wait(mutex);           // protect read_count-- and if
+          read_count--;
+          if (read_count ==0)    // if no one else is using, let writer use.
+              signal(rw_mutex);
+          signal(mutex);         // protect read_count-- and if-condition
+      }
+      ```
+  * second RW problem
+    * 當writer ready時，就必須換writer使用，reader不得插隊，有可能會造成reader starvation。
+
+
+* Dining Philosophers Example:
+  * 每個人要吃飯時必須拿起左右兩支筷子
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/Dining_Philosophers.png)
+  * 以下方法可以免於deadlock，但不能免於starvation:
+    ```c
+    monitor dp {
+        enum {THINKING, HUNGRY, EATING} state[5]; //current state
+        condition self[5]; //delay eating if can’t obtain chopsticks
+        void pickup(int i){ // pickup chopsticks
+            state[i] = HUNGRY;
+            test(i);  // if neighbors are not eating, then set self=eating
+            if (state[i]!=EATING)  // means neighbors are eating
+                self[i].wait();
+        }
+        void putdown(int i){ // putdown chopsticks
+            state[i] = THINKING;
+            test((i+4) % 5);  // test left and if its hungry let it eat
+            test((i+1) % 5);  // test right and if its hungry let it eat
+        }
+        void test(int i){ // try to eat
+            if ( (state[(i + 4) % 5] != EATING) &&(state[(i + 1) % 5] != EATING)
+              && (state[i] == HUNGRY) ) {
+                //No neighbors are eating and Pi is hungry
+                state[i] = EATING;
+                self[i].signal();
+            }
+        }
+        void init() {
+        for (int i = 0; i < 5; i++)
+        state[i] = thinking;
+        }
+    }
+    ```
+
+<h2 id="0068">Example</h2> 
+
+* Windows synchronization:
+  * windows kernel在單一處理器系統下存取share resource的時候會把所有存取此resource的interrupt都mask掉
+  * 而多處理器系統下，windowd使用spinlock(自旋鎖)來保護較短的程式碼，且擁有spinlock的thread絕對不會被preempt。
+  * 對於kernel space以外的thread synchronization，windows提供dispatcher object(分派器物件)，使用dispatcher object時，thread可以根據包括mutex lock、semaphore、event、counter來做同步。
+    * windows 藉由thread獲得mutex lock來存取resource，並在結束時釋放。
+    * event和condition variable類似，他可以在某個條件發生時等待一個thread。
+    * counter用來通知一個thread的time quantum已經到了。
+    * dispatcher object擁有兩個狀態:分別是**signaled state(信號狀態)**和**nonsignaled state(非信號狀態)**
+    * signaled state表示thread可以取得此物件(釋放鎖)，反之亦然。
+    * dispatcher object與thread之間的關係:當一個thread被一個nonsignaled state的dispatcher object阻擋時，thread的狀態會從ready變成waiting，並放入此object的waiting queue，當dispatcher object變成signaled state的時候，kernel會去檢查是否有任何thread在waiting queue，如果有，kernel就從裡面挑一個(或多個)把他的狀態從waiting設成ready，thread便可以恢復執行。
+    * 對於mutex lock dispatcher object而言，如果thread試圖取得一個nonsignaled state的mutex lock dispatcher object時，該thread會被suspend，並放入該object的waiting queue中，當該object轉換到signaled state時，kernel只能選擇釋放一個於waiting queue中的thread，並獲得此mutex lock。
+  * critical section object是使用者模式的mutex lock，並且在沒有kernel的干預下釋放。
+    * critical section object在等待thread釋放物件時，會先使用spinlock，如果自旋的時間太長，則該thread將配置一個kernel的mutex lock並交出他的CPU
+    * critical section非常有效率，因為kernel的mutex lock只有在發生race condition的時候才會被配置。
+
+* Linux synchronization:
+  * Linux提供一種簡單數學運算的不可分割指令:(單元整數)`atomic_t`，所有使用該類型的運算都不可中斷:
+    * 此種方法特別有效率，因為不需要上鎖
+    * ```c
+      atomic_t counter;
+      int value;
+      ```
+    *  | Atomic operation | Effect | 
+       | --- | --- | 
+       | atomic_set(&counter,5) | counter=5 |
+       | atomic_add(&counter,10) | counter+=10 |
+       | atomic_sub(&counter,4) | counter-=4 |
+       | atomic_inc(&counter) | counter+=1 |
+       | value=atomic_read(&counter) | calue=12 |
+  * Linux 亦提供`mutex_lock()`來保護kernel內的critical section:
+    * task在進入critical section之前必須呼叫函數`mutex_lock()`，並在離開之後呼叫`mutex_unlock()`
+    * 如果目前lock無法取得，則呼叫`mutex_lock()`的task會被設為sleep，並在可以取得時被wakeup。
+  * Linux kernel也提供spinlock和semaphore。
+  * Linux中，如果該task已經獲得一個spinlock或mutex lock的話，除非釋放，否則不能再獲得一個相同的鎖。
+  * Linux提供`preempt_disable()`和`preempt_enable()`來禁用和啟用preempt。
+  * 如果kernel的task正擁有一個lock的時候，kernel是不可以preempt的，為了實現此機制，系統中的每個task都有一個thread-info的struct，包含一個preempt_count的計數器，當task獲得鎖的時候preempt_count+1，反之亦然，當preempt_count的值為0時，才可以被preempt或者被中斷。
+
+* POSIX synchronization:
+  * POSIX mutex lock:
+    * `int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr);`建立互斥鎖，第二個參數attr可以是以下值:  
+      * PTHREAD_MUTEX_TIMED_NP，這是缺省值，也就是普通鎖。當一個線程加鎖以後，其余請求鎖的線程將形成一個等待隊列，並在解鎖後按優先級獲得鎖。這種鎖策略保證了資源分配的公平性。
+      * PTHREAD_MUTEX_RECURSIVE_NP，嵌套鎖，允許同一個線程對同一個鎖成功獲得多次，並通過多次unlock解鎖。如果是不同線程請求，則在加鎖線程解鎖時重新競爭。
+      * PTHREAD_MUTEX_ERRORCHECK_NP，檢錯鎖，如果同一個線程請求同一個鎖，則返回EDEADLK，否則與PTHREAD_MUTEX_TIMED_NP類型動作相同。這樣就保證當不允許多次加鎖時不會出現最簡單情況下的死鎖。
+      * PTHREAD_MUTEX_ADAPTIVE_NP，適應鎖，動作最簡單的鎖類型，僅等待解鎖後重新競爭。
+      ```c
+      #include <pthread.h>
+      
+      pthread_mutex_t mutex;
+      pthread_mutex_init(&mutex, NULL); //設定lock屬性，第二個參數為NULL代表使用預設參數
+      
+      pthread_mutex_lock(&mutex); //成功回傳0
+      /* critical section */
+      pthread_mutex_unlock(&mutex); //成功回傳0
+      ```
+  * POSIX semaphore:
+    * 分成named跟unnamed。
+    * create a named semaphore and lock(在之前的[example](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)就有使用過的`sem_open()`函數):
+      ```c
+      include <semaphre.h>
+      sem_t* sem;
+      /* create a named semaphore and initialize to 1 */
+      sem = sem_open("SEM",O_CREAT, 0666, 1);
+      ```
+    * create a named semaphore and lock:
+      ```c
+      include <semaphre.h>
+      sem_t* sem;
+      
+      sem_init(&sem,0,1)  //第二個參數設定為 0 表示僅供目前的 process 及其 thread 使用。非 0 表示此 semaphore 與其他process共用，第三個參數表示initialize to 1
+      ```
+   * lock and unlock(named跟unnamed一樣):
+     ```c
+      sem_wait(sem); //aquire
+      /* critical section */
+      sem_post(sem); //release
+     ```
+  * POSIX condition variable:
+    * 初始化:
+      ```c
+      pthread_mutex_t mutex;
+      pthread_cond_t cond;
+      ```
+    * wait跟signal的動作都必須要在critical section裡面，原因是會觸發condition variable的變數往往會需要被critical section保護，`pthread_cond_wait()`第二個參數lock在此function被呼叫的時候會被release掉，讓signal方可以進入critical section，雖然lock被release掉，但因為condition variable未被signal，所以其實會被卡住直到被叫醒，叫醒之後還必須要aquire才會繼續往下執行
+      ```c
+      /* wait */
+      action() {
+          pthread_mutex_lock(&mutex);
+          if (x != 0) // x為觸發condition variable的變數，有race condition的可能
+              pthread_cond_wait(cond, mutex); // release lock，被叫醒之後必須aquire才會繼續往下執行。
+          pthread_mutex_unlock(&mutex);
+          /* take_action */
+      }
+      
+      /* signal */
+      counter() {
+          pthread_mutex_lock(&mutex)
+          x--;
+          if (x==0)
+              pthread_cond_signal(cond);
+          pthread_mutex_unlock(&mutex);
+      }
+      ```
+* Java  synchronization:
+  * Java monitor
+
 
 
 
