@@ -1485,60 +1485,177 @@
           pthread_mutex_unlock(&mutex);
       }
       ```
-* Java  synchronization:
-  * Java monitor:
-  ```java
-  public class BoundedBuffer<E>
-  {
-      private static final int BUFFER_SIZE = 5;
-      
-      private int count, in, out;
-      private E[] buffer;
-      
-      public BoundedBuffer(){
-          coint = 0;
-          in    = 0;
-          out   = 0;
-          buffer = (E[]) new Object[BUDDER_SIZE];
+* Java synchronization:
+  * Java synchronized:
+    * 較方便的機制，會自動幫我們控制鎖(使用者不必顧慮)
+    * 當進入宣告為synchronized的method時，該thread會得到lock，這時候其他的thread 想要進來，則將自己block並且放到entry set
+    * 當thread進入synchronized的method時，因為某些條件不滿足而卡在`wait()`時，會被放到wait set裡面，並觸發InterruptedException轉換到其他的thread，而其他的thread呼叫`signal()`，會從wait set裡面挑選(通常是FIFO)一個thread回到entry set並且與其他在entry set裡面的thread競爭鎖。
+    * wait()要在同步方法(synchronized method)或同步區塊(synchronized block)中呼叫
+       ```java
+       /* synchronized block */
+       synchronized(obj){
+         //...
+       }
+
+       /* synchronized method */
+       public synchronized void method() { 
+         // ...
+       }   
+       ```
+    * [其他請參考](https://www.jackforfun.com/java-synchronized)
+    * Java monitor example:
+    ```java
+    public class BoundedBuffer<E>
+    {
+        private static final int BUFFER_SIZE = 5;
+
+        private int count, in, out;
+        private E[] buffer;
+
+        public BoundedBuffer(){
+            coint = 0;
+            in    = 0;
+            out   = 0;
+            buffer = (E[]) new Object[BUDDER_SIZE];
+        }
+
+        /* Producer */
+        public synchronized void insert(E item){ // method被宣告為synchronized
+            while (count==BUFFER_SIZE){
+                try{
+                    wait(); // 暫停直到其他thread呼叫notify或notifyAll
+                }catch(InterruptedException ie){}
+            }
+
+            buffer[in] = item;
+            in = (in+1) % BUFFER_SIZE;
+            count++;
+
+            notify();
+        }
+
+        /* Consumer */
+        public synchronized void remove(){
+            E item;
+
+            while(count ==0){
+                try:{
+                    wait();
+                }catch(InterruptedException ie){}
+            }
+
+            item = buffer[out];
+            out = (out+1) % BUFFER_SIZE;
+            count--;
+
+            notify();
+            retuen item;
+        }
+    }
+    ```
+  * Java ReetrantLock:
+    * 較靈活的鎖定機制(比起synchronized)
+    * 分成NonfairSync(非公平鎖)以及FairSync(公平鎖)，可以透過修改ReetrantLock class內部的sync class來設定機制，[詳見](https://zhuanlan.zhihu.com/p/45305463)
+    * FairSync會先去檢查waiting queue裡面有沒有thread在等待，沒有的話才會去aquire; 而NonfairSync則會直接去搶鎖。
+    * default是NonfairSync，FairSync 的效率往往沒有 NonfairSync的效率高
+    * 對於reader-writer proclem, ReetrantLock把每一個thread都鎖住，則該策略可能過於保守，所以Java API還提供ReetrantReadWriteLock，允許同時多個reader並行，但只有一個writer。
+    * example:
+      ```java
+      Lock key = new ReetrantLock();
+      key.lock(); //如果把lock()放在try子句裡面，那麼如果lock()發生異常就會跳到finally，這時因為沒有lock成功所以會觸發IllegalMonitorStateException並且覆蓋遠本的異常失敗原因。
+      try{
+          /* critical section */
       }
+      finally{
+          key.unlock(); // 避免try的時候發生錯誤而導致資源release不正常，所以不管有沒有拋出異常都要unlock
+      }
+      ```
+  * Java Semaphore:
+    * 允許負值
+    * `acquire()`將拋出 InterruptedException
+    * example:
+      ```java
+      try{
+          sem.acquire()
+          /* critical section */
+      }catch(InterruptedException ie){ 
+      }finally{
+          sem.release();
+      }
+      ```
+  * Java confition variable:
+    * 因為需要提供互斥，所以要跟ReetrantLock關聯
+    * Java不提供對命名的Condition variable的支援。
+    * 其`await()`與`signal()`呼叫方法與上述提到的[Monitor](#0066)相同
+    * Java synchronized的`wait()`和`signal()`操作僅適用於單一的Condition variable，而Condition可以允許通知特定thread。
+    * example:
+      ```java
+      Lock key = ReetrantLock();  // create ReetrantLock
+      Condition conVar = key.newCondition(); 
+      Condition[] conVars = Condition[5];
       
-      /* Producer */
-      public synchronized void insert(E item){
-          while (count==BUFFER_SIZE){
-              try{
-                  wait();
-              }catch(InterruptedException ie){}
+      for (int i;i++;i<5)
+          conVars[i] = key.newCondition(); // 透過ReetrantLock 建立Condition variable
+      
+      /* worker */
+      public void doWork(int threadNumber)
+      {
+          lock.lock();
+          
+          try{
+              /* if not my turn then wait */
+              if (threadNumber != turn)
+                  conVars[threadNumber].await();
+          
+              /*Do some work*/
+          
+              turn = (turn + 1) % 5;
+              conVars[turn].signal();
+          }catch(InterruptedException ie) {}
+          finally{
+              lock.unlock();
           }
-          
-          buffer[in] = item;
-          in = (in+1) % BUFFER_SIZE;
-          count++;
-          
-          notify();
       }
-      
-      /* Consumer */
-      public synchronized void remove(){
-          E item;
-          
-          while(count ==0){
-              try:{
-                  wait();
-              }catch(InterruptedException ie){}
-          }
-          
-          item = buffer[out];
-          out = (out+1) % BUFFER_SIZE;
-          count--;
-          
-          notify();
-      }
-  }
-  ```
+      ```
 
+<h2 id="0069">替代方法</h2> 
 
+* transaction memory:
+  * 觀念源自於資料庫理念
+  * memory transaction代表一連串單元記憶體讀寫操作
+  * 如果在一個transaction中所有操作都完成，則commit，否則的話就終止並撤回
+  * 鎖容易產生deadlock，且當擁有大量thread時，競爭會非常激烈，而該機制沒有鎖，所以也不會有deadlock
+  * 可以用硬體或軟體實作，軟體叫做STM(software transactional memory)，硬體叫做HTM(hardware transactional memory)
+  * example:
+    ```c
+    void update(){
+        atomic{
+            /* modify shared data */
+        }
+    }
+    ```
+* OpenMP:
+  * thread的產生和管理由library管理而不是開發人員。
+  * `#pragma omp parallel`之後的程式碼會確保thread不會發生race condition的狀況。
+  * example:
+    ```c
+    void update(int value)
+    {
+         #pragma omp parallel
+         {
+             counter += value;
+         }
+    }
+    ```
+* Functional language:
+  * c/c++、Java和C#被稱為命令式(imperative or procedural)語言。
+  * 對於SMP系統強調並行與平行程式
+  * 例如Scala或Erlang
+  * Functional language和命令式語言的差別在於，Functional language不必維護狀態，變數一旦被定義，並且assign一個數值，就不可以被改變，也因為不允許可變，所以不會有race condition的情況發生。
 
+<h1 id="007">Dead Lock</h1> 
 
+* 
 
 
 
