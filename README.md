@@ -1486,7 +1486,55 @@
       }
       ```
 * Java  synchronization:
-  * Java monitor
+  * Java monitor:
+  ```java
+  public class BoundedBuffer<E>
+  {
+      private static final int BUFFER_SIZE = 5;
+      
+      private int count, in, out;
+      private E[] buffer;
+      
+      public BoundedBuffer(){
+          coint = 0;
+          in    = 0;
+          out   = 0;
+          buffer = (E[]) new Object[BUDDER_SIZE];
+      }
+      
+      /* Producer */
+      public synchronized void insert(E item){
+          while (count==BUFFER_SIZE){
+              try{
+                  wait();
+              }catch(InterruptedException ie){}
+          }
+          
+          buffer[in] = item;
+          in = (in+1) % BUFFER_SIZE;
+          count++;
+          
+          notify();
+      }
+      
+      /* Consumer */
+      public synchronized void remove(){
+          E item;
+          
+          while(count ==0){
+              try:{
+                  wait();
+              }catch(InterruptedException ie){}
+          }
+          
+          item = buffer[out];
+          out = (out+1) % BUFFER_SIZE;
+          count--;
+          
+          notify();
+      }
+  }
+  ```
 
 
 
