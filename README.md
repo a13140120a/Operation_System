@@ -1704,7 +1704,7 @@
   * No preemption: a resource can be released only voluntarily by the process holding it, after that process has completed its task
   * Circular wait:there exists a set {P0, P1, …, Pn} of waiting processes，p1在等p2，p2在等p3....pn在等p1。
 
-<h2 id="0069">Resource-Allocation Graph</h2> 
+<h2 id="0071">Resource-Allocation Graph</h2> 
 
 * Resources types R1, R2, ..., Rm:E.g. CPU, memory pages, I/O devices, 
 * Each resource type Ri has Wi instances:E.g. a computer has 2 CPUs
@@ -1716,9 +1716,17 @@
 * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/deadlock2_graph.PNG)
 
 
+<h2 id="0072">Handling Deadlocks</h2> 
 
-
-
+* 對於Deadlock可以有以下三種方式處理:
+  * 忽略此問題，假裝從未發生過deadlock:
+    * 大多數的OS，例如windows 跟Linux使用此方法，
+  * 允許系統出現Deadlock，出現了再來想辦法恢復:
+    * 
+  * 使用某些方法防止或避免出現Deadlock，例如deadlock prevention和deadlock avoidance:
+    * deadlock prevention是在設計時就要避免deadlock的發生
+    * deadlock avoidance則是在runtime的時候
+    * 某些資料庫系統使用第三種方法
 
 
 
