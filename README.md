@@ -1653,17 +1653,67 @@
   * 例如Scala或Erlang
   * Functional language和命令式語言的差別在於，Functional language不必維護狀態，變數一旦被定義，並且assign一個數值，就不可以被改變，也因為不允許可變，所以不會有race condition的情況發生。
 
-<h1 id="007">Dead Lock</h1> 
+<h1 id="007">Deadlock</h1> 
 
-* 
+* 在正常的情況下，一個thread只能依照下列的順序來使用resource:
+  1. request
+  2. use
+  3. release
+  * 例如對devices有`request()`、`release()`、對 file則有`open()`和`close()`，對記憶體有`allocate`和`free()`等system call
+* 活結(livelock)發生在一個thread連續嘗試失敗的操作，像是在走廊有兩個人面對面嘗試通過走廊，A往左邊移動，B往右邊移動，於是A又往右邊移動，B又往左邊移動，也就是當thread同時重試失敗的操作時，通常會發生。
+  * 可以失敗後隨機選擇重試的運作來避免，乙太網路就是採用此方法(會退讓一段隨機的時間)。
+  * 可用以下例子說明:
+    ```c
+    void *do_work_one(void *param)
+    {
+        int done = 0;
+        while (!done){
+            pthread_mutex_lock(&first_lock);
+            if (pthread_mutex_trylock(&second_lock)){
+                /* do some work */
+                pthread_mutex_unlock(&second_lock);
+                pthread_mutex_unlock(&first_lock);
+                done=1;
+            }
+            else
+                pthread_mutex_unlock(&first_lock);
+        }
+        pthread_exit(0);
+    }
+    
+    void *do_work_two(void *param)
+    {
+        int done = 0;
+        while (!done){
+            pthread_mutex_lock(&second_lock);
+            if (pthread_mutex_trylock(&first_lock)){
+                /* do some work */
+                pthread_mutex_unlock(&first_lock);
+                pthread_mutex_unlock(&second_lock);
+                done=1;
+            }
+            else
+                pthread_mutex_unlock(&first_lock);
+        }
+        pthread_exit(0);
+    }
+    ```
+* 要發生Deadlock必須要同時成立以下四種情況:
+  * Mutual exclusion:only one process at a time can use a resource
+  * Hold and wait:a process holding at least one resource is waiting to acquire additional resources held by other processes
+  * No preemption: a resource can be released only voluntarily by the process holding it, after that process has completed its task
+  * Circular wait:there exists a set {P0, P1, …, Pn} of waiting processes，p1在等p2，p2在等p3....pn在等p1。
 
+<h2 id="0069">Resource-Allocation Graph</h2> 
 
-
-
-
-
-
-
+* Resources types R1, R2, ..., Rm:E.g. CPU, memory pages, I/O devices, 
+* Each resource type Ri has Wi instances:E.g. a computer has 2 CPUs
+* 以下情形不會產生deadlock:
+* ![non_deadlock](https://github.com/a13140120a/Operation_System/blob/main/imgs/non_deadlock.PNG)
+* 以下情形會產生daedlock:
+* ![deadlock_graph](https://github.com/a13140120a/Operation_System/blob/main/imgs/deadlock_graph.PNG)
+* 以下情形，雖然有cycle，但沒有deadlock
+* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/deadlock2_graph.PNG)
 
 
 
