@@ -6,11 +6,11 @@
 * ## [Thread](#004) #
 * ## [CPU Scheduling](#005) #
 * ## [Synchronization](#006) #
-* ## [Storage Management](#005) #
-* ## [Protection and Security](#006) #
-* ## [Distributed Systems](#007) #
-* ## [Special Purpose Systems](#008) #
-* ## [Case Studies](#009) # 
+* ## [Deadlock](#007) #
+* ## [pass](#006) #
+* ## [pass](#007) #
+* ## [pass](#008) #
+* ## [pass](#009) # 
 ****
 
 <h1 id="001">Overview</h1> 
