@@ -1722,7 +1722,7 @@
   * 忽略此問題，假裝從未發生過deadlock:
     * 大多數的OS，例如windows 跟Linux使用此方法，
   * 允許系統出現Deadlock，出現了再來想辦法恢復:
-    * 
+    * 1
   * 使用某些方法防止或避免出現Deadlock，例如deadlock prevention和deadlock avoidance:
     * deadlock prevention是在設計時就要避免deadlock的發生
     * deadlock avoidance則是在runtime的時候
