@@ -359,7 +359,7 @@
   * memory management information:ex base register, limit register, page table, segment table
   * IO status information
   * accounting information: 包括帳號，cpu使用時間及數量，時限等等，開了多少file等等。
-  * linux pcb是以C的[task_struct](http://lienguang.com/task_struct/) 結構表示，所有的process是以Double Link List的task_struct表示，[請參考詳細說明](https://www.itread01.com/content/1548075798.html)。
+  * linux pcb是以C的[task_struct](http://lienguang.com/task_struct/) 結構表示(位於/usr/src/linux-hwe-5.13-headers-5.13.0-27/include/linux/sched.h中定義)，所有的process是以Double Link List的task_struct表示，[請參考詳細說明](https://www.itread01.com/content/1548075798.html)。
 * degree of multiprogramming: 目前在記憶體的process數量
 * IO bound:較IO傾向的process
 * CPU bound:較CPU傾向的process
@@ -1721,16 +1721,21 @@
 * 對於Deadlock可以有以下三種方式處理:
   * 忽略此問題，假裝從未發生過deadlock:
     * 大多數的OS，例如windows 跟Linux使用此方法，
-  * 允許系統出現Deadlock，出現了再來想辦法恢復:
-    * 1
+  * 允許系統出現Deadlock，出現了再來想辦法恢復(Deadlock Recovery):
+    * Process termination: 有兩種方法:一是全部kill掉，二是一次kill掉其中一個位於cycle裡面的process(問題是從哪一個process開始kill)直到deadlock解除。
+    * Resource preemption: 選擇一個resource或process然後把它preempt(問題是要preempt哪一個resouce或process)，或者是rollback，(issue:要全部rollback還是要rollback到哪)，會不會老是砍掉同一個(starvation)
   * 使用某些方法防止或避免出現Deadlock，例如deadlock prevention和deadlock avoidance:
-    * deadlock prevention是在設計時就要避免deadlock的發生
-    * deadlock avoidance則是在runtime的時候
+    * deadlock prevention是在設計時就要避免deadlock的發生，可以藉由讓四個發生Deadlock的必要條件不成立來達成
+      * Mutual exclusion:不使用Mutual exclusion，例如read-only file就是一個很好的例子，但是許多resour本來就是不可共用的，例如printer、mutext lock
+      * Hold and wait:有兩種方法可以確保不Hold and wait。1. 當一個process request a resource時，必須保證目前沒有hold任何resource。2. process執行之前必須先取得所有將會取得的resource(不切實際)，這兩種作法都有兩個主要的缺點，第一是resource utilization會非常低，因為許多resource會長期被分配而未使用，第二是starvation。
+      * No preemption:當一個process正在waiting一個resource的時候，他的resource必須要可以被preempt(例如cpu，memory等等)，但是一些IO device就沒辦法使用此方法。
+      * Circular wait:解決Circular wait的方法就是可以藉由把每個resource都設置一個total ordering{R1,R2,R3,R4}，並且當一個process想要取得Rk的時候必須要釋放所有Ri,(k<i)，讓所有的resource變成同一個方向，就不會有Circular wait，例如有一個process已經有R0跟R5，想要取得R3就必須要把R5 release。
+    * deadlock avoidance則是在runtime的時候:
+      * safe state:就是system 可以找到一個process的先後順序的safe sequence讓system可以絕對不會發生deadlock
+      * unsafe state: 若找不到safe sequence，則有可能會發生deadlock
+      * 分成single instance:使用[Resource-Allocation Graph(RAG)](https://www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=50)
+      * 和multiple instance:使用[Banker’s algorithm](https://www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=51)
     * 某些資料庫系統使用第三種方法
-
-
-
-
 
 
 
