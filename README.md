@@ -514,7 +514,7 @@
     * ![Socket](https://github.com/a13140120a/Operation_System/blob/main/imgs/20220120.PNG)
 * PRC(Remote procedure call)
   * RPC的底層也是使用Socket實現
-  * client端會有一個stub的process負責處理parsing，server端則稱為(skeleton)
+  * client端會有一個stub的process負責處理parsing，server端則稱為(skeleton)[wiki](https://zh.wikipedia.org/wiki/%E6%A1%A9_(%E8%AE%A1%E7%AE%97%E6%9C%BA))
   * 當client端呼叫一個remote procedure時，RPC會找到適當的stub, 並且mashaling(重排) parameter，封裝成[XDR(External Data Representation)](https://zh.wikipedia.org/wiki/%E5%A4%96%E9%83%A8%E6%95%B0%E6%8D%AE%E8%A1%A8%E7%A4%BA%E6%B3%95)格式，送到server端處理。
   * Windows的stub程式碼是由使用MIDL(微軟介面定義語言 Microsoft Interface Definition Language)所撰寫編譯而成
   * 遇到Pointer的傳輸時會有複雜的解決方法，其中可以參考微軟的[MIDL Pointers and RPC](https://docs.microsoft.com/en-us/windows/win32/rpc/pointers-and-rpc)
@@ -1736,6 +1736,95 @@
       * 分成single instance:使用[Resource-Allocation Graph(RAG)](https://www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=50)
       * 和multiple instance:使用[Banker’s algorithm](https://www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=51)
     * 某些資料庫系統使用第三種方法
+
+
+<h1 id="008">Memory Management</h1> 
+
+<h2 id="0081">Address Binding</h2> 
+
+* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
+
+* [參考Computer_Organization_And_Architecture的memory部分](https://github.com/a13140120a/Computer_Organization_And_Architecture#007)
+* [當編譯到執行](https://github.com/a13140120a/Computer_Organization_And_Architecture#0065)
+* ![Loader and Linker請參考](#0024)
+* source檔中的位址通常是符號化的(symbolized)，而通常compiler 會將這些符號bind到一個可重定位的位址(例如離某個segment開始14個bytes的地方)，而lin
+* 指令和資料至記憶體位置的連結(bind)可在以下任何步驟完成:
+  * Compile time:
+    * ![comepile_time](https://github.com/a13140120a/Operation_System/blob/main/imgs/compile_time.PNG)
+    * 最早期的方式，在compile的時候就去assign phisycal address
+    * 生成出來的是absolute code(絕對碼)，裡面的address都會被bind到真實且固定的phisycal address
+    * 缺乏彈性，除非recompile否則無法搬動(因為virtual swapin再swapout回來的時候原來的空間可能已經被占用，所以需要搬動)，但是run-time的時候非常快，因為直接可以access address，不需要做額外運算
+  * Load time:
+    * ![load_time](https://github.com/a13140120a/Operation_System/blob/main/imgs/load_time.PNG)
+    * 若程式在compile時不能確定在記憶體中的位置，則compiler必須產生relocatable code(可重定位程式碼)，並由loader來決定address的binding(例如.BS+0x14，BS由loader決定)。
+    * 一但記憶體位置搬動，必須要reload(把程式kill掉)，沒辦法在runtime的時候搬移。
+  * Execution time:
+    * ![execution_time](https://github.com/a13140120a/Operation_System/blob/main/imgs/execution_time.PNG)
+    * 必須要有特殊的硬體才可以(MMU)
+    * 0x18為相對於此process的位址的偏移值
+    * 上圖0x18其實是指0x2018，但是load到memory之後來是0x18，原因是因為會經由MMU轉換(CPU自己不知道)
+    * compile出來與load到memory的都是所謂的logical-address(virtual address)
+    * 是現在電腦大部分的作法
+* logical address: CPU發送出來的address，
+* phisycal adderss:memory真正看到的，也就是載入MBR(https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0041)的數值，而此數值通常是CPU發出來的address經由MMU轉換而來的
+* MMU(memory-managment unit 記憶體管理單元):
+  * ![MMU](https://github.com/a13140120a/Operation_System/blob/main/imgs/MMU.PNG)
+  * 是一種硬體裝置
+  * 會有一個relocation register裡面會儲存藥加上得值(例如14000)
+  * context switch的時候會把memory base address load到relocation register裡面
+* Dynamic Loading
+  * 當一個routine被呼叫的時候，會先去找memory裡面有沒有，如果沒有的話才會load到memory裡面。
+  * 可節省memory空間(例如當有大量的error handle code的時候)
+  * 決定那些code是Dynamic Loading的是使用者，而不是OS
+  * Example:
+    ```c
+    // dlopen(): open a library and prepare it for use
+    // desym(): looks up the value of a symbol in a given(opened) library.
+    // dlclose(): closes a DL library
+    #include <dlfcn.h>
+    
+    int main() {
+        double (*cosine)(double);
+        void* handle = dlopen ("/lib/libm.so.6", RTLD_LAZY);
+        cosine = dlsym(handle, "cos"); // 定義cosine是system的dynamic library裡面的cos這個function
+        printf ("%f\n", (*cosine)(2.0));  // 當call到這行的時候才會把function load進memory
+        dlclose(handle);
+    }
+    ```
+* Static linking:
+  * gcc在call linker之後會發現執行檔變大了，原因是因為加上了Static linking library(xx.lib)
+  * link完之後就會把程式碼併在一起
+  * 會在memory裡面造成duplicated code
+  * Dynamic Loading + Static linking還是沒有解決duplicated code的問題
+  * 優點是比Dynamic linking速度更快
+* Dynamic linking:
+  * 只有一份Code 放在記憶體裡面，並且可以share給everyone
+  * 需要的時候再去用就好了
+  * DLL(Dynamic linking library)又稱為shared libraries(共享程式庫)
+  * compile的時候就必須決定是static library還是dynamic library
+  * 需要透過OS才有辦法完成，因為會牽涉到Processes之間的共享空間
+  * 當被call的時候OS會先去找看看有沒有在memory裡面，如果沒有的話才會load 進memory
+  * 跟Dynamic Loading的差別在於Dynamic linking可以共享，只需一份
+  * 相較Static linking較慢一點
+
+<h2 id="0082">Contiguous Memory Allocation</h2> 
+
+* 每個process都包含在一個記憶體中的單獨連續空間，這個空間稱為partition
+* Partition又有分Fixed-partition allocation 和 Variable-size partition:
+  * Fixed-partition allocation:因為每個partition都一樣大，所以會造成內部空間的浪費(就像機車停在汽車停車格一樣)
+  * Variable-size partition: 記憶體在經過多次的填補與抽離之後，會造成hole，而為了解決新產生的process要塞進哪個hole，有以下三種方法:
+    * First-fit:尋找第一個找到的合適的hole(速度較快，不用traverse整個list)
+    * Best-fit:尋找可以填進去的所有hole裡面最小的hole(需要traverse整個list，但相對較節省空間)
+    * Worst-fit:尋找可以填進去的所有hole裡面最大的hole(需要traverse整個list)
+  * Fragmentation:
+    * Internal fragmentation:一個partition內部出現沒有用到的memory空間稱為Internal fragmentation，只會發生在fixed-partition allocation，其中一個solution是把partition size切得更小。
+    * External fragmentation:一個partition外部出現沒有用到的memory空間(hole)稱為External fragmentation，只會發生在variable-size allocation，其中一個solution是compaction(重新排列記憶體空間，把每個partition都貼在一起)
+
+<h2 id="0083">Non-Contiguous Memory Allocation(Paging)</h2> 
+
+* 
+
+
 
 
 
