@@ -1850,65 +1850,67 @@
     * 有2的24次方個frames
 * OS會有一個free-frame list(或frame table)來記錄frame是否可用，分配給哪一個page或哪一個process。
 
-<h2 id="0083">Hardware Support</h2> 
+* Hardware Support
+  * PTBR(page-table base register): 通常會使用一個PTBR來指向page table的base addr(phisycal，因為不再做translation)，base addr的值會儲存在PCB裡面，等到Context switch的時候會把這個base addr load到PTBR裡面。
+  * TLB(translation look-aside buffer): 
+    * 為了解決一次read要兩次access的問題，裡面儲存了少量的page tabale的entry
+    * 是一個特殊的小型硬體快取記憶體
+    * 由Associative memory所組成
+    * 包含一個key跟一個value，Associative memory可以同時跟所有的key做比較
+    * [wiki 典型的TLB](https://zh.wikipedia.org/wiki/%E8%BD%89%E8%AD%AF%E5%BE%8C%E5%82%99%E7%B7%A9%E8%A1%9D%E5%8D%80#%E5%85%B8%E5%9E%8B%E7%9A%84_TLB)
+    * 加上TLB之後的Access memory流程圖:
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
+    * 假設access TLB要20ns，access memory要100秒，有70% TLB hit-ratio，EMAT(Effective Memory-Access Time)就等於0.7x(20 + 100)+(1-0.70)x(20+100+100)=150ns
+    * 如果TLB滿了，就必須要找到一個key來犧牲掉
+    * Intel Core i7有128個entry的L1 instruction TLB跟64個entry的L1 data TLB，L1 cache miss之後會到L2，L2有512個entry的TLB。L2 cache miss之後就要到Memory裡面去找。
+    * 發生context switch 的時候TLB有兩種Solution，第一種也就是現代電腦最普遍的做法，就是整個flush掉，第二種就是多加一個PID(ASID, address-space identifier 位址空間識別碼)的欄位，標記每個page是哪個process的。
+  * Memory Protection:
+    * 通常每個page都會有一個(或一些)欄位用來儲存一些protection bit，這些bit有可能可以用來判斷是不是read-only或者read/write等等，而protection bit中最常使用的就是所謂的valid-invalid bit，
+    * valid-invalid bit代表目前的page是不是可用的，例如virtual memory技術裡面，當這個page是invalid的狀態時，那麼使用這個page就會產生page fault(因為swap in 到disk裡面)。
+    * PTLR(page-table length register)用來表示page table的大小，以保護一個process在正確的範圍內存取memory。
+  * Shared Pages:
+    * 可以多個page map到同一個frame，避免不必要的記憶體空間浪費，DLL就是使用此項技術。
 
-* PTBR(page-table base register): 通常會使用一個PTBR來指向page table的base addr(phisycal，因為不再做translation)，base addr的值會儲存在PCB裡面，等到Context switch的時候會把這個base addr load到PTBR裡面。
-* TLB(translation look-aside buffer): 
-  * 為了解決一次read要兩次access的問題，裡面儲存了少量的page tabale的entry
-  * 是一個特殊的小型硬體快取記憶體
-  * 由Associative memory所組成
-  * 包含一個key跟一個value，Associative memory可以同時跟所有的key做比較
-  * [wiki 典型的TLB](https://zh.wikipedia.org/wiki/%E8%BD%89%E8%AD%AF%E5%BE%8C%E5%82%99%E7%B7%A9%E8%A1%9D%E5%8D%80#%E5%85%B8%E5%9E%8B%E7%9A%84_TLB)
-  * 加上TLB之後的Access memory流程圖:
-  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
-  * 假設access TLB要20ns，access memory要100秒，有70% TLB hit-ratio，EMAT(Effective Memory-Access Time)就等於0.7x(20 + 100)+(1-0.70)x(20+100+100)=150ns
-  * 如果TLB滿了，就必須要找到一個key來犧牲掉
-  * Intel Core i7有128個entry的L1 instruction TLB跟64個entry的L1 data TLB，L1 cache miss之後會到L2，L2有512個entry的TLB。L2 cache miss之後就要到Memory裡面去找。
-  * 發生context switch 的時候TLB有兩種Solution，第一種也就是現代電腦最普遍的做法，就是整個flush掉，第二種就是多加一個PID(ASID, address-space identifier 位址空間識別碼)的欄位，標記每個page是哪個process的。
-* Memory Protection:
-  * 通常每個page都會有一個(或一些)欄位用來儲存一些protection bit，這些bit有可能可以用來判斷是不是read-only或者read/write等等，而protection bit中最常使用的就是所謂的valid-invalid bit，
-  * valid-invalid bit代表目前的page是不是可用的，例如virtual memory技術裡面，當這個page是invalid的狀態時，那麼使用這個page就會產生page fault(因為swap in 到disk裡面)。
-  * PTLR(page-table length register)用來表示page table的大小，以保護一個process在正確的範圍內存取memory。
-* Shared Pages:
-  * 可以多個page map到同一個frame，避免不必要的記憶體空間浪費，DLL就是使用此項技術。
+* Page Table Memory Structure
+  * 因為page table通常太大，沒辦法塞進單一個frame裡面，而通常page table又必須存在連續的記憶體空間，於是有多種solution出現。
+  * Hierarchical Paging:
+    * 把page table分成階層式的，缺點是要access的次數變多
+    * 例如Two-level paging(32-bit address with 4KB (2^12) page size)
+      * 12-bit offset (d) = 4KB (212) page size
+      * 第一層有10-bit(inner page) :1K (2^10) 個page table entries，代表一個inner page table有1K個page
+      * 第二層有10-bit(outer page) :1K (2^10) 個page table entries，代表一個outer page table有1K個inner page table
+      * 要access三次
+  * Hashed Page Table:
+    * 每個entry由page number, frame number以及指向下一個entry的pointer所組成
+    * virtual addr的page number部分被hash到hash table
+    * 通常用於處理大於32 bit的virtual addr
+    * 比較virtual addr的page number和hash table的page number，如果相同則命中，如果不相同則traverse這個entry的linked list
+    * 與virtual addr的bit數量無關，所以更有彈性，如果使用到的page很少，就不會存在bucket，可以節省大量記憶體空間
+    * 壞處是如果collision就要一直traverse link，而且pointer會浪費記憶體空間
+    * 示意圖:
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/hash_table.png)
+    * 改良後的page table:
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/better_hash_table.PNG)
 
-Page Table Memory Structure
-
-<h2 id="0084">Page Table Memory Structure</h2> 
-
-* 因為page table通常太大，沒辦法塞進單一個frame裡面，而通常page table又必須存在連續的記憶體空間，於是有多種solution出現。
-* Hierarchical Paging:
-  * 把page table分成階層式的，缺點是要access的次數變多
-  * 例如Two-level paging(32-bit address with 4KB (2^12) page size)
-    * 12-bit offset (d) = 4KB (212) page size
-    * 第一層有10-bit(inner page) :1K (2^10) 個page table entries，代表一個inner page table有1K個page
-    * 第二層有10-bit(outer page) :1K (2^10) 個page table entries，代表一個outer page table有1K個inner page table
-    * 要access三次
-
-* Hashed Page Table:
-  * 每個entry由page number, frame number以及指向下一個entry的pointer所組成
-  * virtual addr的page number部分被hash到hash table
-  * 通常用於處理大於32 bit的virtual addr
-  * 比較virtual addr的page number和hash table的page number，如果相同則命中，如果不相同則traverse這個entry的linked list
-  * 與virtual addr的bit數量無關，所以更有彈性，如果使用到的page很少，就不會存在bucket，可以節省大量記憶體空間
-  * 壞處是如果collision就要一直traverse link，而且pointer會浪費記憶體空間
-  * 示意圖:
-  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/hash_table.png)
-  * 改良後的page table:
-  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/better_hash_table.PNG)
-
-* Inverted Page Table:
-  * 不使用每個process都有一個page table，而使用單一個frame table，節省記憶體空間，而且table的使用率是百分之百(不會有多餘的frame)
-  * 每個access都必須要search整個frame table，可以使用hashing解決這個問題
-  * 每個entry不能有多個pid跟page，所以無法共享實體frame。
-  * 通常一個entry會由process id(PID)、page number、offset三項所組成
-  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/inverted_page_table.png)
+  * Inverted Page Table:
+    * 不使用每個process都有一個page table，而使用單一個frame table，節省記憶體空間，而且table的使用率是百分之百(不會有多餘的frame)
+    * 每個access都必須要search整個frame table，可以使用hashing解決這個問題
+    * 每個entry不能有多個pid跟page，所以無法共享實體frame。
+    * 通常一個entry會由process id(PID)、page number、offset三項所組成
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/inverted_page_table.png)
 
 
+<h2 id="0084">Non-Contiguous Memory Allocation(Segmentation)</h2> 
 
-
-
-
-
-
+* 是Non-Contiguous Memory Allocation的variable size
+* 是以使用者的角度去切割(page是以系統管理的角度)
+* ![Segmentation-table-example](https://github.com/a13140120a/Operation_System/blob/main/imgs/Segmentation-table-example.jpg)
+* Segmentation Table:
+  * Logical address格式: [Segment, offset]，一個page的size可以是4KB等等，但這裡的offset必須要跟系統定義的能長到最大的physical addr的長度一致(例如4GB，23個bit)
+  * 每個entry都必須要有:
+    * Base (4 bytes): Segment的base address
+    * Limit (4 bytes): Segment的長度
+  * 會有STBR(Segment-table base register):segmentation table的base addr
+  * 還有STLR(Segment-table length register):segmentation table的長度，用來檢查存取的位置是否超過segment的範圍
+  * ![segmentationHardware](https://github.com/a13140120a/Operation_System/blob/main/imgs/segmentationHardware.jpg)
 
