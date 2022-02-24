@@ -7,10 +7,10 @@
 * ## [CPU Scheduling](#005) #
 * ## [Synchronization](#006) #
 * ## [Deadlock](#007) #
-* ## [pass](#006) #
-* ## [pass](#007) #
-* ## [pass](#008) #
-* ## [pass](#009) # 
+* ## [Memory Management](#008) #
+* ## [pass](#009) #
+* ## [pass](#010) #
+* ## [pass](#011) # 
 ****
 
 <h1 id="001">Overview</h1> 
@@ -287,7 +287,7 @@
   * 這樣的結構可以直接利用各層的優點  
   <br>
   
-    ![macOSiOS](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_16macOS%2BiOS.jpg)  
+    ![macOS_iOS](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_16macOS%2BiOS.jpg)  
   * Darwin是一個分層系統，由Mach微核心 和BSD UNIX核心組成，Mcah處理trap, BSD kernel處理POSIX system call
   * Darwin還提供了用於開發驅動程式和動態載入module的[kexts](https://support.apple.com/zh-tw/guide/deployment/depa5fb8376f/web)  
     ![D](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_17Darwin.jpg)
@@ -341,6 +341,7 @@
   * data section :存放全域變數，大小固定，又分初始化及未初始化區域。
   * heap section :process執行時動態分配的記憶體
   * stack section:呼叫函數時的臨時資料儲存(包括函數參數，return值以及區域變數)
+  * [詳細](https://www.gushiciku.cn/pl/pwfP/zh-tw)
   * ![c_process_memory](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_process_memory.png)
 * `size [filename]`可以查看Linux 二進位檔的資訊，data顯示的是未初始化的資料，bss是已初始化的資料，dec跟hex分別表示十進位與16進位的三個階段的總和
 * [objdump](https://wangchujiang.com/linux-command/c/objdump.html)是gcc工具，可查看執行檔的反組譯碼，符號表等資訊，反組譯出來的是[AT&T格式](https://www.itread01.com/content/1549963466.html)。
@@ -1809,7 +1810,7 @@
 
 <h2 id="0082">Contiguous Memory Allocation</h2> 
 
-* 每個process都包含在一個記憶體中的單獨連續空間，這個空間稱為partition
+* 每個process都包含在一個記憶體中(physical)的單獨連續空間，這個空間稱為partition
 * Partition又有分Fixed-partition allocation 和 Variable-size partition:
   * Fixed-partition allocation:因為每個partition都一樣大，所以會造成內部空間的浪費(就像機車停在汽車停車格一樣)
   * Variable-size partition: 記憶體在經過多次的填補與抽離之後，會造成hole，而為了解決新產生的process要塞進哪個hole，有以下三種方法:
@@ -1822,7 +1823,87 @@
 
 <h2 id="0083">Non-Contiguous Memory Allocation(Paging)</h2> 
 
-* 
+* page: 把**logical address space**分成多個相同size的chunk 稱為page
+* frame:把**physical memory**分成多個相同size的chunk 稱為frame
+* 如果要 run 一個需要n個page的program, 則需要準備n個frames來裝。
+* 允許**physical-address space**是不連續的
+* 沒有external fragmentation，而且降低internal fragmentation(page size越小的話internal fragmentation越少)
+* Dynamic linking的實作使用的技術就是共享的page。
+* [詳細資料可以參考](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
+* page number經過查詢page table之後會得到相對應的frame number:
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_map.jpg)
+* page table是一個由OS mantain的structure，放在memory裡面，每個process都有它自己的page table，page table裡也只會有這個process的page而已，process不能隨意access自己以外的memory space。
+* 由CPU產生出來的address都分成兩個部分: page number 和 page offset:
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_offset.png)
+* N bits的process可以allocate 2的N次方的pages，也就是最多會有2的N次方乘以page size的memory size
+* N bits的offset代表page size是2的N次方
+* Physical addr = frame base addr + frame offset
+* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
+* 例子:
+  * 假設Page size是1KB(2^10)，Page2 maps到frame5，今有13個bits的logical address(p=2,d=20), physical addr就是5*(1KB)+20 =1,010,000,000,000+0,000,010,100=1,010,000,010,100
+  * 假設logical address有32 bits,physical address有36 bits，則:
+    * page size為4KB, 
+    * Page table 有2的20次方個entries(有2的20次方個個page，也就是說需要20個bits來定位page)
+    * offset有12個bit(4KB)
+    * Max program memory就是2的32次方(4GB)的空間，
+    * Total physical memory size: 2的36次方(64GB)
+    * 有2的24次方個frames
+* OS會有一個free-frame list(或frame table)來記錄frame是否可用，分配給哪一個page或哪一個process。
+
+<h2 id="0083">Hardware Support</h2> 
+
+* PTBR(page-table base register): 通常會使用一個PTBR來指向page table的base addr(phisycal，因為不再做translation)，base addr的值會儲存在PCB裡面，等到Context switch的時候會把這個base addr load到PTBR裡面。
+* TLB(translation look-aside buffer): 
+  * 為了解決一次read要兩次access的問題，裡面儲存了少量的page tabale的entry
+  * 是一個特殊的小型硬體快取記憶體
+  * 由Associative memory所組成
+  * 包含一個key跟一個value，Associative memory可以同時跟所有的key做比較
+  * [wiki 典型的TLB](https://zh.wikipedia.org/wiki/%E8%BD%89%E8%AD%AF%E5%BE%8C%E5%82%99%E7%B7%A9%E8%A1%9D%E5%8D%80#%E5%85%B8%E5%9E%8B%E7%9A%84_TLB)
+  * 加上TLB之後的Access memory流程圖:
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
+  * 假設access TLB要20ns，access memory要100秒，有70% TLB hit-ratio，EMAT(Effective Memory-Access Time)就等於0.7x(20 + 100)+(1-0.70)x(20+100+100)=150ns
+  * 如果TLB滿了，就必須要找到一個key來犧牲掉
+  * Intel Core i7有128個entry的L1 instruction TLB跟64個entry的L1 data TLB，L1 cache miss之後會到L2，L2有512個entry的TLB。L2 cache miss之後就要到Memory裡面去找。
+  * 發生context switch 的時候TLB有兩種Solution，第一種也就是現代電腦最普遍的做法，就是整個flush掉，第二種就是多加一個PID(ASID, address-space identifier 位址空間識別碼)的欄位，標記每個page是哪個process的。
+* Memory Protection:
+  * 通常每個page都會有一個(或一些)欄位用來儲存一些protection bit，這些bit有可能可以用來判斷是不是read-only或者read/write等等，而protection bit中最常使用的就是所謂的valid-invalid bit，
+  * valid-invalid bit代表目前的page是不是可用的，例如virtual memory技術裡面，當這個page是invalid的狀態時，那麼使用這個page就會產生page fault(因為swap in 到disk裡面)。
+  * PTLR(page-table length register)用來表示page table的大小，以保護一個process在正確的範圍內存取memory。
+* Shared Pages:
+  * 可以多個page map到同一個frame，避免不必要的記憶體空間浪費，DLL就是使用此項技術。
+
+Page Table Memory Structure
+
+<h2 id="0084">Page Table Memory Structure</h2> 
+
+* 因為page table通常太大，沒辦法塞進單一個frame裡面，而通常page table又必須存在連續的記憶體空間，於是有多種solution出現。
+* Hierarchical Paging:
+  * 把page table分成階層式的，缺點是要access的次數變多
+  * 例如Two-level paging(32-bit address with 4KB (2^12) page size)
+    * 12-bit offset (d) = 4KB (212) page size
+    * 第一層有10-bit(inner page) :1K (2^10) 個page table entries，代表一個inner page table有1K個page
+    * 第二層有10-bit(outer page) :1K (2^10) 個page table entries，代表一個outer page table有1K個inner page table
+    * 要access三次
+
+* Hashed Page Table:
+  * 每個entry由page number, frame number以及指向下一個entry的pointer所組成
+  * virtual addr的page number部分被hash到hash table
+  * 通常用於處理大於32 bit的virtual addr
+  * 比較virtual addr的page number和hash table的page number，如果相同則命中，如果不相同則traverse這個entry的linked list
+  * 與virtual addr的bit數量無關，所以更有彈性，如果使用到的page很少，就不會存在bucket，可以節省大量記憶體空間
+  * 壞處是如果collision就要一直traverse link，而且pointer會浪費記憶體空間
+  * 示意圖:
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/hash_table.png)
+  * 改良後的page table:
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/better_hash_table.PNG)
+
+* Inverted Page Table:
+  * 不使用每個process都有一個page table，而使用單一個frame table，節省記憶體空間，而且table的使用率是百分之百(不會有多餘的frame)
+  * 每個access都必須要search整個frame table，可以使用hashing解決這個問題
+  * 每個entry不能有多個pid跟page，所以無法共享實體frame。
+  * 通常一個entry會由process id(PID)、page number、offset三項所組成
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/inverted_page_table.png)
+
 
 
 
