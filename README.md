@@ -1913,4 +1913,152 @@
   * 會有STBR(Segment-table base register):segmentation table的base addr
   * 還有STLR(Segment-table length register):segmentation table的長度，用來檢查存取的位置是否超過segment的範圍
   * ![segmentationHardware](https://github.com/a13140120a/Operation_System/blob/main/imgs/segmentationHardware.jpg)
+* Sharing of Segments: 因為要program在memory可能是非常複雜的，必須要知道在哪幾個page可以share，而且會有internel fragmentation的問題，所以比較上層的Segments sharing就比較親近programmer。
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/segmentation_share.PNG)
+* Protection & Sharing
+  * Protection bits associated with segments
+    *  Read-only segment (code)
+    *  Read-write segments (data, heap, stack)
+  *  Code sharing occurs at segment level
+    * Shared memory communication
+    * Shared library
+    * Share segment by having same base in two segment tables
+* Segmentation with Paging:
+  * Apply segmentation in logical address space
+  * Apply paging in physical address space
+  * ![Segmentation_with_page](https://github.com/a13140120a/Operation_System/blob/main/imgs/Segmentation_with_page.png)
+
+<h2 id="0085">Swapping</h2> 
+
+* Memory的content(page)在memory跟disk之間移動的動作叫做swap
+* backing store(備份儲存體，或稱swap space): 一塊用來儲存從memory swap到disk的儲存空間，通常在安裝OS的時候設定Swap space的大小，通常Swap space跟檔案系統是分開的，使用midterm scheduling。
+
+* swap page示意圖:
+  * ![swap_page](https://github.com/a13140120a/Operation_System/blob/main/imgs/swap_page.jpg)
+* 如果memory addr的binding是在load time或者compile time的話，那麼當disk中的page swap回memory當中就必須要到相同的記憶體位址
+* 但如果memory arrd的binding是在executing time的話，就可以swap到memory的任意位置
+* 當一個process被swap的時候，必須要是Idle的狀態(不能是在正做IO的狀態)，因為如果IO寫回memory的時候剛好這個位址的page(或process)已經被swap掉(換成其他page或process)了，就會寫到別的page裡面去，有兩種解決辦法:
+  * 一是swap 的時候不做IO，但是這樣會影響效能。
+  * (較通用的作法)二是OS會allocate一個專門用來裝IO要寫回memory資料的buffer，當IO要寫回memory的時候會先寫回buffer，然後當page(或process)被swap回memory的時候才從buffer去拿。
+* 標準swap 是swap整個process，但是這樣太缺乏效率而且沒有必要，
+* 所以通常都是swap一個page而已，而swap page又稱為**page in** 跟**page out**。
+
+* 行動裝置:
+  * 行動裝置通常使用快取記憶體來代替空間較大的硬碟作為永久性儲存裝置
+  * IOS系統通常在可用的主記憶體空間降到一定門檻的時候會強制要求應用程式主動放棄所配置的記憶體空間來取代Swap機制，這時唯讀資料(例如程式碼)會從系統中被移除，而已經被修改過的資料(例如stack)則不會被移除，然而，若還是不能夠釋放足夠的記憶體空間則該應用程式會被IOS OS系統終止。
+  * Androi不支援swap，如果沒有足夠的記憶體空間可以使用的話，Android會終止一個process，在終止process之前，android會寫入該process的application state到快取記憶體裡面(行動裝置的永久儲存體)，因此可以快速的重啟應用程式。
+
+<h2 id="0086">Example</h2> 
+
+* Intel 32和64位元架構:
+  * IA-32 架構:
+    * IA-32 架構的記憶體管理被分成兩個元件，segmentation unit跟paging unit，cpu產生的logical address會先送到segmentation unit，然後產生一個linear address之後再送到paging unit產生physical address
+    * 流程圖:
+    * ![流程圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_1.PNG)
+    * IA-32 架構允許segment的大小最大可以到4GB，並且最多可以擁有16K個segment，其logical address由兩個部分組成:(selector, offset)
+    * 段描述符表(descriptor table)：IA-32處理器把所有段描述符按順序組織成線性表放在主記憶體中，稱為段描述符表。
+      * 分為三類：全局描述符表GDT、局部描述符表LDT、中斷描述符表IDT。
+      * GDT和IDT在整個系統中只有一張，而每個任務都有自己私有的一張局部描述符表LDT。
+      * GDTR全局描述符寄存器：48位，高32位存放GDT基址，低16為存放GDT限長。
+      * LDTR局部描述符寄存器：16位，高13為存放LDT在GET中的索引值。
+      * 目前使用的LDT, 其位址和limit存放在 LDTR暫存器中
+      * 主記憶體的GDT, 其位址和limit存放在 GDTR暫存器中
+    * 段選擇器(selector):
+      * 32位彙編中16位段寄存器(CS、DS、ES、SS、FS、GS)存放段描述符在段描述符表中的索引值、指示位TI(TI=0指示從全局描述表GDT中讀取描述符，TI=1指示從局部描述符中LDT中讀取描述符)、優先級(RPL用於特權檢查)。這些信息總稱段選擇器(段選擇子).
+      * CS 暫存器具有另外一個重要的功能 : 它包含一個2位元欄位, 用來指定CPU當前的特權等級
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_selector.PNG)
+      * cpu從descriptor table 中找到段描述符(descriptor)之後加上offset得到linear address
+    * 產生出來的linear address會再送到paging unit:
+      * IA-32 架構允許兩種分頁大小，4KB與4MB，在4KB的page中，IA-32使用two-level的階層分頁法，32位元的linear address分割如下:
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_page.PNG)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
