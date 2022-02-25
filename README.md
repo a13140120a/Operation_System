@@ -1968,11 +1968,34 @@
       * CS 暫存器具有另外一個重要的功能 : 它包含一個2位元欄位, 用來指定CPU當前的特權等級
       * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_selector.PNG)
       * cpu從descriptor table 中找到段描述符(descriptor)之後加上offset得到linear address
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_discriptor_table.PNG)
     * 產生出來的linear address會再送到paging unit:
       * IA-32 架構允許兩種分頁大小，4KB與4MB，在4KB的page中，IA-32使用two-level的階層分頁法，32位元的linear address分割如下:
       * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_page.PNG)
+      * 最高位的10個bit referece到outer table(IA32稱為page directiry)的entry(進入點)，而中間10個bit(1024個)為inner table的index，最低的12個位原則是4KB的page offset
+      * CR3：是一種處理有關分頁目錄 (page directory)的控制暫存器，CR3中含有頁目錄表實體記憶體基地址，因此該暫存器也被稱為頁目錄基地址暫存器PDBR（Page-Directory Base address Register），[詳細內容](https://wanker742126.neocities.org/new/dos_asm/ap03.html)
+      * 如果PSE(page size extensions, CR4的bit 4，在Pentium和以後的處理器才有)旗標設為1時，才可以使用4MB的分頁大小，那麼p1就會是page table的index，而剩下的22bit就是offset。否則就只能只用4KB的page，那麼p1跟p2就分別用來表示outer table跟inner table的index。[詳細](https://www.csie.ntu.edu.tw/~wcchen/asm98/asm/proj/b85506061/chap2/paging.html)
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA_32_2level_page.PNG)
+    * [PAE(Physical Address Extension)](https://zh.wikipedia.org/wiki/%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E6%89%A9%E5%B1%95#%E9%A1%B5%E8%A1%A8%E7%BB%93%E6%9E%84)技術使得32位元處理器可以處理大於4GB的實體位址空間。
+    * [參考資料](https://www.cntofu.com/book/46/linux_kernel/1217.md)
 
+  * x86-64 架構:
+    * Intel一開始的64位元架是IA-64，但是這時候AMD也開始發展64位元架構，稱為 x86-64，它是以現有IA-32 指令集為基礎下去擴展和支援更大的logical 和physical address，當 x86-64架構出現時，原本AMD根據Intel架構發展晶片的情況反轉，變成Intel採取AMD的x86-64架構，後來AMD64與Intel64通稱為x86-64。
+    * 64位元的address space支援2^64次方(16 exabytes)的記憶體定址，但實際上，目前x86-64只提供48位元的虛擬地址，使用四層的分頁結構，支援4KB、2MB或1GB的分頁，x86-64的virtial address大小是48個bit，有PAE的話則可以支援到52 bits(1024兆個bytes)。
+    * ![x86_64_page_translation](https://github.com/a13140120a/Operation_System/blob/main/imgs/x86_64_page_translation.png)
 
+* ARM架構:
+  * ARM除了行動裝置以外，還提供嵌入式系統的架構，以下將描述64位元ARMv8的架構。
+  * 雖然是64位元結構，但其實只有使用到48位元的位址，高位元的25個bit全為1的話代表使用kernel的virtual address，全為0的話代表使用的是user 的virtual space。
+  * ARMv8句有三種不同的translation granules(轉換顆粒): 4KB、16KB、64KB，每種translation granules提供不同的page大小，以及較大的連續記憶體部分稱為region(區域)
+  * | ranslation granules大小 | page大小 | region大小 |
+    | --- | --- | --- |
+    | 4 KB | 4 KB | 2 MB |
+    | 16 KB | 16 KB| 32 MB |
+    | 64 KB | 64 KB | 512 MB |
+  * ![ARMv8_page_translation](https://github.com/a13140120a/Operation_System/blob/main/imgs/ARMv8_page_translation.png)
+  * 如果使用的是4KB的translation granules的話，那麼第0~11個bit是page的offset，此時如果使用的region是2MB的話，那麼0~20個bit就是region內的offset，但如果使用的region是1GB的話，那麼0~29個bit就是region內的offset。
+  * [詳細](https://www.cnblogs.com/-9-8/p/8406345.html)
 
 
 
