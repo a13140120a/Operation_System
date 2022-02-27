@@ -1440,7 +1440,7 @@
       ```
   * POSIX semaphore:
     * 分成named跟unnamed。
-    * create a named semaphore and lock(在之前的[example](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)就有使用過的`sem_open()`函數):
+    * create a named semaphore and lock:
       ```c
       include <semaphre.h>
       sem_t* sem;
