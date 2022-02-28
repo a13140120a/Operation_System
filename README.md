@@ -8,7 +8,7 @@
 * ## [Synchronization](#006) #
 * ## [Deadlock](#007) #
 * ## [Memory Management](#008) #
-* ## [pass](#009) #
+* ## [Virtual Memory](#009) #
 * ## [pass](#010) #
 * ## [pass](#011) # 
 ****
@@ -1918,6 +1918,7 @@
   * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/segmentation_share.PNG)
 * Protection & Sharing
   * Protection bits associated with segments
+    *  paging所提到的protection bit是一個例子，存取記憶體真正的protection通常是在segmentation5
     *  Read-only segment (code)
     *  Read-write segments (data, heap, stack)
   *  Code sharing occurs at segment level
@@ -2001,16 +2002,35 @@
 
 
 
+<h1 id="009">Virtual Memory</h1> 
 
 
+<h2 id="0091">Bcakground</h2> 
 
+* 一個process的執行，不需要把整個process都load 到memory裡面去，因為以下幾種情況:
+  * 程式碼當中會有許多handle error的程式碼，但是這些程式碼並不是每次執行都會被使用到(或極少使用到)。
+  * 當allocate一個array或list 的時候，我們可能allocate非常大(例如100 * 100)但實際上使用到的確只有10 * 10的空間。
+  * 某些function很少被執行到。
+* 而使用virtual memory有以下幾個好處:
+  * 程式不再被實體記憶體所限制，可以使用超過實體記憶體的記憶體空間
+  * 提高cpu/resourese的使用率(multi programming)
+  * load program的速度較快
+* VirtualMemory是意圖:
+  * ![VirtualMemory](https://github.com/a13140120a/Operation_System/blob/main/imgs/VirtualMemory.jpg)
+* virtual是屬於鬆散空間，因為這樣才有位置可以塞進成長的stack、heap或者DLL的code部分到自己的virtual memory:
+  * ![process_between_dll](https://github.com/a13140120a/Operation_System/blob/main/imgs/process_between_dll.png)
 
+<h2 id="0091">Demand Paging</h2> 
 
-
-
-
-
-
+* 只有在需要用到的時候才把page load到memory
+* 通常會有每個PTE會有一個valid-invalid bit的欄位來表示此page存在memory與否，如果不存在的話將會觸發page fault，並交由OS處理:[page fault流程](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
+* pure demand paging:在沒有任何page在memory裡面的情況下執行process，簡單來說就是當execute一個process的時候可能就create一個page table、PCB就好。 
+* 觸發page fault會使該instruction重新執行，然而，執行一個instruction的時候可能不只發生一個page fault，例如一個instruction的功能是把一段區域A的byte搬移到另一個區域B，這時候CPU在存取A的時候因為A區域橫跨了兩個page，於是在搬移到一半的時候觸發了page fault，這時候instruction重新執行，原來A的前半段部分已經被修改過了，解決這個問題有兩個方法:
+  * 先嘗試存去兩個端點，如果有page fault被觸發，那就可以在修改之前先讓所有的page fault發生
+  * 使用臨時的暫存器把修改過的區域記錄下來，如果發生page fault的話，就把舊的內容寫回記憶體中，並且處理完page fault之後重新執行一次instruction。
+* swaper:把整個process存到disk裡面
+* pager:把page存到disk裡面
+* swaper跟pager不會衝突，例如swap要把這個process存到disk裡面，然後交給pager處理，pager再決定要把這個process的哪個page存到disk裡面。
 
 
 
