@@ -1872,6 +1872,7 @@
     * 可以多個page map到同一個frame，避免不必要的記憶體空間浪費，DLL就是使用此項技術。
 
 * Page Table Memory Structure
+  * PTE:page table entry
   * 因為page table通常太大，沒辦法塞進單一個frame裡面，而通常page table又必須存在連續的記憶體空間，於是有多種solution出現。
   * Hierarchical Paging:
     * 把page table分成階層式的，缺點是要access的次數變多
@@ -1977,6 +1978,7 @@
       * 如果PSE(page size extensions, CR4的bit 4，在Pentium和以後的處理器才有)旗標設為1時，才可以使用4MB的分頁大小，那麼p1就會是page table的index，而剩下的22bit就是offset。否則就只能只用4KB的page，那麼p1跟p2就分別用來表示outer table跟inner table的index。[詳細](https://www.csie.ntu.edu.tw/~wcchen/asm98/asm/proj/b85506061/chap2/paging.html)
       * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA_32_2level_page.PNG)
     * [PAE(Physical Address Extension)](https://zh.wikipedia.org/wiki/%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E6%89%A9%E5%B1%95#%E9%A1%B5%E8%A1%A8%E7%BB%93%E6%9E%84)技術使得32位元處理器可以處理大於4GB的實體位址空間。
+    * 其他名詞:PDE(page directory entry, windows page table的outer table)
     * [參考資料](https://www.cntofu.com/book/46/linux_kernel/1217.md)
 
   * x86-64 架構:
