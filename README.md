@@ -744,9 +744,9 @@
 <h2 id="0052">Scheduling Algorithms</h2> 
 
 * Scheduling Algorithms通常有以下幾種評估標準(Scheduling Criteria):
-  * CPU utilization:理論上0~100%，實際上會介於40~90%，可用[top](https://david50.pixnet.net/blog/post/45252072-%5B%E7%AD%86%E8%A8%98%5Dlinux---top%E8%B3%87%E8%A8%8A)查看
+  * CPU utilization:理論上0/~100%，實際上會介於40/~90%，可用[top](https://david50.pixnet.net/blog/post/45252072-%5B%E7%AD%86%E8%A8%98%5Dlinux---top%E8%B3%87%E8%A8%8A)查看
   * Throughput: (以系統的角度)每單位時間內完成的工作量，對於cpu scheduling而言就是每單位時間完成的process數量。
-  * Turnaround Time: (以single job的角度)submission~cpmpletion的時間
+  * Turnaround Time: (以single job的角度)submission/~cpmpletion的時間
   * wait time:在ready queue的時間
   * response time: (對於interactive很重要)從submission到第一個cpu burst開始的時間。
 
@@ -760,7 +760,7 @@
   * 無法預知下一個cpu burst的長度(但可以使用一些time serious的方式預測，例如[EMA](https://zh.wikipedia.org/wiki/%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87#%E6%8C%87%E6%95%B8%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87))
   * [詳細解說](https://www.youtube.com/watch?v=scp5vRE3yVw&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=32)
 * RR(Round robin):
-  * 每個process會得到一個固定的time quantum，通常是10~100毫秒。
+  * 每個process會得到一個固定的time quantum，通常是10/~100毫秒。
   * 時間越短，overhead越高，時間越長則就變成FCFS
 * Priority Scheduling:
   * 每個process會有一個priority, priority越高則越先執行
@@ -886,7 +886,7 @@
   * 使用以priority為基礎的preemptive排班演算法來排班thread
   * 確保最高priority的thread將一直執行
   * windows kernel處理schedule的部分叫做dispatcher，被dispatcher選到的thread將一直執行直到被更高priority的thread preempt或是遇到IO、終止、或time quantum用完才會停止
-  * 使用32層的priority技巧，variable class包含1~15，real-time包含16~31，priority為0的thread被用於記憶體管理。
+  * 使用32層的priority技巧，variable class包含1/~15，real-time包含16/~31，priority為0的thread被用於記憶體管理。
   * dispatcher為每個priority提供一個queue，從最高到最低traverse，直到發現有ready的thread為止，如果沒有發現任何ready thread，會執行一個叫做idle thread的特殊thread。
   * process通常是NORMAL_PRIORITY_CLASS，除非父process是其他類別或者使用者特別設定。
   * 可使用`SetPriorityClass()`以及`SetThreadPriority()`，其API對應的priority請[參考](https://docs.microsoft.com/zh-tw/windows/win32/procthread/scheduling-priorities#base-priority)
@@ -1996,7 +1996,7 @@
     | 16 KB | 16 KB| 32 MB |
     | 64 KB | 64 KB | 512 MB |
   * ![ARMv8_page_translation](https://github.com/a13140120a/Operation_System/blob/main/imgs/ARMv8_page_translation.png)
-  * 如果使用的是4KB的translation granules的話，那麼第0~11個bit是page的offset，此時如果使用的region是2MB的話，那麼0~20個bit就是region內的offset，但如果使用的region是1GB的話，那麼0~29個bit就是region內的offset。
+  * 如果使用的是4KB的translation granules的話，那麼第0/~11個bit是page的offset，此時如果使用的region是2MB的話，那麼0/~20個bit就是region內的offset，但如果使用的region是1GB的話，那麼0/~29個bit就是region內的offset。
   * [詳細](https://www.cnblogs.com/-9-8/p/8406345.html)
 
 
