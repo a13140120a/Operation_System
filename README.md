@@ -2051,7 +2051,7 @@
   * 而一開始就把整個process的image檔都load到swap space裡面的方法也會造成一些缺點，其中一個缺點便是process的load time會特別久，所以另一種做法是: 需要的page(demand page)才會從file system讀出來到memory當中，當這個page要被swap到disk時，系統會先檢查有沒有modify過，如果有的話就存到swap space，如果沒有的話就直接覆寫掉該page(而不是swap到disk)，需要的話就再從file system載入，這種做法可以把減少系統對於swap space的使用量。
   * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。
 
-<h2 id="0091">Copy-on-Write</h2> 
+<h2 id="0092">Copy-on-Write</h2> 
 
 * Copy-on-Write(寫入時複製): 藉由共享page來取代複製，當有寫入的動作發生的時候，才複製出一份新的page讓其中一個process使用(parent or child)
 * `fork()` system call使用此技巧，當呼叫`fork()`的時候，傳統的做法是，child會複製parent的memory content，然而，考慮到通常`fork()`之後會接著`exec()`、複製整個parent process的memory 空間是一件浪費時間與空間的事情，因此，我們可以讓parent與child最初共享parent的memory page，這些memory page會被標註為copy-on-write的page，這表示如果有其中一個process想要寫入共享的page，才會copy 一份新的page讓process寫入
@@ -2059,19 +2059,67 @@
   * ![copy_on_write_1](https://github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_1.jpg)
 * process1修改 page C之後:
   * ![copy_on_write_2](https://github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_2.jpg)
+* 有些UNIX版本(包括Linux、MacOS、BSD Linux)會提供`vfork()`system call，vfork的全名是"virtual memory fork"，使用`vfork()`時，parent process會被suspend，而child process會使用parent的memory space，因為`vfork()`在使用時不會有Copy-on-Write，所以child的任何改動，parent都是看的見的，通常`vfork()`使用完之後會馬上接著`exec()`，也因為不會發生分頁的複製，所以`vfork()`是一種非常有效率的process產生方式。
+
+
+
+<h2 id="0093">Page Replacement</h2> 
+
+* virtual memory的其中一項好處是可以增加degree of multiprogrammimg，假設今天配置了6個process，系統中有40個frame可以使用，每個process大小都是10個page，但實際用到的其實只有5個page，這時候就可以裝得下，但假設突然間這6個process都必須要使用完整的10個page，這樣子就over-allocating記憶體了。
+* 當page fault發生時，可能會需要一個空的(free)frame來放這個「我們需要但是不在記憶體裡面的page」，而這時候如果系統上卻已經沒有空的frame，就必須選擇一個犧牲的欄位(稱為victim frame)，把這個victim frame swap 到disk，讓我們需要的page可以load到memory上面來。
+* Basic Page Replacement:
+  * modify bit(dirty bit): page replacement需要兩個動作: swap out一個page到disk，跟swap in一個page到memory，這使得處理page fault的時間會double，因此，在硬體中通常每個page或frame會有一個dirty bit，如果這個page被寫過的話，dirty bit就會被設成1，當我們需要選擇一個page來swap進disk的時候，就可以先檢查這個bit，如果dirty bit是1的話，那我們才會寫回disk，如果不是的話就代表不會寫回disk，可以大幅減少處理page fault的時間。
+* First-In-First-Out (FIFO) Algorithm:
+  * 顧名思義，先進先出，最老的page會先被replace掉
+  * 建立一個FIFO的queue，當要替換掉的時候就把最上面的page replace掉，而當一個page被load 進memory的時候就插入queue的尾端。
+  * 假設 Reference string: 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5
+  * 一開始有3個free frames
+  * 使用FIFO Algorithm會出現9個page fault:
+  * ![FIFO](https://github.com/a13140120a/Operation_System/blob/main/imgs/FIFO.PNG)
+* Belady's anomaly:
+  * FIFO會發生的現象
+  * 當frame數提高的時候page fault可能不會提升或甚至反而下降的現象。
+  * 如下圖，當使用上述的Reference string，並把frame數提升到4個的時候，page fault反而上升到了10個
+  * ![beladys](https://github.com/a13140120a/Operation_System/blob/main/imgs/beladys.PNG)
+  * Belady's anomaly FIFO的page fault發生曲線圖(非與上述Reference string相同):
+  * ![beladys_plot](https://github.com/a13140120a/Operation_System/blob/main/imgs/beladys_plot.PNG)
+* Optimal Page Replacement:
+  * 把未來最長時間之內不會被用到的那一頁替換掉
+  * 被證明是「一定是最好的演算法」
+  * 可以看到使用相同的Reference string之下，只出現了6個page fault
+  * 實際上是無法達成的，因為我們無法知道未來會出要那些page
+  * 常常會用來被跟其他演算法比較，藉此評估效能。
+  * 注意下圖並不是每個page真的在memory裡面搬來搬去，而是為了方便觀察而改變順序
+  * ![optimal_algorithm](https://github.com/a13140120a/Operation_System/blob/main/imgs/optimal_algorithm.PNG)
+* LRU Algorithm (Least Recently Used):
+  * 近來最少使用演算法，白話文就是最久未被使用演算法
+  * 比起Optimal Page Replacement是使用「向前看」的方式，那麼LRU就是「向後看」(跟FIFO一樣都是向後看)
+  * 一個有趣的地方是，如果我們把Reference string倒過來(5, 4, 3, 2, 1, 5, 2, 1, 4, 3, 2, 1)那麼page fault的次數也不會改變
+  * 可以看到使用相同的Reference string之下，出現了8個page fault，雖然沒辦法跟optimal一樣，但是比FIFO還多。
+  * ![LRU](https://github.com/a13140120a/Operation_System/blob/main/imgs/LRU.PNG)
+  * LRU的實作方法有兩種:
+    * Counter: 把time stamp copy 進去counter裡面，搜尋的時候只要搜尋最小的counter的值就可以了，需要注意overflow的問題。
+    * stack: 美當一個page被access時，就把該page從stack中移出，並且放到最頂端，如此一來最頂端的page就是最近被用過的，那麼最底端的page就是要被犧牲的page，可以使用double linked list來實作，每當要移動一個page並放在頂端的時候，就需要更改六個pointer，使用hash map來儲存每個page在double linked list的位置，如此一來要搜尋該page就只需要order one的時間。
+    * 無論是Counter或者是stack的方式來Iimplement LRU，硬體上除了TLB支外的部分，沒有硬體是辦不到的，每次access memory都必須要更改counter或者stack的值會讓系統效能，如果使用軟體的方式，那麼效能將會變成原來的十分之一，所以必須採用其他的方法，例如LRU-Approximation Page Replacement。
+* LRU-Approximation Page Replacement:
+  * 會有一個reference bit(參考位元)，當這個page被access(包括讀取和寫入)，這個reference會被硬體設定為1，雖然我們無法知道被使用的順序，但我們知道哪修被使用過，而哪修還沒被使用過，這種部份排班資訊可以使許多replacement algorithm盡量接近於LRU。
+  * Additional-Reference-Bits Algorithm:
+    * 會為PTE保存一個8位元的位元組，每經過一段時間(例如100毫秒)的interrupt(clock interrupt)這個位元組就會產生中斷並把控制權交給OS，OS會把每一頁的reference bit向左shift到最高位元(most significant bit, msb)，然後把其他的位元向右shift一個bit，這樣這8個位元就代表過去這8段時間的這頁的使用紀錄，
+    * 如果位移暫存器中的位元是00000000，那麼表示這八段時間內該頁都沒有被使用過，如果是11111111，代表這八段時間內該頁至少都被使用過一次
+    * 如果某暫存器的值是11000100，代表上一次，上兩次以及上六次使用過
+    * 如果某暫存器的值是01110000，表上上一次，上上上次以及上四次使用過
+    * 這樣只需要比較大小，就知道誰最近最少被使用了，11000100上一次使用是前一次，01110000上一次使用是前兩次，所以01110000這頁會被替換掉
+    * 如果有好幾個page的數值都是一樣的，我們可以把所有最小值的page都swap出去，或是使用FIFO的方法來選擇其中一個
 
 
 
 
-
-
-
-
-
-
-
-
-
+* Stack Algorithm:
+  * 一種類型的演算法
+  * LRU跟Optimal都是屬於該類型的演算法
+  * 只要屬於這類型的演算法都不會遭遇Belady's anomaly
+  * 定義:the set of pages in memory for n frames is always a subset of the set of pages that would be in memory with n+1 frames，意思是，如果今天有n個frame，在同樣的reference string 的input之下，變成n+1個frame之後，原來的set還是會被include在裡面
+  * FIFO不屬於stack algorithm
 
 
 
