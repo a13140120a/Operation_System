@@ -2049,7 +2049,7 @@
 * Optimizations:
   * 儘管是在同一顆disk上面，系統對於swap space的存取速度還是會大於對file system控制範圍的存取速度，原因是因為file system在存取硬碟的時候需要做很多的檢查、以及控管，另一個原因是因為swap space 通常會有比較大的chunk size，這會增加一次access的資料量，進而增加存取速度，也因為如此，有些OS會在一開始就把整個process的image檔都load到swap space裡面。
   * 而一開始就把整個process的image檔都load到swap space裡面的方法也會造成一些缺點，其中一個缺點便是process的load time會特別久，所以另一種做法是: 需要的page(demand page)才會從file system讀出來到memory當中，當這個page要被swap到disk時，系統會先檢查有沒有modify過，如果有的話就存到swap space，如果沒有的話就直接覆寫掉該page(而不是swap到disk)，需要的話就再從file system載入，這種做法可以把減少系統對於swap space的使用量。
-  * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。
+  * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。[(sbrk()參考)](https://stackoverflow.com/questions/6988487/what-does-the-brk-system-call-do)
 
 <h2 id="0092">Copy-on-Write</h2> 
 
@@ -2150,16 +2150,43 @@
   * 相較於原本的「先swap進disk，再swap回memory」，可以節省較多的時間(類似資源回收桶的概念)
   * 這個觀念的其中一種延伸是，幫被modify過的page保存一個table，每當這些page閒置的時候把他的content寫回disk，並且把dirty bit設為0，這樣就可以增加選出來的victim page未被修改過的機率了。
   * 另外一種延伸是，存進free frame的庫存的時候，不把內容全部清零，並且標上這個frame是屬於哪個page的，因為內容在swap進disk之後並不會更改，所以當如果某個那個page的時候，就可以直接從free frame庫存裡面去找看看有沒有，就不需要再去disk 做IO，可以節省較多時間。
+* Applications and Page Replacement:
+  * 一些應用程式，因為它們有特殊的特性和需求，應該盡可能地自己管理memory和disk，而不是依賴OS的Page Replacement或file system，通過使用raw IO(直接存取硬碟做IO而不透過file system)，一些應用程式可以更有效地運行。數據庫(data base)和數據倉庫(data warehouse)就是此類應用程式的示例。
+
+* 作業系統通常區分兩種類型的page fault:主要(major)以及次要(minor)，(windows稱major為hard page fault，minor為soft page fault)，
+  * 當使用該page，但該page不在記憶體上時，會觸發major page fault，
+  * 而當該頁存在於memory中，但process沒有map到該頁的logical mapping的時候會發生minor page fault，而發生的原因有以下兩種:
+    * process可以使用共享程式庫(dll)，在這種情況下，process只需要更新page table就可以了。
+    * 第2種原因是，當系統回收(reclaim)page，並將其放在free frame list裡面的時候，這時該page的內容尚未被清空(之前使用的內容尚在，會有安全的疑慮)，這時只要把該page清空，然後重新分配給該process就可以了，第2種原因通常會發生在allocate heap的時候。
+    * 可以使用`ps -eo min_flt,maj_flt,cmd` 來查看Linux系統當中major和minor的page fault數量以及啟動該process的command。
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/major_minor_page_fault_command.PNG)
+    * [詳細參考](https://www.learnsteps.com/difference-between-minor-page-faults-vs-major-page-faults/)
+
+<h2 id="0094"Allocation of Frames></h2> 
+
+* 每個process都有一個最少配置frame的數量，若少於這個數量，process將無法執行。
+* 舉例來說，如果使用[間接定址(indirect addressing)](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#%E5%AE%9A%E5%9D%80)，例如load可能會涉及第0個page，而第0個page又會去reference第6個page等等，這樣這個process至少需要三個frame才能夠執行。
+* Allocation Algorithms:
+  * Equal Allocation(同等分配):每個process平均分到相同的frame，例如system當中有93個frame和5個process，那麼每個frame可以分到18個frame，而剩下的3個可以當作free frame的庫存，這種分配方法會造成較大的process可能沒有足夠的frame，或者較小的process分配到太多沒有用到的frame。
+  * Proportional Allocation(比例分配):按照每個process的大小去分配，例如有62個frame，分給兩個process，一個是10KB的小型程式，一個則是127KB的大型程式， 那麼總共的size是137KB，於是我們分給小process 10/137 * 62約等於四個frame，而大的process則獲得127/137 * 62約等於57個frame，如果有新的process近來或者舊的process執行完畢，都會改變系統配置給每個process的數量。
+  * 當然，如果這個process的priority較高的話，可以多分配一些frame以增加其效能，反之亦然。
+
+* Global versus Local Allocation
+  * Local allocation:
+    * 允許一個process可以從別的process中取得frame
+    * 有可能因為frame數不足而導致延遲。
+  * Global allocation:
+    * 每個process只能使用分配給自己的frame
+    * 這種方法允許高priority的process可以增加配給自己的frames數量。
+    * 缺點是process不能控制自己的page fault rate，因為frame會被較高priority的process搶走
+    * 因為會受到其他process的影響，所以執行同樣的process有可能會有不同的狀況出現(例如第一次執行只需要0.5秒，另一次執行則需4.3秒)
+    * 通常會產生較好的系統效能，是較常用的方法
+  * 系統中通常會有一種核心常式(kernel routine)，該routine會從所有process中回收page(reclaim page)，而這種常式通常被稱為**reaper(收割者)**，他們會應用上述的任何演算法，當可用記憶體數量到達最大的閾值(threshold)的時候系統會suspend routine，直到低於最低的閾值的時候會再resume routine，並且將回收回來的frame放到free frame list當中。
+  * 如下圖，當達到最低直a的時候啟動reapers，直到達到最高點b的時候suspend reapers。
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/reaper.jpg)
+  * 收割常式(reaper)，通常會使用一些如上述的類似LRU演算法，如果仍然無法將free frame list保持在最小閾值以上的話，這時候可能會暫停使用Second-Chance Algorithm，改成使用FIFO，
+  * 或者更極端的例子: Linux 系統中，當記憶體數量降到極低時，OOM(out-of-memory killer)這個process會選擇一個process將其終止，每個process都會有所謂的OOM score，較高的score會增加該process被終止的機會，OOM score是根據process使用的記憶體百分比來計算，其中，pid為2500的process其OOM score可以使用`cat /proc/2500/oom_score`查看，reaper不僅可以reclaiming page，還可以隨著時間調整最大與最小閾值，而這些值管理者都可以根據需求調整預設值。
   * 
-
-<h2 id="0094">Applications and Page Replacement</h2> 
-
-* 
-
-
-
-
-
 
 
 
