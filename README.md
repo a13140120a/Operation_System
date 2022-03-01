@@ -2102,26 +2102,59 @@
     * stack: 美當一個page被access時，就把該page從stack中移出，並且放到最頂端，如此一來最頂端的page就是最近被用過的，那麼最底端的page就是要被犧牲的page，可以使用double linked list來實作，每當要移動一個page並放在頂端的時候，就需要更改六個pointer，使用hash map來儲存每個page在double linked list的位置，如此一來要搜尋該page就只需要order one的時間。
     * 無論是Counter或者是stack的方式來Iimplement LRU，硬體上除了TLB支外的部分，沒有硬體是辦不到的，每次access memory都必須要更改counter或者stack的值會讓系統效能，如果使用軟體的方式，那麼效能將會變成原來的十分之一，所以必須採用其他的方法，例如LRU-Approximation Page Replacement。
 * LRU-Approximation Page Replacement:
-  * 會有一個reference bit(參考位元)，當這個page被access(包括讀取和寫入)，這個reference會被硬體設定為1，雖然我們無法知道被使用的順序，但我們知道哪修被使用過，而哪修還沒被使用過，這種部份排班資訊可以使許多replacement algorithm盡量接近於LRU。
+  * 會有一個reference bit(參考位元)，當這個page被access(包括讀取和寫入)，這個reference會被硬體設定為1，雖然我們無法知道被使用的順序，但我們知道哪修被使用過，而哪修還沒被使用過，這種部份排班資訊可以使許多replacement algorithm盡量接近於LRU，基於這個reference，可以衍伸出下列兩種演算法。
   * Additional-Reference-Bits Algorithm:
-    * 會為PTE保存一個8位元的位元組，每經過一段時間(例如100毫秒)的interrupt(clock interrupt)這個位元組就會產生中斷並把控制權交給OS，OS會把每一頁的reference bit向左shift到最高位元(most significant bit, msb)，然後把其他的位元向右shift一個bit，這樣這8個位元就代表過去這8段時間的這頁的使用紀錄，
+    * 會為PTE保存一個8位元的reference bit位元組，每經過一段時間(例如100毫秒)的interrupt(clock interrupt)這個位元組就會產生中斷並把控制權交給OS，OS會把每一頁的reference bit向左shift到最高位元(most significant bit, msb)，然後把其他的位元向右shift一個bit，這樣這8個位元就代表過去這8段時間的這頁的使用紀錄，
     * 如果位移暫存器中的位元是00000000，那麼表示這八段時間內該頁都沒有被使用過，如果是11111111，代表這八段時間內該頁至少都被使用過一次
     * 如果某暫存器的值是11000100，代表上一次，上兩次以及上六次使用過
     * 如果某暫存器的值是01110000，表上上一次，上上上次以及上四次使用過
     * 這樣只需要比較大小，就知道誰最近最少被使用了，11000100上一次使用是前一次，01110000上一次使用是前兩次，所以01110000這頁會被替換掉
     * 如果有好幾個page的數值都是一樣的，我們可以把所有最小值的page都swap出去，或是使用FIFO的方法來選擇其中一個
-
-
-
-
+  * Second-Chance Algorithm:
+    * 又稱為clock page-replacement algorithm
+    * 會有一個FIFO的queue(環狀的，因為搜尋到queue的尾端時，會再回到頂部重新開始搜尋)
+    * 基本上是一種FIFO的演算法，可是當某個page被選出來之後，我們檢視他的reference bit，如果為0的話，則swap進disk，
+    * 如果為1的話，我們就把他的reference bit清除為0，然後給他second chance，並且繼續往下搜尋整個queue，直到所有的page都被替換掉，或者被給予second chance。
+    * 如果這個page經常被使用，那麼他的reference一直都會是1，代表他永遠不會被swap到disk裡面
+    * 當每個page的reference bit都為1時，Second-Chance Algorithm就會退化成FIFO了(第一次search 整個queue的時候會把全部的page都設成0，然後挑最頂端的)。
+    * ![Second_chance_algorithm](https://github.com/a13140120a/Operation_System/blob/main/imgs/Second_chance_algorithm.jpg)
+  * Enhanced Second-Chance Algorithm:
+    * 使用跟Second-Chance Algorithm相同的技巧，但會有一個reference bit(表示被access過)跟一個dirty bit(表示被修改過)
+    * 有了這兩個bit可以得到以下四種類型:
+    * 1.(0,0):表示沒有被access過也沒有被修改過，為最佳替換的page
+    * 2.(0,1):表示沒有被access過但有被修改過(應該是指沒有被讀取但有被寫入過?)
+    * 3.(1,0):表示有被access過但沒有被修改過，可能很快會被再使用到
+    * 4.(1,1):表示有被access過而且有被修改過，最差候選page
+    * 檢查這兩個bit，並且從1開始為最高優先swap到disk依序往下
+    * 有可能要搜尋過好幾次整個queue才可以找到victim page
+    * 這種方法傾向於選擇不曾被修改過的page，可以降低IO時間
 * Stack Algorithm:
   * 一種類型的演算法
   * LRU跟Optimal都是屬於該類型的演算法
   * 只要屬於這類型的演算法都不會遭遇Belady's anomaly
   * 定義:the set of pages in memory for n frames is always a subset of the set of pages that would be in memory with n+1 frames，意思是，如果今天有n個frame，在同樣的reference string 的input之下，變成n+1個frame之後，原來的set還是會被include在裡面
   * FIFO不屬於stack algorithm
+* Counting-Based Page Replacement:
+  * 又分成LFU與MFU
+  * 兩種演算法執行的時候的cost代價都很昂貴。
+  * LFU Algorithm (least frequently used):
+    * 使用次數最少的那個page被swap掉
+    * 缺點是，若是有一個page在process剛開始的時候大量用到，但之後就沒有再用到過了，可是因為counter的值很大，所以會一直留在memory當中
+    * 有一種解決方法就是每經過一段時間把counter的值往右shift一個位置，造成使用次數會隨著時間指數下降。
+  * MFU Algorithm (most frequently used):
+    * 使用次數最多的那個page被swap掉
+    * 一些理論認為，使用次數最少的代表才開要開始使用，所以應該留在memory，反而把使用次數較多的替換掉。
+* Page-Buffering Algorithms:
+  * 是一種優化演算法的方法(演算法)，概念是: 系統會有一個free frame的庫存(free frames pool)
+  * 當需要選擇一個victim page的時候(而這個victim page又因為有被modify過所以要先swap回disk，才可以把disk的page swap到這個frame上)，會先從free frame的庫存裡面挑一個出來，然後從disk裡面先把要用的page swap到這個frame裡面，之後再把原本被modify過的page寫回disk裡面，並且把這個frame清零後放進free frames的庫存裡面
+  * 相較於原本的「先swap進disk，再swap回memory」，可以節省較多的時間(類似資源回收桶的概念)
+  * 這個觀念的其中一種延伸是，幫被modify過的page保存一個table，每當這些page閒置的時候把他的content寫回disk，並且把dirty bit設為0，這樣就可以增加選出來的victim page未被修改過的機率了。
+  * 另外一種延伸是，存進free frame的庫存的時候，不把內容全部清零，並且標上這個frame是屬於哪個page的，因為內容在swap進disk之後並不會更改，所以當如果某個那個page的時候，就可以直接從free frame庫存裡面去找看看有沒有，就不需要再去disk 做IO，可以節省較多時間。
+  * 
 
+<h2 id="0094">Applications and Page Replacement</h2> 
 
+* 
 
 
 
