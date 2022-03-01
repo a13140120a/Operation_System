@@ -2023,7 +2023,10 @@
 <h2 id="0091">Demand Paging</h2> 
 
 * 只有在需要用到的時候才把page load到memory
-* 通常會有每個PTE會有一個valid-invalid bit的欄位來表示此page存在memory與否，如果不存在的話將會觸發page fault，並交由OS處理:[page fault流程](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
+* **page fault**: 通常會有每個PTE會有一個valid-invalid bit的欄位來表示此page存在memory與否(limit用來保護違規存取)，如果不存在的話將會觸發**page fault**，並交由OS處理:
+  * 可以參考Computer_Organization_And_Architecture的[page fault流程](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
+  * 補充:發生page fault時會先檢查internel table(通常會再PCB裡面)，來決定是有效還是無效的reference，若是無效，便終止process，若是有效，才把page從disk load到memory當中，在這中途可能會context switch到另一個process，等待load的動作結束之後才會切換回來。
+  * 
 * pure demand paging:在沒有任何page在memory裡面的情況下執行process，簡單來說就是當execute一個process的時候可能就create一個page table、PCB就好。 
 * 觸發page fault會使該instruction重新執行，然而，執行一個instruction的時候可能不只發生一個page fault，例如一個instruction的功能是把一段區域A的byte搬移到另一個區域B，這時候CPU在存取A的時候因為A區域橫跨了兩個page，於是在搬移到一半的時候觸發了page fault，這時候instruction重新執行，原來A的前半段部分已經被修改過了，解決這個問題有兩個方法:
   * 先嘗試存去兩個端點，如果有page fault被觸發，那就可以在修改之前先讓所有的page fault發生
@@ -2031,15 +2034,31 @@
 * swaper:把整個process存到disk裡面
 * pager:把page存到disk裡面
 * swaper跟pager不會衝突，例如swap要把這個process存到disk裡面，然後交給pager處理，pager再決定要把這個process的哪個page存到disk裡面。
+* Free-Frame List: OS通常會有一個free-frame list，裡面裝著空白的frame，而OS通常會使用一種叫做「**zero-fill-on-demand**」的技術來把free-frame list裡面的frame在被配置之前填(清)零。
 
+<h2 id="0091">Demand Paging Performance</h2> 
 
+* 其EAT(有效存取時間) = (1-P) x ma(memory access time) + p x pft(page falt time):
+  * 假設ma = 200ns, pft = 8ms
+  * 那麼EAT = (1 - p) * 200ns + p * 8ms = 200ns + 7,999,800ns x p
+  * 從上述可以看到page fault 發生的機率是決定效能好壞的關鍵因素。
+  * 如果p(page fault rate)是僅僅千分之一的話，效能就會下降40倍(速度為原來的40分之一)
+  * 如果系統效能下降的程度要控制在10%以內，p必須要小於0.0000025才行。
+  * 因為memory 其實有locality的特性，所以p通常都會非常小。
 
+* Optimizations:
+  * 儘管是在同一顆disk上面，系統對於swap space的存取速度還是會大於對file system控制範圍的存取速度，原因是因為file system在存取硬碟的時候需要做很多的檢查、以及控管，另一個原因是因為swap space 通常會有比較大的chunk size，這會增加一次access的資料量，進而增加存取速度，也因為如此，有些OS會在一開始就把整個process的image檔都load到swap space裡面。
+  * 而一開始就把整個process的image檔都load到swap space裡面的方法也會造成一些缺點，其中一個缺點便是process的load time會特別久，所以另一種做法是: 需要的page(demand page)才會從file system讀出來到memory當中，當這個page要被swap到disk時，系統會先檢查有沒有modify過，如果有的話就存到swap space，如果沒有的話就直接覆寫掉該page(而不是swap到disk)，需要的話就再從file system載入，這種做法可以把減少系統對於swap space的使用量。
+  * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。
 
+<h2 id="0091">Copy-on-Write</h2> 
 
-
-
-
-
+* Copy-on-Write(寫入時複製): 藉由共享page來取代複製，當有寫入的動作發生的時候，才複製出一份新的page讓其中一個process使用(parent or child)
+* `fork()` system call使用此技巧，當呼叫`fork()`的時候，傳統的做法是，child會複製parent的memory content，然而，考慮到通常`fork()`之後會接著`exec()`、複製整個parent process的memory 空間是一件浪費時間與空間的事情，因此，我們可以讓parent與child最初共享parent的memory page，這些memory page會被標註為copy-on-write的page，這表示如果有其中一個process想要寫入共享的page，才會copy 一份新的page讓process寫入
+* process1修改 page C之前:
+  * ![copy_on_write_1](https://github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_1.jpg)
+* process1修改 page C之後:
+  * ![copy_on_write_2](https://github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_2.jpg)
 
 
 
