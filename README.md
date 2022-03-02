@@ -2191,18 +2191,43 @@
 * 如果一個process沒有足夠的frame，那執行中將會大量出現page fault，因為每個page都很忙碌，所以把這個page swap到disk之後馬上又須要把他swap回來。
 * 當一個process突然進入到新的狀況，並且需要更多的frame，於是他開始產生page fault，然後從其他的process拿走frame，其他的process因為frame減少了，於是又開始大量的產生page fault，造成所有的process都在排隊等待frame，這時候cpu的queue就空了，空了之後cpu就認為cpu使用率變低，於是就增加degree of multiprogramming，讓更多的process進到cpu scheduling裡面，更多的process需要更多的frame，如此惡性循環，早成cpu使用率急遽下降
 * ![Thrashing](https://github.com/a13140120a/Operation_System/blob/main/imgs/Thrashing.jpg)
+* 使用Local page replacement(process不能搶奪其他process的frames)可以限制thrashing，但如果多個process都出現thrashing現象，仍然會阻塞IO queue，造成效能下降。
+* locality model(局部區域模式): 藉著觀察process上一段時間使用的page，來決定process目前需要多少個frame，所謂的locality就是指一組同時被使用的page，舉例來說，當一個function被呼叫的時候，這個process就到了一個新的locality，而當這個function return的時候，就又來開了這個locality。
+* ![locality](https://github.com/a13140120a/Operation_System/blob/main/imgs/Locality.jpg)
+* 如果我們分配的frame比locality的大小還少，那麼該process就會出現thrashing，而如何為每個locality定義他的frame數? 以下有兩種方法:
+  * working-set model:
+    * 定義一個參數∆，這個∆代表working-set window，也就是最近∆個page的reference，而在最近∆個page所組成的set就是working set。
+    * 下圖中t1時間內的working set是{1,2,5,6,7}，t2的working set是{3,4}
+    * ![WorkingSetModel](https://github.com/a13140120a/Operation_System/blob/main/imgs/WorkingSetModel.jpg)
+    * D = ∑WSSi，WSSi是Wirking set size，D是process目前working set對frame的需求，如果需求大於可用frame數(D>m)的話，將會發生thrashing，那我們就必須選擇另一個process，把他的frame給這個thrashing的process，反之，如果D<m的話，那麼就可以把這個process多出來的frame拿給其他需要的process使用。
+    * 要實現working-set model是非常困難的事情，因為每次的reference都必須把working-set window的一端加入新的紀錄，且另一端要移除舊的紀錄，就像working-set window在移動一樣
+    * 另一種類似working-set window的方法是，假設∆為10000，我們可以每5000次的reference就觸發一次clock interrupt，並且把這5000次的每一個page的reference bit記錄下來(例如page 1在過去5000到10000次有被reference，還有過去10000次到15000次有被reference，那麼用兩個bit來表示就是11)，這樣如果產生了page fault，我們就可以去參考過去5000/~15000次的reference中(因為∆=10000)，當然我們可以增加用來記錄的bit數以及觸發clock interrupt的次數來增加精確度，可是更頻繁的unterrupt將會付出更高的代價。
+  * Page-Fault Frequency:
+    * 是一種更直接的控制方法
+    * 當Page-Fault Frequency太高的時候，代表發生thrashing，代表需要更多的frame，反之亦然
+    * 使用這種方法的cost會比working-set model要低很多，因為working-set model要記錄每個access，而Page-Fault Frequency只有發生page fault的時候才需要紀錄。
+
+<h2 id="0096">Memory Compression</h2> 
+
+* paging(in/out)的替代方法
+* 當我們要replace一個page的時候，這個page有可能已經被modify過了，所以必須要先把原本的content寫回disk(或secondary storage)，另外一種方法，也就是Memory Compression，可以把多個modify過的frame壓縮到一個frame當中，這樣就不用一直存回disk(或secondary storage)當中了。
+* 舉例來說，當free frame的數量低於某個閾值的時候，會觸發replacement的動作，假設選擇了第13, 3, 35, 26個frame放到free frame list裡面，通常這些page當中，如果有被修改過的話就會被寫入disk當中:
+* ![memory_compression_before](https://github.com/a13140120a/Operation_System/blob/main/imgs/memory_compression_before.jpg)
+* 而Memory Compression的做法則會把其中三個frame壓縮成一個frame，並存在compressed frame list裡面:
+* ![memory_compression_after](https://github.com/a13140120a/Operation_System/blob/main/imgs/memory_compression_after.jpg)
+* Windows 10和MacOS都支援Memory compression
+* MacOS一開始會先使用Compression LRU page，如果記憶體不足的話才會用paging。
+* 行動裝置不支援paging(in/out)，所以絕大部分行動裝置都是使用這種方式管理記憶體。
+* 這種方法被證明確實可以減少記憶體空間，並且使用SSD當成backing store的paging更快速。
 
 
+<h2 id="0097">Allocating Kernel Memory</h2> 
 
-
-
-
-
-
-
-
-
-
+* kernel的記憶體空間不同於user program，不能輕易地被paging或切割，例如I/O buffering這種必須要直接與硬體溝通的地方，一定要是連續的實體記憶體空間
+* 再者，有些kernel的structure不能隨意的被swap到disk當中，必須常駐於記憶體，且須小心地管理這些不同大小的structure，避免產生internal fragmentation，才可以給user更大的記憶體使用空間。
+* 因此可以有以下兩種策略:
+  * Buddy system(夥伴系統)：
+  * 
 
 
 
