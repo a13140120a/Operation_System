@@ -250,7 +250,7 @@
   * 所謂單一架構其實就是沒有架構，所有功能都放到單一的位址空間中的靜態二進制檔案當中
   * 缺點是難以design, 修改困難，漏洞多，優點是效能非常快，windows and UNIX Linux仍然存在此種架構
   * 原始UNIX系統為此架構
-  * ![https://github.com/a13140120a/Operation_System/blob/main/imgs/2_12_UNIX_Structure.jpg]
+  * ![UNIX_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/UNIX_Structure.jpg)
 * Layered OS Architecture(分層架構)
   * 又稱為鬆散耦合(loosely coupled)，系統可分為許多具有特定功能的較小單獨元件
   * 速度較慢，但更好更改系統
@@ -258,21 +258,21 @@
   * 第0層為硬體，最高層為使用者介面
   * 非常好除錯與維護，因為每層只能使用較低層的服務
   * 分層系統常用於網路(如TCP/IP)
-  * ![Laered_OS](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_13_Laered_OS.jpg)
+  * ![Layered_OS](https://github.com/a13140120a/Operation_System/blob/main/imgs/Layered_OS.jpg)
 * Microkernel
   * kernel 的部分只保留一些基礎(如記憶體管理和process),其他都在使用者空間
   * 主要採用message passing 溝通
   * 優點是容易擴展，所有新的service 都加入使用者空間，所以不需修改核心，而當核心修改時，因為核心很小，所以不會牽涉到太多東西
   * 效能非常低弱，因為當兩個service 要溝通時必須要經過kernel, 產生許多複製訊息的動作
   * 最有名的Darwin是macOS 和IOS 的核心，Darwin是由兩個kernel所組成，其中一個是Mach
-  * ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_14_microkernelArchitecture.jpg)
+  * ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/microkernelArchitecture.jpg)
 * Modules(模組化):
   * kernel提供主要服務，其他服務則在執行時被動態載入，就不必每次將新特性加入kernel都必須從新編譯
   * 比Layered OS更有彈性，因為任何module都可以呼叫其他module
   * 全部的module都在kernel裡面，所以速度不會太慢。
   * kernel裡面會有system table, 會有許多空的entry, 可以讓使用者insert
   * linux 也適用該技術，稱為[LKM](https://zh.wikipedia.org/wiki/%E5%8F%AF%E8%BC%89%E5%85%A5%E6%A0%B8%E5%BF%83%E6%A8%A1%E7%B5%84)
-  * ![Solaris_Modules](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_15_Solaris_Modules.jpg)
+  * ![Solaris_Modules](https://github.com/a13140120a/Operation_System/blob/main/imgs/Solaris_Modules.jpg)
 
 * 混和系統
   * 作業系統通常不會使用單一的系統結構，會組合不同架構，以強調性能、安全及可用性等問題
@@ -285,12 +285,10 @@
   * core frameworks: 定義了支援圖形和多媒體的框架，包括Quicktime和OpenGL
   * Kernel enviroment: 這種環境也稱為Darwin, 包括Mach為核心和[BSD](https://zh.wikipedia.org/wiki/BSD) UNIX核心 
   * 這樣的結構可以直接利用各層的優點  
-  <br>
-  
-    ![macOS_iOS](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_16macOS%2BiOS.jpg)  
+  * ![macOS_iOS](https://github.com/a13140120a/Operation_System/blob/main/imgs/macOS_and_iOS.jpg)  
   * Darwin是一個分層系統，由Mach微核心 和BSD UNIX核心組成，Mcah處理trap, BSD kernel處理POSIX system call
   * Darwin還提供了用於開發驅動程式和動態載入module的[kexts](https://support.apple.com/zh-tw/guide/deployment/depa5fb8376f/web)  
-    ![D](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_17Darwin.jpg)
+  * ![Darwin](https://github.com/a13140120a/Operation_System/blob/main/imgs/Darwin.jpg)
 
 * Android:
   * 由google 領導開發
@@ -300,8 +298,7 @@
   * 開發人員還可以使用[JNI](https://developer.android.com/training/articles/perf-jni)技術，JNI允許跳過虛擬機直接存取硬體，缺點是不能移植到不同的硬體平台。
   * 包含[HAL](https://zh.wikipedia.org/wiki/%E7%A1%AC%E9%AB%94%E6%8A%BD%E8%B1%A1%E5%B1%A4)層，使開發人員可以在不同的硬體平台上移植程式。
   * 一般Linux使用的是GNU的C庫(glibc), 而Android則是用[Bionic libc](https://zh.wikipedia.org/wiki/Bionic_(%E8%BB%9F%E9%AB%94))函式庫
-  * 
-    ![android_kernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_18Android.jpg)
+  * ![android_kernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/Android_kernel_moudule.jpg)
 
 * [WSL](https://hackmd.io/@billsun/Bkh8oAmGX?type=view): 使windows 可以允許Linux的ELF執行檔在Windows 10 上執行。
 
@@ -474,7 +471,7 @@
       * bounded capacity:有限buffer size，當buffer滿時producer需等待，當buffer空時comsumer需等待。
       * unbounded capacity:無限buffer size，從不阻塞。
 * Windows中提供的內部進程間通信方式為[ALPC](https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9C%B0%E8%BF%87%E7%A8%8B%E8%B0%83%E7%94%A8#%E5%AE%9E%E7%8E%B0)，只能於同一台機器中使用。
-  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/3_19_ALPC_Windows.jpg)
+  * ![ALPC_Windows](https://github.com/a13140120a/Operation_System/blob/main/imgs/ALPC_Windows.jpg)
 * Pipe:
   * 早期的UNIX系統所使用的IPC機制
   * Linux pipe:`ls|less`相等於Windows的`dir|more`
@@ -512,7 +509,7 @@
   * 127.0.0.1稱為loopback
   * 傳輸的data可以是任何東西，由programmer自行parse
   * Socket 運作方式:
-    * ![Socket](https://github.com/a13140120a/Operation_System/blob/main/imgs/20220120.PNG)
+    * ![Socket](https://github.com/a13140120a/Operation_System/blob/main/imgs/socket.PNG)
 * PRC(Remote procedure call)
   * RPC的底層也是使用Socket實現
   * client端會有一個stub的process負責處理parsing，server端則稱為(skeleton)[wiki](https://zh.wikipedia.org/wiki/%E6%A1%A9_(%E8%AE%A1%E7%AE%97%E6%9C%BA))
@@ -520,7 +517,7 @@
   * Windows的stub程式碼是由使用MIDL(微軟介面定義語言 Microsoft Interface Definition Language)所撰寫編譯而成
   * 遇到Pointer的傳輸時會有複雜的解決方法，其中可以參考微軟的[MIDL Pointers and RPC](https://docs.microsoft.com/en-us/windows/win32/rpc/pointers-and-rpc)
   * 概念圖:
-    * ![RPC](https://github.com/a13140120a/Operation_System/blob/main/imgs/20220120-2.PNG)
+    * ![RPC](https://github.com/a13140120a/Operation_System/blob/main/imgs/RPC.PNG)
 * Android RPC:
   * Android OS中的binder framework包含龐大的IPC機制，其中就包含RPC
   * [Application components](https://www.techplayon.com/applications-component/)是Android app 的基本block，而Service就是其中一個Application components
