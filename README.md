@@ -2162,7 +2162,7 @@
     * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/major_minor_page_fault_command.PNG)
     * [詳細參考](https://www.learnsteps.com/difference-between-minor-page-faults-vs-major-page-faults/)
 
-<h2 id="0094"Allocation of Frames></h2> 
+<h2 id="0094">Allocation of Frames</h2> 
 
 * 每個process都有一個最少配置frame的數量，若少於這個數量，process將無法執行。
 * 舉例來說，如果使用[間接定址(indirect addressing)](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#%E5%AE%9A%E5%9D%80)，例如load可能會涉及第0個page，而第0個page又會去reference第6個page等等，這樣這個process至少需要三個frame才能夠執行。
@@ -2186,14 +2186,14 @@
   * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/reaper.jpg)
   * 收割常式(reaper)，通常會使用一些如上述的類似LRU演算法，如果仍然無法將free frame list保持在最小閾值以上的話，這時候可能會暫停使用Second-Chance Algorithm，改成使用FIFO，
   * 或者更極端的例子: Linux 系統中，當記憶體數量降到極低時，OOM(out-of-memory killer)這個process會選擇一個process將其終止，每個process都會有所謂的OOM score，較高的score會增加該process被終止的機會，OOM score是根據process使用的記憶體百分比來計算，其中，pid為2500的process其OOM score可以使用`cat /proc/2500/oom_score`查看，reaper不僅可以reclaiming page，還可以隨著時間調整最大與最小閾值，而這些值管理者都可以根據需求調整預設值。
-  * 
 
 
+<h2 id="0095">Thrashing</h2> 
 
-
-
-
-
+* 如果一個process花在paging的時間比花在executing的時間還多，這種現象就稱為Thrashing
+* 如果一個process沒有足夠的frame，那執行中將會大量出現page fault，因為每個page都很忙碌，所以把這個page swap到disk之後馬上又須要把他swap回來。
+* 當一個process突然進入到新的狀況，並且需要更多的frame，於是他開始產生page fault，然後從其他的process拿走frame，其他的process因為frame減少了，於是又開始大量的產生page fault，造成所有的process都在排隊等待frame，這時候cpu的queue就空了，空了之後cpu就認為cpu使用率變低，於是就增加degree of multiprogramming，讓更多的process進到cpu scheduling裡面，更多的process需要更多的frame，如此惡性循環，早成cpu使用率急遽下降
+* ![Thrashing](https://github.com/a13140120a/Operation_System/blob/main/imgs/Thrashing.jpg)
 
 
 
