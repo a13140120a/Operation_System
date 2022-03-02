@@ -250,7 +250,7 @@
   * 所謂單一架構其實就是沒有架構，所有功能都放到單一的位址空間中的靜態二進制檔案當中
   * 缺點是難以design, 修改困難，漏洞多，優點是效能非常快，windows and UNIX Linux仍然存在此種架構
   * 原始UNIX系統為此架構
-    ![https://github.com/a13140120a/Operation_System/blob/main/imgs/2_12_UNIX_Structure.jpg]
+  * ![https://github.com/a13140120a/Operation_System/blob/main/imgs/2_12_UNIX_Structure.jpg]
 * Layered OS Architecture(分層架構)
   * 又稱為鬆散耦合(loosely coupled)，系統可分為許多具有特定功能的較小單獨元件
   * 速度較慢，但更好更改系統
@@ -265,14 +265,14 @@
   * 優點是容易擴展，所有新的service 都加入使用者空間，所以不需修改核心，而當核心修改時，因為核心很小，所以不會牽涉到太多東西
   * 效能非常低弱，因為當兩個service 要溝通時必須要經過kernel, 產生許多複製訊息的動作
   * 最有名的Darwin是macOS 和IOS 的核心，Darwin是由兩個kernel所組成，其中一個是Mach
-    ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_14_microkernelArchitecture.jpg)
+  * ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_14_microkernelArchitecture.jpg)
 * Modules(模組化):
   * kernel提供主要服務，其他服務則在執行時被動態載入，就不必每次將新特性加入kernel都必須從新編譯
   * 比Layered OS更有彈性，因為任何module都可以呼叫其他module
   * 全部的module都在kernel裡面，所以速度不會太慢。
   * kernel裡面會有system table, 會有許多空的entry, 可以讓使用者insert
   * linux 也適用該技術，稱為[LKM](https://zh.wikipedia.org/wiki/%E5%8F%AF%E8%BC%89%E5%85%A5%E6%A0%B8%E5%BF%83%E6%A8%A1%E7%B5%84)
-    ![Solaris_Modules](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_15_Solaris_Modules.jpg)
+  * ![Solaris_Modules](https://github.com/a13140120a/Operation_System/blob/main/imgs/2_15_Solaris_Modules.jpg)
 
 * 混和系統
   * 作業系統通常不會使用單一的系統結構，會組合不同架構，以強調性能、安全及可用性等問題
