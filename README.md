@@ -2253,6 +2253,7 @@
 
 
 <h2 id="0099">Other Considerations</h2> 
+
 * Preparing：
   * 在pure demand paging剛開始執行時，會發生大量的page fault，會影響CPU的效能，所以Prepaging的目的就是要減少process startup(或process context switch)的時候大量的page fault。
   * 其策略就是把同一時間內，該process需要的所有page都記錄下來。
