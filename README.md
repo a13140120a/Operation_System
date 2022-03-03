@@ -1825,11 +1825,11 @@
 
 <h2 id="0081">Address Binding</h2> 
 
-* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
+* ![c_compile](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
 
 * [參考Computer_Organization_And_Architecture的memory部分](https://github.com/a13140120a/Computer_Organization_And_Architecture#007)
 * [當編譯到執行](https://github.com/a13140120a/Computer_Organization_And_Architecture#0065)
-* ![Loader and Linker請參考](#0024)
+* [Loader and Linker請參考](#0024)
 * source檔中的位址通常是符號化的(symbolized)，而通常compiler 會將這些符號bind到一個可重定位的位址(例如離某個segment開始14個bytes的地方)，而lin
 * 指令和資料至記憶體位置的連結(bind)可在以下任何步驟完成：
   * Compile time：
