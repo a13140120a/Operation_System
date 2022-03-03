@@ -35,12 +35,12 @@
     * batch： 一次只能一個user 執行一個process
     * Multi-programming： 一次可以執行多個process，不會因為IO 而idle 在那邊，使用的是interrupt 的技術，但是沒有跟user 的interactive
     * Time-sharing： 可以來回在很多個process 之間切換，讓人產生好像一次執行多個process的錯覺，可以interactive。  
-    * [更多詳細資訊](https：//medium.com/@a131401203/%E4%B8%AD%E6%96%87%E7%B3%BB%E4%B9%8B%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1%E6%BC%94%E9%80%B2%E5%8F%B2-610986e9ee3c)
+    * [更多詳細資訊](https://medium.com/@a131401203/%E4%B8%AD%E6%96%87%E7%B3%BB%E4%B9%8B%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1%E6%BC%94%E9%80%B2%E5%8F%B2-610986e9ee3c)
 
 <h2 id="0013">Interrupt</h2>   
 
 * 對於傳統的電腦，IO的運作方式是驅動程式會先載入到控制器中適合的暫存器，然後controler會從暫存器的內容來決定要進行的動作。
-  * ![cONTROLER](https：//github.com/a13140120a/Operation_System/blob/main/imgs/controler.PNG)
+  * ![cONTROLER](https://github.com/a13140120a/Operation_System/blob/main/imgs/controler.PNG)
 * 現代OS大部分都是Interrupt-driven IO的方式執行IO
   * cpu 發出request 使IO devices工作，自己則可以去執行其他指令，等到controler執行完之後會通知cpu，然後cpu才會繼續處理
 * 當CPU發生Interrupt時，會停止正在執行的工作，並依照Interrupt的種類轉換到一個的位址，而這個位址通常是interrupt service routine(中斷服務常式)的起始位址
@@ -77,7 +77,7 @@
 * Processor： 一個實體晶片，包含一個或多個CPU
 * Core： CPU的基本計算單位，或CPU中執行指令和暫存器儲存資料的地方
 * Muti-Core： 同一個CPU上包含多個Core
-* ![DualCore](https：//github.com/a13140120a/Operation_System/blob/main/imgs/DualCore.jpg)
+* ![DualCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/DualCore.jpg)
 
 <h2 id="0017">Memory Access Architecture</h2> 
 
@@ -88,7 +88,7 @@
   * 是一個hierarchy的架構，通常由許多SMP架構組成，可以建構更大的架構
   * 每個processor accesses memory的速度不一樣，local的比較快，remote access會較慢
   * 程式師需管理process run在哪個processor以提升效能
-* ![NUMA](https：//github.com/a13140120a/Operation_System/blob/main/imgs/NUMA-Architecture.png)
+* ![NUMA](https://github.com/a13140120a/Operation_System/blob/main/imgs/NUMA-Architecture.png)
 
 ****
 <h1 id="002">OS structure</h1> 
@@ -198,7 +198,7 @@
   * JAVA的API： Java Api(與jvm的interface)
 
 * api與system call比較圖：
-  ![api與system call比較圖](https：//github.com/a13140120a/Operation_System/blob/main/imgs/sys_api.PNG)
+  ![api與system call比較圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/sys_api.PNG)
 
 * 傳遞參數至作業系統有三種方式：
   * 使用register
@@ -211,23 +211,23 @@
 * 其編譯到載入的過程如下：
   * source code 被編譯成物件檔(目的檔)object file，object file可以被載入到實體記憶體的任何位置，而這種格式被稱為relocatabel object file(可重定位物件檔案)
   * 接下來linker會將這些relocatabel object file組合成單一個可執行(executable)檔
-  * 在連結的期間可以指定包含其他的物件檔或程式庫(-l\*就是链接lib\*.a文件，-lm 就是連結C的標準數學函式庫libm.a(靜態函式庫)。  [詳細](https：//bbs.csdn.net/topics/20023165))
+  * 在連結的期間可以指定包含其他的物件檔或程式庫(-l\*就是链接lib\*.a文件，-lm 就是連結C的標準數學函式庫libm.a(靜態函式庫)。  [詳細](https://bbs.csdn.net/topics/20023165))
   * loader 則會將二進制可執行檔載入到記憶體中執行
   * 動態連結函式庫(DLL)允許執行時動態的載入，windows為.dll檔，linux則為.so檔
-  * ![compile](https：//github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
+  * ![compile](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
 
 * 物件檔與執行檔通常具有標準格式：
-  * linux系統中，此標準格式為[ELF格式](https：//zh.wikipedia.org/wiki/%E5%8F%AF%E5%9F%B7%E8%A1%8C%E8%88%87%E5%8F%AF%E9%8F%88%E6%8E%A5%E6%A0%BC%E5%BC%8F)
-  * Windows中，則使用[PE格式](https：//ithelp.ithome.com.tw/articles/10187490)
+  * linux系統中，此標準格式為[ELF格式](https://zh.wikipedia.org/wiki/%E5%8F%AF%E5%9F%B7%E8%A1%8C%E8%88%87%E5%8F%AF%E9%8F%88%E6%8E%A5%E6%A0%BC%E5%BC%8F)
+  * Windows中，則使用[PE格式](https://ithelp.ithome.com.tw/articles/10187490)
   * Linux當中可用file test.o來查看，以下可以看到test.o為elf 64位元可重定位檔，test為elf可執行檔(也可用readelf進行評估)
-    ![file](https：//github.com/a13140120a/Operation_System/blob/main/imgs/%E6%93%B7%E5%8F%960.PNG)
+    ![file](https://github.com/a13140120a/Operation_System/blob/main/imgs/%E6%93%B7%E5%8F%960.PNG)
     
 * 應用程式specify on OS，其原因如下：
   * 每個OS具有不同的二進制格式
   * CPU具有不同的指令集
   * Sustem call不同
 
-* API 是在應用曾架構中指定某些功能，[ABI](https：//zh.wikipedia.org/wiki/%E5%BA%94%E7%94%A8%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%8E%A5%E5%8F%A3)(應用二進位介面 application binary interface)則是用於指定底層詳細資訊，包括位址寬度，參數傳遞給System call的方法、執行時堆疊架構等等，一個ABI常見的樣貌即是調用約定(又稱呼叫約定 Calling Conventions)
+* API 是在應用曾架構中指定某些功能，[ABI](https://zh.wikipedia.org/wiki/%E5%BA%94%E7%94%A8%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%8E%A5%E5%8F%A3)(應用二進位介面 application binary interface)則是用於指定底層詳細資訊，包括位址寬度，參數傳遞給System call的方法、執行時堆疊架構等等，一個ABI常見的樣貌即是調用約定(又稱呼叫約定 Calling Conventions)
 
 
 <h2 id="0025">OS設計與製作</h2>   
@@ -250,7 +250,7 @@
   * 所謂單一架構其實就是沒有架構，所有功能都放到單一的位址空間中的靜態二進制檔案當中
   * 缺點是難以design, 修改困難，漏洞多，優點是效能非常快，windows and UNIX Linux仍然存在此種架構
   * 原始UNIX系統為此架構
-  * ![UNIX_Structure](https：//github.com/a13140120a/Operation_System/blob/main/imgs/UNIX_Structure.jpg)
+  * ![UNIX_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/UNIX_Structure.jpg)
 * Layered OS Architecture(分層架構)
   * 又稱為鬆散耦合(loosely coupled)，系統可分為許多具有特定功能的較小單獨元件
   * 速度較慢，但更好更改系統
@@ -258,21 +258,21 @@
   * 第0層為硬體，最高層為使用者介面
   * 非常好除錯與維護，因為每層只能使用較低層的服務
   * 分層系統常用於網路(如TCP/IP)
-  * ![Layered_OS](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Layered_OS.jpg)
+  * ![Layered_OS](https://github.com/a13140120a/Operation_System/blob/main/imgs/Layered_OS.jpg)
 * Microkernel
   * kernel 的部分只保留一些基礎(如記憶體管理和process),其他都在使用者空間
   * 主要採用message passing 溝通
   * 優點是容易擴展，所有新的service 都加入使用者空間，所以不需修改核心，而當核心修改時，因為核心很小，所以不會牽涉到太多東西
   * 效能非常低弱，因為當兩個service 要溝通時必須要經過kernel, 產生許多複製訊息的動作
   * 最有名的Darwin是macOS 和IOS 的核心，Darwin是由兩個kernel所組成，其中一個是Mach
-  * ![microkernel](https：//github.com/a13140120a/Operation_System/blob/main/imgs/microkernelArchitecture.jpg)
+  * ![microkernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/microkernelArchitecture.jpg)
 * Modules(模組化)：
   * kernel提供主要服務，其他服務則在執行時被動態載入，就不必每次將新特性加入kernel都必須從新編譯
   * 比Layered OS更有彈性，因為任何module都可以呼叫其他module
   * 全部的module都在kernel裡面，所以速度不會太慢。
   * kernel裡面會有system table, 會有許多空的entry, 可以讓使用者insert
-  * linux 也適用該技術，稱為[LKM](https：//zh.wikipedia.org/wiki/%E5%8F%AF%E8%BC%89%E5%85%A5%E6%A0%B8%E5%BF%83%E6%A8%A1%E7%B5%84)
-  * ![Solaris_Modules](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Solaris_Modules.jpg)
+  * linux 也適用該技術，稱為[LKM](https://zh.wikipedia.org/wiki/%E5%8F%AF%E8%BC%89%E5%85%A5%E6%A0%B8%E5%BF%83%E6%A8%A1%E7%B5%84)
+  * ![Solaris_Modules](https://github.com/a13140120a/Operation_System/blob/main/imgs/Solaris_Modules.jpg)
 
 * 混和系統
   * 作業系統通常不會使用單一的系統結構，會組合不同架構，以強調性能、安全及可用性等問題
@@ -280,36 +280,36 @@
   * Windows是單核心，但保留一些microkernel架構，支援subsystem，但同時也可以動態載入module
 
 * macOS and IOS
-  * user experience： 該層定義設備與使用者之間的互動，macOS使用的是[Aqua](https：//zh.wikipedia.org/wiki/Aqua_(GUI))，IOS使用的則是[Springboard](https：//zh.wikipedia.org/zh-tw/SpringBoard)
+  * user experience： 該層定義設備與使用者之間的互動，macOS使用的是[Aqua](https://zh.wikipedia.org/wiki/Aqua_(GUI))，IOS使用的則是[Springboard](https://zh.wikipedia.org/zh-tw/SpringBoard)
   * application frameworks： 這層包刮了用於開發MacOS應用程式的Cocoa 以及開發OS的Cocoa Touch framework，他們為Objected-C以及swift編程語言提供API。
   * core frameworks： 定義了支援圖形和多媒體的框架，包括Quicktime和OpenGL
-  * Kernel enviroment： 這種環境也稱為Darwin, 包括Mach為核心和[BSD](https：//zh.wikipedia.org/wiki/BSD) UNIX核心 
+  * Kernel enviroment： 這種環境也稱為Darwin, 包括Mach為核心和[BSD](https://zh.wikipedia.org/wiki/BSD) UNIX核心 
   * 這樣的結構可以直接利用各層的優點  
-  * ![macOS_iOS](https：//github.com/a13140120a/Operation_System/blob/main/imgs/macOS_and_iOS.jpg)  
+  * ![macOS_iOS](https://github.com/a13140120a/Operation_System/blob/main/imgs/macOS_and_iOS.jpg)  
   * Darwin是一個分層系統，由Mach微核心 和BSD UNIX核心組成，Mcah處理trap, BSD kernel處理POSIX system call
-  * Darwin還提供了用於開發驅動程式和動態載入module的[kexts](https：//support.apple.com/zh-tw/guide/deployment/depa5fb8376f/web)  
-  * ![Darwin](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Darwin.jpg)
+  * Darwin還提供了用於開發驅動程式和動態載入module的[kexts](https://support.apple.com/zh-tw/guide/deployment/depa5fb8376f/web)  
+  * ![Darwin](https://github.com/a13140120a/Operation_System/blob/main/imgs/Darwin.jpg)
 
 * Android：
   * 由google 領導開發
   * 開發人員使用Java程式語言開發，但不使用標準Java API, Java program被編譯成可在ART(Android Runtime)上執行的程式，針對有限的記憶體和cpu做了優化。
   * Java首先會先被編譯成.class檔，然後轉成可執行檔.dex檔
   * 一般的JVM會有JIT的機制，而Android的Java則是使用AOT(ahead-of-time提前編譯)技術
-  * 開發人員還可以使用[JNI](https：//developer.android.com/training/articles/perf-jni)技術，JNI允許跳過虛擬機直接存取硬體，缺點是不能移植到不同的硬體平台。
-  * 包含[HAL](https：//zh.wikipedia.org/wiki/%E7%A1%AC%E9%AB%94%E6%8A%BD%E8%B1%A1%E5%B1%A4)層，使開發人員可以在不同的硬體平台上移植程式。
-  * 一般Linux使用的是GNU的C庫(glibc), 而Android則是用[Bionic libc](https：//zh.wikipedia.org/wiki/Bionic_(%E8%BB%9F%E9%AB%94))函式庫
-  * ![android_kernel](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Android_kernel_moudule.jpg)
+  * 開發人員還可以使用[JNI](https://developer.android.com/training/articles/perf-jni)技術，JNI允許跳過虛擬機直接存取硬體，缺點是不能移植到不同的硬體平台。
+  * 包含[HAL](https://zh.wikipedia.org/wiki/%E7%A1%AC%E9%AB%94%E6%8A%BD%E8%B1%A1%E5%B1%A4)層，使開發人員可以在不同的硬體平台上移植程式。
+  * 一般Linux使用的是GNU的C庫(glibc), 而Android則是用[Bionic libc](https://zh.wikipedia.org/wiki/Bionic_(%E8%BB%9F%E9%AB%94))函式庫
+  * ![android_kernel](https://github.com/a13140120a/Operation_System/blob/main/imgs/Android_kernel_moudule.jpg)
 
-* [WSL](https：//hackmd.io/@billsun/Bkh8oAmGX?type=view)： 使windows 可以允許Linux的ELF執行檔在Windows 10 上執行。
+* [WSL](https://hackmd.io/@billsun/Bkh8oAmGX?type=view)： 使windows 可以允許Linux的ELF執行檔在Windows 10 上執行。
 
 <h2 id="0027">系統啟動</h2>  
 
-* [啟動程式](https：//zh.wikipedia.org/wiki/%E5%95%9F%E5%8B%95%E7%A8%8B%E5%BC%8F)：
+* [啟動程式](https://zh.wikipedia.org/wiki/%E5%95%9F%E5%8B%95%E7%A8%8B%E5%BC%8F)：
   * BIOS的作用是初始化和測試硬體元件，以及從大容量儲存裝置（如硬碟）載入啟動程式，並由啟動程式載入作業系統
   * 許多BIOS程式都只能在特定電腦型號或特定主機板型號上執行。早年，BIOS儲存於ROM晶片上；現在的BIOS多儲存於快閃記憶體晶片上，這方便了BIOS的更新。
-  * 最近許多電腦系統已經使用[UEFI](https：//zh.wikipedia.org/wiki/%E7%B5%B1%E4%B8%80%E5%8F%AF%E5%BB%B6%E4%BC%B8%E9%9F%8C%E9%AB%94%E4%BB%8B%E9%9D%A2)取代[BIOS](https：//zh.wikipedia.org/wiki/BIOS)
+  * 最近許多電腦系統已經使用[UEFI](https://zh.wikipedia.org/wiki/%E7%B5%B1%E4%B8%80%E5%8F%AF%E5%BB%B6%E4%BC%B8%E9%9F%8C%E9%AB%94%E4%BB%8B%E9%9D%A2)取代[BIOS](https://zh.wikipedia.org/wiki/BIOS)
   * GRUB是一個用於UNIX系統的開源啟動程式，非常靈活，可在啟動時修改kernel參數，甚至可以選擇啟動不同的kernel，例如Linux的/proc/cmdline中的BOOT_INAGE是要載入到記憶體的核心映象檔的名稱，而root指定根檔案系統的唯一標識符
-  * Android不使用GRUB，最常見的啟動程式是[LK](https：//baike.baidu.hk/item/lk/623671)  [(LK詳細)](https：//www.itread01.com/content/1502160009.html)
+  * Android不使用GRUB，最常見的啟動程式是[LK](https://baike.baidu.hk/item/lk/623671)  [(LK詳細)](https://www.itread01.com/content/1502160009.html)
 
 <h2 id="0028">除錯</h2>  
 
@@ -317,8 +317,8 @@
 * crush dump： 當系統crash 的時候就要 collecting data for crash dump
 * /proc是存在kernel中的偽檔案系統，/proc/2155將包含ID為2155的process 的訊息
 * 可用`ps`查看process狀態，`top`查看process即時訊息，`vmstat`查看系統記憶體使用情況，`netstat`查看網路，`iostat`查看磁碟IO狀況
-* `strace`可以查看任何process調用的system call,例如`strace ls`可查看ls調用的那些system call以及狀況，[gdb](https：//jasonblog.github.io/note/gdb/gdbshi_yong_jiao_xue_ff1a_zi_dong_hua_ni_de_debug.html)指令可以原始碼除錯，`perf`為Linux性能工具包，`tcpdump`網路封包擷取。
-* BCC： BCC是[eBPF](https：//hackmd.io/@sysprog/linux-ebpf)工具的前端介面，而eBPF是擴展的[BPF](https：//zh.wikipedia.org/wiki/BPF)，eBPF可動態插入正在運行的Linux系統，其指令可讀取特定事件(例如正在呼叫某個system call)，或者監視系統效能(例如IO時間)，BCC提供了python的前端介面，並嵌入了eBPF工具連接的C程式碼，而eBPF又與核心連接，BCC提供的許多工具均可用於特定應用程式，例如MySQL, Java或Python 程式
+* `strace`可以查看任何process調用的system call,例如`strace ls`可查看ls調用的那些system call以及狀況，[gdb](https://jasonblog.github.io/note/gdb/gdbshi_yong_jiao_xue_ff1a_zi_dong_hua_ni_de_debug.html)指令可以原始碼除錯，`perf`為Linux性能工具包，`tcpdump`網路封包擷取。
+* BCC： BCC是[eBPF](https://hackmd.io/@sysprog/linux-ebpf)工具的前端介面，而eBPF是擴展的[BPF](https://zh.wikipedia.org/wiki/BPF)，eBPF可動態插入正在運行的Linux系統，其指令可讀取特定事件(例如正在呼叫某個system call)，或者監視系統效能(例如IO時間)，BCC提供了python的前端介面，並嵌入了eBPF工具連接的C程式碼，而eBPF又與核心連接，BCC提供的許多工具均可用於特定應用程式，例如MySQL, Java或Python 程式
 
 ****
 <h1 id="003">Process Concept</h1> 
@@ -338,10 +338,10 @@
   * data section ：存放全域變數，大小固定，又分初始化及未初始化區域。
   * heap section ：process執行時動態分配的記憶體
   * stack section：呼叫函數時的臨時資料儲存(包括函數參數，return值以及區域變數)
-  * [詳細](https：//www.gushiciku.cn/pl/pwfP/zh-tw)
-  * ![c_process_memory](https：//github.com/a13140120a/Operation_System/blob/main/imgs/c_process_memory.png)
+  * [詳細](https://www.gushiciku.cn/pl/pwfP/zh-tw)
+  * ![c_process_memory](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_process_memory.png)
 * `size [filename]`可以查看Linux 二進位檔的資訊，data顯示的是未初始化的資料，bss是已初始化的資料，dec跟hex分別表示十進位與16進位的三個階段的總和
-* [objdump](https：//wangchujiang.com/linux-command/c/objdump.html)是gcc工具，可查看執行檔的反組譯碼，符號表等資訊，反組譯出來的是[AT&T格式](https：//www.itread01.com/content/1549963466.html)。
+* [objdump](https://wangchujiang.com/linux-command/c/objdump.html)是gcc工具，可查看執行檔的反組譯碼，符號表等資訊，反組譯出來的是[AT&T格式](https://www.itread01.com/content/1549963466.html)。
 * process的狀態可分為以下幾種：
   * new：process正在產生中
   * ready：已經在memory裡面等待被執行
@@ -357,7 +357,7 @@
   * memory management information：ex base register, limit register, page table, segment table
   * IO status information
   * accounting information： 包括帳號，cpu使用時間及數量，時限等等，開了多少file等等。
-  * linux pcb是以C的[task_struct](http：//lienguang.com/task_struct/) 結構表示(位於/usr/src/linux-hwe-5.13-headers-5.13.0-27/include/linux/sched.h中定義)，所有的process是以Double Link List的task_struct表示，[請參考詳細說明](https：//www.itread01.com/content/1548075798.html)。
+  * linux pcb是以C的[task_struct](http：//lienguang.com/task_struct/) 結構表示(位於/usr/src/linux-hwe-5.13-headers-5.13.0-27/include/linux/sched.h中定義)，所有的process是以Double Link List的task_struct表示，[請參考詳細說明](https://www.itread01.com/content/1548075798.html)。
 * degree of multiprogramming： 目前在記憶體的process數量
 * IO bound：較IO傾向的process
 * CPU bound：較CPU傾向的process
@@ -368,9 +368,9 @@
 * swap in/out： virtual memory放進/岀disk
 * context switch：當cpu要切換running process的時候需要把process的資訊記錄下來(如PC以及其他暫存器)，這種動作就叫context switch
 * Linux 的systemd 這個process的ID永遠是1，是系統啟動時的第一個user process，然後會再create 許多子process
-  * ![linux_tree](https：//github.com/a13140120a/Operation_System/blob/main/imgs/linux_tree.png)
+  * ![linux_tree](https://github.com/a13140120a/Operation_System/blob/main/imgs/linux_tree.png)
   * `ps -el`可以看到系統中所有process的完整訊息：
-  * PPID代表parent pid(父process id), [NI及PRI代表的意義請看這裡](https：//kknews.cc/zh-tw/tech/j85ngl.html), [其他](https：//dywang.csie.cyut.edu.tw/dywang/linuxSystem/node77.html)
+  * PPID代表parent pid(父process id), [NI及PRI代表的意義請看這裡](https://kknews.cc/zh-tw/tech/j85ngl.html), [其他](https://dywang.csie.cyut.edu.tw/dywang/linuxSystem/node77.html)
   * Linux的init 就是 systemd
 
 
@@ -384,8 +384,8 @@
   * parent繼續與child同時執行
   * parent等child執行完之後才繼續執行
 * create process的時候，新process 的記憶體空間有可能是：
-  * 完全複製parent的process跟資料例如(UNIX的fork())：[example](https：//github.com/a13140120a/Operation_System/blob/main/linux_create_process_example.c)
-  * create的同時直接將program載入進去child。(例如windows的CreateProcess())：[example](https：//github.com/a13140120a/Operation_System/blob/main/win_createprocess_example.cpp)
+  * 完全複製parent的process跟資料例如(UNIX的fork())：[example](https://github.com/a13140120a/Operation_System/blob/main/linux_create_process_example.c)
+  * create的同時直接將program載入進去child。(例如windows的CreateProcess())：[example](https://github.com/a13140120a/Operation_System/blob/main/win_createprocess_example.cpp)
 * parent會因為以下原因殺死child：
   * child使用超過分配的resource
   * 工作結束
@@ -407,7 +407,7 @@
 * producer生產資訊，comsumer消耗資訊。
 * shared memory IPC：
   * 製作comsumer跟producer的共通buffer：
-  * ![ipc_buffer](https：//github.com/a13140120a/Operation_System/blob/main/imgs/ipc_buffer.PNG)
+  * ![ipc_buffer](https://github.com/a13140120a/Operation_System/blob/main/imgs/ipc_buffer.PNG)
   * 
     ```c
     /* 如果沒有犧牲掉一個位置的話，當in==out會不知道是空了還是滿了。 */
@@ -431,7 +431,7 @@
         out = (out+1) % BUFFER_SIZE;
     }
     ```
-  * POSIX shared memory的範例：[producer](https：//github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[consumer](https：//github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)，gcc command`gcc -o consumer posix_producer.c -lrt`
+  * POSIX shared memory的範例：[producer](https://github.com/a13140120a/Operation_System/blob/main/posix_producer.c)，[consumer](https://github.com/a13140120a/Operation_System/blob/main/posix_comsumer.c)，gcc command`gcc -o consumer posix_producer.c -lrt`
 * message passing IPC：
   * 至少具備以下兩種操作：
     ```
@@ -470,8 +470,8 @@
       * zero capacity：buffer size為零，此種情況下，producer必須等待直到comsumer收到資料。
       * bounded capacity：有限buffer size，當buffer滿時producer需等待，當buffer空時comsumer需等待。
       * unbounded capacity：無限buffer size，從不阻塞。
-* Windows中提供的內部進程間通信方式為[ALPC](https：//zh.wikipedia.org/wiki/%E6%9C%AC%E5%9C%B0%E8%BF%87%E7%A8%8B%E8%B0%83%E7%94%A8#%E5%AE%9E%E7%8E%B0)，只能於同一台機器中使用。
-  * ![ALPC_Windows](https：//github.com/a13140120a/Operation_System/blob/main/imgs/ALPC_Windows.jpg)
+* Windows中提供的內部進程間通信方式為[ALPC](https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9C%B0%E8%BF%87%E7%A8%8B%E8%B0%83%E7%94%A8#%E5%AE%9E%E7%8E%B0)，只能於同一台機器中使用。
+  * ![ALPC_Windows](https://github.com/a13140120a/Operation_System/blob/main/imgs/ALPC_Windows.jpg)
 * Pipe：
   * 早期的UNIX系統所使用的IPC機制
   * Linux pipe：`ls|less`相等於Windows的`dir|more`
@@ -489,12 +489,12 @@
     * 基本上，UNIX的parent透過ordinary pipe和`fork()`出來的child溝通
     * UNIX把pipe當成一個特殊的檔案型態，可以使用普通的`read()`或`write()`來操作。
     * 完成通訊之後就會消失
-    * [UNIX Ordinary pipe example](https：//github.com/a13140120a/Operation_System/blob/main/unix_pipe.c)
+    * [UNIX Ordinary pipe example](https://github.com/a13140120a/Operation_System/blob/main/unix_pipe.c)
   * Windows的Ordinary pipe叫做anonymous pipe(匿名管道)：
     * 如同UNIX是parent-child的關係
     * 可以使用普通的`readFile()`或`writeFile()`來操作。
     * create的API是`CreatePipe()`
-    * windows anonymous pipe example： [parent](https：//github.com/a13140120a/Operation_System/blob/main/win_pipe_parent.cpp), [child](https：//github.com/a13140120a/Operation_System/blob/main/win_pipe_child.cpp)
+    * windows anonymous pipe example： [parent](https://github.com/a13140120a/Operation_System/blob/main/win_pipe_parent.cpp), [child](https://github.com/a13140120a/Operation_System/blob/main/win_pipe_child.cpp)
   * Named Pipes(命名管道)：
     * 可以雙向，不需是parent-child的關係，可以多個process一起使用。
     * 完成通訊之後依然可以持續存在
@@ -509,21 +509,21 @@
   * 127.0.0.1稱為loopback
   * 傳輸的data可以是任何東西，由programmer自行parse
   * Socket 運作方式：
-    * ![Socket](https：//github.com/a13140120a/Operation_System/blob/main/imgs/socket.PNG)
+    * ![Socket](https://github.com/a13140120a/Operation_System/blob/main/imgs/socket.PNG)
 * PRC(Remote procedure call)
   * RPC的底層也是使用Socket實現
-  * client端會有一個stub的process負責處理parsing，server端則稱為(skeleton)[wiki](https：//zh.wikipedia.org/wiki/%E6%A1%A9_(%E8%AE%A1%E7%AE%97%E6%9C%BA))
-  * 當client端呼叫一個remote procedure時，RPC會找到適當的stub, 並且mashaling(重排) parameter，封裝成[XDR(External Data Representation)](https：//zh.wikipedia.org/wiki/%E5%A4%96%E9%83%A8%E6%95%B0%E6%8D%AE%E8%A1%A8%E7%A4%BA%E6%B3%95)格式，送到server端處理。
+  * client端會有一個stub的process負責處理parsing，server端則稱為(skeleton)[wiki](https://zh.wikipedia.org/wiki/%E6%A1%A9_(%E8%AE%A1%E7%AE%97%E6%9C%BA))
+  * 當client端呼叫一個remote procedure時，RPC會找到適當的stub, 並且mashaling(重排) parameter，封裝成[XDR(External Data Representation)](https://zh.wikipedia.org/wiki/%E5%A4%96%E9%83%A8%E6%95%B0%E6%8D%AE%E8%A1%A8%E7%A4%BA%E6%B3%95)格式，送到server端處理。
   * Windows的stub程式碼是由使用MIDL(微軟介面定義語言 Microsoft Interface Definition Language)所撰寫編譯而成
-  * 遇到Pointer的傳輸時會有複雜的解決方法，其中可以參考微軟的[MIDL Pointers and RPC](https：//docs.microsoft.com/en-us/windows/win32/rpc/pointers-and-rpc)
+  * 遇到Pointer的傳輸時會有複雜的解決方法，其中可以參考微軟的[MIDL Pointers and RPC](https://docs.microsoft.com/en-us/windows/win32/rpc/pointers-and-rpc)
   * 概念圖：
-    * ![RPC](https：//github.com/a13140120a/Operation_System/blob/main/imgs/RPC.PNG)
+    * ![RPC](https://github.com/a13140120a/Operation_System/blob/main/imgs/RPC.PNG)
 * Android RPC：
   * Android OS中的binder framework包含龐大的IPC機制，其中就包含RPC
-  * [Application components](https：//www.techplayon.com/applications-component/)是Android app 的基本block，而Service就是其中一個Application components
+  * [Application components](https://www.techplayon.com/applications-component/)是Android app 的基本block，而Service就是其中一個Application components
   * 當Client端app呼叫`bindService()`時，該app的service(例如背景播放音樂)將會被bind(綁定)，而被綁定的service將會extend(Java的繼承) Service這個父類別`public class MyService extends Service {}`
   * 要提供RPC，`onBind()`必須要有一個返回介面，該介面由Java撰寫，並使用Android Interface Definition Language (AIDL Android介面定義語言)創建stub文件。
-  * [詳細資訊](https：//www.itread01.com/p/585471.html)
+  * [詳細資訊](https://www.itread01.com/p/585471.html)
 
 ****
 <h1 id="004">Thread</h1> 
@@ -565,34 +565,34 @@
   * many to one：
     * 一個process 指有一個kernel thread(有很多user thread)
     * 優點是因為resource都sharing所以很快，缺點是一旦被blocking會導致系統停滯
-    * ![many_to_one](https：//github.com/a13140120a/Operation_System/blob/main/imgs/many_to_one.PNG)
+    * ![many_to_one](https://github.com/a13140120a/Operation_System/blob/main/imgs/many_to_one.PNG)
   * one to one：
     * 一個thread被blocking的話，對其他thread沒有影響
     * 缺點是消耗太多資源，但現在電腦不缺資源，所以現代大多數OS(包括Linux和Windows)都是使用此種模式。
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/1to1.PNG)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/1to1.PNG)
   * Many to many：
     * 可以有many to one的resource sharing的快速的優點
     * 又可以有one to one那種不容易被blocking導致系統停滯的缺點
     * 難以實現，問題出在於如何mapping, 如果使用情境很單純，mapping的演算法可能會導致產生過多的overhead。
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/many_to_many.PNG)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/many_to_many.PNG)
 
 <h2 id="0043">Library</h2> 
 
 * 又分成asynchronous threading(非同步)和synchronous threading(同步)
   * asynchronous threading：不必等child thread結束，才能繼續
   * synchronous threading：必須等child thread結束，才能繼續
-* [Pthread example](https：//github.com/a13140120a/Operation_System/blob/main/pthread_exm.c), gcc command：`gcc -pthread -o pthread_exm pthread_exm.c`
-* [Windows thread example](https：//github.com/a13140120a/Operation_System/blob/main/win_createthread.c)
+* [Pthread example](https://github.com/a13140120a/Operation_System/blob/main/pthread_exm.c), gcc command：`gcc -pthread -o pthread_exm pthread_exm.c`
+* [Windows thread example](https://github.com/a13140120a/Operation_System/blob/main/win_createthread.c)
 
 * Implicit Threading： 由compiler和runtime libraries負責管理與新增執行緒，並非由程式負責，分成以下幾種方法：
   * Thread pool
     * 先Create 一個thread，節省去產生一個thread的成本。
     * 可以把資源使用量控制在一定的範圍之內
-    * Window threadpool： [QueueUserWorkItem](https：//docs.microsoft.com/en-us/windows/win32/api/threadpoollegacyapiset/nf-threadpoollegacyapiset-queueuserworkitem)
+    * Window threadpool： [QueueUserWorkItem](https://docs.microsoft.com/en-us/windows/win32/api/threadpoollegacyapiset/nf-threadpoollegacyapiset-queueuserworkitem)
     * Java threadpool
   * Fork-join： thread並不是在fork的時候被create，而是在task真正執行的時候才被create，library負責分配建立thread的數量，以及分配task給thread
     * java的fork join： `ForkJoinPool()`
-  * [OpenMP](https：//zh.wikipedia.org/wiki/OpenMP)：是一套支援跨平台共享記憶體方式的多執行緒並行的編程API，支援C,C++和Fortran
+  * [OpenMP](https://zh.wikipedia.org/wiki/OpenMP)：是一套支援跨平台共享記憶體方式的多執行緒並行的編程API，支援C,C++和Fortran
     * example：
     * ```c
       #include <omp.h>
@@ -635,7 +635,7 @@
         let queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)
         dispatch_async(queue, { printf("hello block!") })
         ```
-  * [TBB(Intel threading building blocks)](https：//en.wikipedia.org/wiki/Threading_Building_Blocks)：
+  * [TBB(Intel threading building blocks)](https://en.wikipedia.org/wiki/Threading_Building_Blocks)：
     * 是一個 C++ template library，TBB提供任務排班、負載平衡以及支援快取。
     * 也提供平行迴圈、Atomicity操作、互斥鎖等豐富功能。
     * 範例：
@@ -663,11 +663,11 @@
     * 把訊號直接傳到所有的執行緒上。
     * 把訊號傳到行程中特定的執行緒中。
     * 選一個執行緒，負責接收所有的訊號。
-  * [Windows APC](https：//docs.microsoft.com/zh-tw/windows/win32/sync/asynchronous-procedure-calls)：windows沒有signal，但有APC，允許使用者執行緒設定一個函數, 當一個event發生時就呼叫此函數
+  * [Windows APC](https://docs.microsoft.com/zh-tw/windows/win32/sync/asynchronous-procedure-calls)：windows沒有signal，但有APC，允許使用者執行緒設定一個函數, 當一個event發生時就呼叫此函數
 * Thread cancellation： 意思是一個thread在完成工作之前結束他，例如多執行緒搜尋資料庫，其中一個找到，其他就都該結束，被取消的thread稱為target thread, target thread又可分成兩種：
   * Asynchronous cancellation(非同步取消)：立即終止，有可能會無法釋放所有資源
   * Deferred cancellation(延遲取消)：會執行到一個check point才取消，例如：ctrl+c，允許執行緒安全的被取消。
-  * Pthread： `pthread_cancel(tid)`或`pthread_cancel(pthread_self())`，pthread支援[三種取銷模式](https：//man7.org/linux/man-pages/man3/pthread_setcancelstate.3.html)
+  * Pthread： `pthread_cancel(tid)`或`pthread_cancel(pthread_self())`，pthread支援[三種取銷模式](https://man7.org/linux/man-pages/man3/pthread_setcancelstate.3.html)
   * java的Thread cancellation只要把thread的interrupt狀態設成true就可以了`Thread worker; worker.interrupr()`，檢查：`while(!Thread.currentThread().isInterrupr())`
 * TLS(Thread local storage)： 
   * 每個thread的各自的獨一無二的資料，不會干擾或影響到別人
@@ -734,14 +734,14 @@
   4.terminates  
 * non-preemptive： CPU 的Schedule只發生在上述1跟4的情況，non-preemptive的kernel結構較簡單，對於即時計算較差
 * preemptive： CPU 的Schedule可以發生在上述所有的狀況，需要額外的方法防止race condition(競爭情況)
-* Linux環境可使用[vmstat](https：//charleslin74.pixnet.net/blog/post/434428316)來查看每秒context switch以及interrupt的數量，例如`vmstat 5 6`每五秒統計一次，總共統計六次。
+* Linux環境可使用[vmstat](https://charleslin74.pixnet.net/blog/post/434428316)來查看每秒context switch以及interrupt的數量，例如`vmstat 5 6`每五秒統計一次，總共統計六次。
 * Linux環境可以利用`cat /proc/254/status`來查看pid=254的process狀態，最後兩行顯示voluntary-ctxt-switches(自願context switch，如IO)以及nonvoluntary-ctxt-switches(非自願，如被preempt)數量。
 * ready queue並不一定是FIFO queue。
 
 <h2 id="0052">Scheduling Algorithms</h2> 
 
 * Scheduling Algorithms通常有以下幾種評估標準(Scheduling Criteria)：
-  * CPU utilization：理論上0/~100%，實際上會介於40/~90%，可用[top](https：//david50.pixnet.net/blog/post/45252072-%5B%E7%AD%86%E8%A8%98%5Dlinux---top%E8%B3%87%E8%A8%8A)查看
+  * CPU utilization：理論上0/~100%，實際上會介於40/~90%，可用[top](https://david50.pixnet.net/blog/post/45252072-%5B%E7%AD%86%E8%A8%98%5Dlinux---top%E8%B3%87%E8%A8%8A)查看
   * Throughput： (以系統的角度)每單位時間內完成的工作量，對於cpu scheduling而言就是每單位時間完成的process數量。
   * Turnaround Time： (以single job的角度)submission/~cpmpletion的時間
   * wait time：在ready queue的時間
@@ -750,12 +750,12 @@
 * FCFS(First Come First Serve)：
   * 製作容易，average wait time通常很長，並且會因為cpu burst的變化而有極大差異
   * 不管是non-preemptive還是preemptive都不會改變結果，一樣都是先來先做完。
-  * ![fcfs_scheduling](https：//github.com/a13140120a/Operation_System/blob/main/imgs/fcfs_scheduling.PNG)
+  * ![fcfs_scheduling](https://github.com/a13140120a/Operation_System/blob/main/imgs/fcfs_scheduling.PNG)
 * SJF(Shortest Job First)：
   * 可以證明是最小wait time的演算法
   * non-preemptive跟preemptive會得到不同的結果
-  * 無法預知下一個cpu burst的長度(但可以使用一些time serious的方式預測，例如[EMA](https：//zh.wikipedia.org/wiki/%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87#%E6%8C%87%E6%95%B8%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87))
-  * [詳細解說](https：//www.youtube.com/watch?v=scp5vRE3yVw&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=32)
+  * 無法預知下一個cpu burst的長度(但可以使用一些time serious的方式預測，例如[EMA](https://zh.wikipedia.org/wiki/%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87#%E6%8C%87%E6%95%B8%E7%A7%BB%E5%8B%95%E5%B9%B3%E5%9D%87))
+  * [詳細解說](https://www.youtube.com/watch?v=scp5vRE3yVw&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=32)
 * RR(Round robin)：
   * 每個process會得到一個固定的time quantum，通常是10/~100毫秒。
   * 時間越短，overhead越高，時間越長則就變成FCFS
@@ -771,14 +771,14 @@
   * 要定義如何選擇哪一個queue，通常有兩種做法：
     * 除非priority較高的queue空了，否則不會執行較低的queue
     * 每個queue分到不同比例的cpu時間，譬如priority較高的分到80%做RR Schdule，而較低的分到20%做FCFS等等。
-  * ![multilevel_queue](https：//github.com/a13140120a/Operation_System/blob/main/imgs/multilevel_queue.PNG)
+  * ![multilevel_queue](https://github.com/a13140120a/Operation_System/blob/main/imgs/multilevel_queue.PNG)
 * multilevel feedback queue：
   * 最通用的Scheduling Algorithm
   * process可以在queue之間移動
   * 會在run time的時候觀察process的behavior來判斷應該要如何在queue之間移動
   * 如果一個process使用cpu的時間太長，就會被排到較低priority的queue，讓IO bound和interative的process放在較高priority的queue
   * 而較低priority的process也會隨著時間增加而增加priority(aging)來避免starvation
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/multilevel_feedback_queue.PNG)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/multilevel_feedback_queue.PNG)
   * 上圖例子當中，最上層queue分配到的time quantum是8ms，如果8ms內未完工的process就會被安排到第二層的queue，這時候如果最上層queue裡面沒有任何process就會開始執行第二層的queue，如果還是執行不完，就會再被安排到最下層的queue，而為了避免starvation，如果在較低priority的queue待太久則會被安排到較高的queue
   * multilevel feedback queue必須決定以下幾種參數：
     * queue的數量
@@ -796,12 +796,12 @@
 * Pthread中允許process產生期間指定PCS和SCS
   * 預設情況下，對於一個擁有n個執行緒的程式，啟動多少LWP，由哪些LWP來控制哪些執行緒由作業系統來控制，這種狀態被稱為非繫結的。
   * 那麼繫結的含義就很好理解了，只要指定了某個執行緒“綁”在某個LWP上，就可以稱之為繫結的了。
-  * `int pthread_attr_setscope(pthread_attr_t *attr, int scope);`的第二個參數scope是[繫結型別](https：//www.796t.com/article.php?id=63046)，擁有兩個取值，PTHREAD_SCOPE_SYSTEM（繫結的）和PTHREAD_SCOPE_PROCESS（非繫結的）。
+  * `int pthread_attr_setscope(pthread_attr_t *attr, int scope);`的第二個參數scope是[繫結型別](https://www.796t.com/article.php?id=63046)，擁有兩個取值，PTHREAD_SCOPE_SYSTEM（繫結的）和PTHREAD_SCOPE_PROCESS（非繫結的）。
   * Linux採用了one-to-one的方案，這也就是說，Linux的執行緒永遠都是繫結，所以PTHREAD_SCOPE_PROCESS在Linux中不管用，而且會返回ENOTSUP錯誤。
   * 在many-to-many中，PTHREAD_SCOPE_PROCESS使用PCS排班法排班執行緒，將策略地排班user mode的thread在可用的LWP中，而LWP的數目是由library所控制，
   * PTHREAD_SCOPE_SYSTEM則是使用SCS排班法排班執行緒，將產生和連結一個LWP給每個user mode的thread，並使用1對1有效的map thread。
-  * [wiki](https：//zh.wikipedia.org/wiki/POSIX%E7%BA%BF%E7%A8%8B#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B)
-  * [EXAMPLE](https：//github.com/a13140120a/Operation_System/blob/main/set_scope.c)，GCC：`gcc -o set_scope set_scope.c -lpthread`
+  * [wiki](https://zh.wikipedia.org/wiki/POSIX%E7%BA%BF%E7%A8%8B#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B)
+  * [EXAMPLE](https://github.com/a13140120a/Operation_System/blob/main/set_scope.c)，GCC：`gcc -o set_scope set_scope.c -lpthread`
 
 <h2 id="0054">Multi-Processor Scheduling</h2> 
 
@@ -812,12 +812,12 @@
     * all processes in common ready queue：所有cpu的排班程式去競爭一個ready queue，會有synchronization的問題
     * separate ready queues for each processor：可能會有load balancing不平衡的問題(例如一個cpu的queue滿載，另一個則空)。
 * multicore processor將多個核心(core)放在同一個實體晶片上，每個core維持它的架構，因此對作業系統來說好像是一個獨立的processor
-* ![processor_vs_os](https：//github.com/a13140120a/Operation_System/blob/main/imgs/processor_vs_os.jpg)
+* ![processor_vs_os](https://github.com/a13140120a/Operation_System/blob/main/imgs/processor_vs_os.jpg)
 * 當processor存取memory時，需耗費大量的時間，這種情況稱為**Memory Stall**(例如cache miss)
-* ![MemStall](https：//github.com/a13140120a/Operation_System/blob/main/imgs/MemStall.jpg)
+* ![MemStall](https://github.com/a13140120a/Operation_System/blob/main/imgs/MemStall.jpg)
 * 核心多執行緒化
   * 核心多緒化，多個hardware threads被分配到一個core  
-  * ![TwoThrdCore](https：//github.com/a13140120a/Operation_System/blob/main/imgs/TwoThrdCore.jpg)
+  * ![TwoThrdCore](https://github.com/a13140120a/Operation_System/blob/main/imgs/TwoThrdCore.jpg)
   * Intel使用hyper-threading(或稱simultaneous multithreading,SMT)來將hardware thread分配給一個core
   * 核心多執行緒化有兩種方法：
     * Coarse-grained(粗糙)：會執行一條執行緒一直到出現long-latency event(例如Memory stall)，才進行切換並清空(flush)管線，context switch代價較大。
@@ -837,7 +837,7 @@
 * Load balancing會抵消affinity帶來的bonus
 * heterogeneous multiprocessing(HMP)：
   * 對於某些系統而言，每個核心使用相同的instruction來執行，但他們有著不同的時脈以及電源管理，這樣的系統稱為HMP。
-  * 例如ARM使用[big.LITTLE](https：//zh.wikipedia.org/wiki/Big.LITTLE)，高性能的big core與較節能的LITTLE core結合，big core消耗更多的能量，因此只能使用較短的時間，LITTLE消耗較少的能量，所以能夠更長時間使用。
+  * 例如ARM使用[big.LITTLE](https://zh.wikipedia.org/wiki/Big.LITTLE)，高性能的big core與較節能的LITTLE core結合，big core消耗更多的能量，因此只能使用較短的時間，LITTLE消耗較少的能量，所以能夠更長時間使用。
   * CPU scheduler可以將較低耗能(例如背景程式)分配給little，可以節省電量，如果行動裝置組於省電模式，則禁止使用big，windows允許支援HMP。
 
 
@@ -857,18 +857,18 @@
 * Rate-Monotonic (RM) Scheduling：
   * Shorter period, higher priority
   * priority是固定的
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/RM.PNG)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/RM.PNG)
 * Early Deadline First (EDF) Scheduler
   * Task’s priority is determined by deadline.
   * priority會變動
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/EDF.PNG)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/EDF.PNG)
 * Proportional Share Scheduling：
   * 假設CPU時間總共有T個**shares**、process有N個shares(N < T)，這樣每個process都被分配到N/T時間，
   * 必須事前需要把資源比例分配好，例如總共有100個share，已經分配了85個share，若有新的process需要30個share，則拒絕進入系統。
 * POSIX Real-Time Scheduling：
   * 設定執行緒排程演算法的介面是`pthread_attr_setschedpolicy()`，它的完整定義是：`pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy);`
   * 第二個參數的選項有SCHED_RR、SCHED_FIFO和SCHED_OTHER(預設)
-  * [EXAMPLE](https：//github.com/a13140120a/Operation_System/blob/main/set_schedule_policy.c)，GCC：`gcc -o set_schedule_policy set_schedule_policy.c -lpthread`
+  * [EXAMPLE](https://github.com/a13140120a/Operation_System/blob/main/set_schedule_policy.c)，GCC：`gcc -o set_schedule_policy set_schedule_policy.c -lpthread`
 
 
 <h2 id="0056">OS Example</h2> 
@@ -876,7 +876,7 @@
 * Linux：
   * Linux系統的schedule是base on scheduling class，每個scheduling class會有不同的priority以及不同的algorithms以應對不同的需求。
   * 標準的Linux系統會有兩種scheduling class： default(CFS)和real-time，亦可自行加入新的scheduling class。
-  * [CFS](https：//blog.xuite.net/ian11832/blogg/23745751)於Linux kernel 2.6.23開始正式被採用，讓所有工作平等的被執行便是這排程的目標
+  * [CFS](https://blog.xuite.net/ian11832/blogg/23745751)於Linux kernel 2.6.23開始正式被採用，讓所有工作平等的被執行便是這排程的目標
   * CFS將每個thread的負載記錄下來，結合priority以及cpu使用率，較高priority但是IO bound的程式通常負載較低，使用此方法可以確保所有queue都有相近的負載
   * Linux也定義scheduling domain的階層系統，scheduling domain是根據他們共享的資源下去分組的，每個core可能擁有L1 Cache, core之間也可能共享L2 cache, 包含L2 cache的一組被分為domain0和domain1，而這兩個scheduling domain共享L3 cache，並且組成一個**NUMA node**，CFS最初只會在同一個domain裡面做thread的搬移(即domain0或domain1)，下一個層級的load balancing會發生在domain0跟domain1之間，如果整個系統處於忙碌狀態，則CFS不會在每隔Core之間進行load balancing。
 * windows
@@ -886,19 +886,19 @@
   * 使用32層的priority技巧，variable class包含1/~15，real-time包含16/~31，priority為0的thread被用於記憶體管理。
   * dispatcher為每個priority提供一個queue，從最高到最低traverse，直到發現有ready的thread為止，如果沒有發現任何ready thread，會執行一個叫做idle thread的特殊thread。
   * process通常是NORMAL_PRIORITY_CLASS，除非父process是其他類別或者使用者特別設定。
-  * 可使用`SetPriorityClass()`以及`SetThreadPriority()`，其API對應的priority請[參考](https：//docs.microsoft.com/zh-tw/windows/win32/procthread/scheduling-priorities#base-priority)
+  * 可使用`SetPriorityClass()`以及`SetThreadPriority()`，其API對應的priority請[參考](https://docs.microsoft.com/zh-tw/windows/win32/procthread/scheduling-priorities#base-priority)
   * 每個thread都會有一個基本優先權，預設是該class中NORMAL的數值。
   * 當thread的time quantum用完之後會被interrupt，並且如果此thread是variable class，他的priority會被降低，但不會被降到低於基本優先權，如果從waiting狀態中被釋放出來，就會提升priority，提升量取決於等待的是什麼，例如鍵盤IO將獲得大幅提升，若是磁碟IO則適量提升。
   * windows對於foreground process(前景)和background process(背景)有所區別，當一個process由background移動到foreground時，windows會增加其排班量(通常是3)
-  * windows 7引入了[user-mode scheduling(UMS)](https：//zhuanlan.zhihu.com/p/43652554)，允許user獨立於kernel外自行產生以及管理thread，對於大量產生 thread的process，在user mode排班會比在kernel mode排班更有效率，因為不需要介入kernel。
-  * 早期版本的windows提供類似的特性，稱為[fiber](https：//docs.microsoft.com/zh-tw/windows/win32/procthread/fibers)，[(fiber wiki)](https：//zh.wikipedia.org/wiki/%E7%BA%96%E7%A8%8B)，允許user mode的thread(纖程)被map到單一的kernel thread，fiber不能呼叫windows API，因為所有fiber都必須分享他們執行之thread的**TEB**[(Thread Environment Block 執行緒環境區塊)](https：//docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-teb)，如果windows api 將資訊狀態放入一個fiber的TEB，會讓此資訊被另一個fiber覆蓋，UMS藉由提供每個user thread自己的執行緒內容來克服此障礙。
-  * Windows也支援multicore processor系統來進行thread在processor上的排程，使用的技術是建立[SMT Set(邏輯處理器集)](https：//docs.microsoft.com/zh-tw/windows-hardware/drivers/debugger/-smt)，例如四核二緒(8 logic processor)包括四個SMT集：{0,1}{2,3}{4,5}{6,7}，Windows能夠維持同一個SMT set中logic processor上的執行緒執行，為了在不同processor之間load balancing，每個thread會分配給一個ideal processor(理想處理器)，每個process都會有一個初始種子值，用於標示屬於該process的thread的理想CPU，該process每建立一個thread，種子值的數字就會增加，藉此分散負載在不同的logic processor上，在SMT系統中，下一個ideal processor的增量會在下一個SMT set中，例如某個process的thread的ideal processor為0,2,4,6,0,2...，如果第二個process的種子值為1，則分配1,3,5,7,1,3....。
+  * windows 7引入了[user-mode scheduling(UMS)](https://zhuanlan.zhihu.com/p/43652554)，允許user獨立於kernel外自行產生以及管理thread，對於大量產生 thread的process，在user mode排班會比在kernel mode排班更有效率，因為不需要介入kernel。
+  * 早期版本的windows提供類似的特性，稱為[fiber](https://docs.microsoft.com/zh-tw/windows/win32/procthread/fibers)，[(fiber wiki)](https://zh.wikipedia.org/wiki/%E7%BA%96%E7%A8%8B)，允許user mode的thread(纖程)被map到單一的kernel thread，fiber不能呼叫windows API，因為所有fiber都必須分享他們執行之thread的**TEB**[(Thread Environment Block 執行緒環境區塊)](https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-teb)，如果windows api 將資訊狀態放入一個fiber的TEB，會讓此資訊被另一個fiber覆蓋，UMS藉由提供每個user thread自己的執行緒內容來克服此障礙。
+  * Windows也支援multicore processor系統來進行thread在processor上的排程，使用的技術是建立[SMT Set(邏輯處理器集)](https://docs.microsoft.com/zh-tw/windows-hardware/drivers/debugger/-smt)，例如四核二緒(8 logic processor)包括四個SMT集：{0,1}{2,3}{4,5}{6,7}，Windows能夠維持同一個SMT set中logic processor上的執行緒執行，為了在不同processor之間load balancing，每個thread會分配給一個ideal processor(理想處理器)，每個process都會有一個初始種子值，用於標示屬於該process的thread的理想CPU，該process每建立一個thread，種子值的數字就會增加，藉此分散負載在不同的logic processor上，在SMT系統中，下一個ideal processor的增量會在下一個SMT set中，例如某個process的thread的ideal processor為0,2,4,6,0,2...，如果第二個process的種子值為1，則分配1,3,5,7,1,3....。
 
 
 <h2 id="0057">Evaluation Methods</h2> 
 
 * Deterministic modeling：依照performance metric去選擇、製作model，可能是要response time最小，還是wait time，或者是real time。
-* Queueing model：設計演算法，分析並且證明，[little's law](https：//wiki.mbalib.com/zh-tw/%E5%88%A9%E7%89%B9%E5%B0%94%E6%B3%95%E5%88%99)認為，系統中的平均存貨等於存貨單位離開系統的比率（亦即平均需求率）與存貨單位在系統中平均時間的乘積。
+* Queueing model：設計演算法，分析並且證明，[little's law](https://wiki.mbalib.com/zh-tw/%E5%88%A9%E7%89%B9%E5%B0%94%E6%B3%95%E5%88%99)認為，系統中的平均存貨等於存貨單位離開系統的比率（亦即平均需求率）與存貨單位在系統中平均時間的乘積。
 * Simulation：以應用程式的方式設計一個電腦系統的模型，用來驅動模型的資料產生可以是隨機分布、常態分布、指數分布、卜瓦松分布等等，並且收集LOG、workload等資料
 * Implementation：即使是模擬，也沒辦法得到完全正確的評估，因此還需要Implementation。
 
@@ -999,7 +999,7 @@
 * memory barriers(或稱memory fences)：
   * 大多數現代電腦為了提高效能而採取亂序執行，這使得記憶體屏障成為必須。
   * Peterson’s Solution的亂序執行影響：
-  * ![memory_barrier](https：//github.com/a13140120a/Operation_System/blob/main/imgs/memory_barrier.PNG)
+  * ![memory_barrier](https://github.com/a13140120a/Operation_System/blob/main/imgs/memory_barrier.PNG)
   * 最終會導致p1跟p2同時進入CS
   * 以下例子，預期的output是x=100：
     ```c
@@ -1212,7 +1212,7 @@
         signal(mutex)      //if you are the only one then up mutex so someone else get in
       ```
     
-  * for the wait(condition) and signal(condition) implementation using semaphore[參考解說](http：//learningnote321235.blogspot.com/2018/01/10214-hoare-monitor.html)和[參考2](https：//wangwilly.github.io/willywangkaa/2018/08/04/Operating-System-Process-Synchronization-2/)：
+  * for the wait(condition) and signal(condition) implementation using semaphore[參考解說](http：//learningnote321235.blogspot.com/2018/01/10214-hoare-monitor.html)和[參考2](https://wangwilly.github.io/willywangkaa/2018/08/04/Operating-System-Process-Synchronization-2/)：
     * x.wait()
       ```c
       semaphore x_sem;     // initially = 0
@@ -1347,7 +1347,7 @@
 
 * Dining Philosophers Example：
   * 每個人要吃飯時必須拿起左右兩支筷子
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Dining_Philosophers.png)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/Dining_Philosophers.png)
   * 以下方法可以免於deadlock，但不能免於starvation：
     ```c
     monitor dp {
@@ -1500,7 +1500,7 @@
          // ...
        }   
        ```
-    * [其他請參考](https：//www.jackforfun.com/java-synchronized)
+    * [其他請參考](https://www.jackforfun.com/java-synchronized)
     * Java monitor example：
     ```java
     public class BoundedBuffer<E>
@@ -1553,7 +1553,7 @@
     ```
   * Java ReetrantLock：
     * 較靈活的鎖定機制(比起synchronized)
-    * 分成NonfairSync(非公平鎖)以及FairSync(公平鎖)，可以透過修改ReetrantLock class內部的sync class來設定機制，[詳見](https：//zhuanlan.zhihu.com/p/45305463)
+    * 分成NonfairSync(非公平鎖)以及FairSync(公平鎖)，可以透過修改ReetrantLock class內部的sync class來設定機制，[詳見](https://zhuanlan.zhihu.com/p/45305463)
     * FairSync會先去檢查waiting queue裡面有沒有thread在等待，沒有的話才會去aquire; 而NonfairSync則會直接去搶鎖。
     * default是NonfairSync，FairSync 的效率往往沒有 NonfairSync的效率高
     * 對於reader-writer proclem, ReetrantLock把每一個thread都鎖住，則該策略可能過於保守，所以Java API還提供ReetrantReadWriteLock，允許同時多個reader並行，但只有一個writer。
@@ -1707,11 +1707,11 @@
 * Resources types R1, R2, ..., Rm：E.g. CPU, memory pages, I/O devices, 
 * Each resource type Ri has Wi instances：E.g. a computer has 2 CPUs
 * 以下情形不會產生deadlock：
-* ![non_deadlock](https：//github.com/a13140120a/Operation_System/blob/main/imgs/non_deadlock.PNG)
+* ![non_deadlock](https://github.com/a13140120a/Operation_System/blob/main/imgs/non_deadlock.PNG)
 * 以下情形會產生daedlock：
-* ![deadlock_graph](https：//github.com/a13140120a/Operation_System/blob/main/imgs/deadlock_graph.PNG)
+* ![deadlock_graph](https://github.com/a13140120a/Operation_System/blob/main/imgs/deadlock_graph.PNG)
 * 以下情形，雖然有cycle，但沒有deadlock
-* ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/deadlock2_graph.PNG)
+* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/deadlock2_graph.PNG)
 
 
 <h2 id="0072">Handling Deadlocks</h2> 
@@ -1731,8 +1731,8 @@
     * deadlock avoidance則是在runtime的時候：
       * safe state：就是system 可以找到一個process的先後順序的safe sequence讓system可以絕對不會發生deadlock
       * unsafe state： 若找不到safe sequence，則有可能會發生deadlock
-      * 分成single instance：使用[Resource-Allocation Graph(RAG)](https：//www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=50)
-      * 和multiple instance：使用[Banker’s algorithm](https：//www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=51)
+      * 分成single instance：使用[Resource-Allocation Graph(RAG)](https://www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=50)
+      * 和multiple instance：使用[Banker’s algorithm](https://www.youtube.com/watch?v=YM77tIHvYVM&list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV&index=51)
     * 某些資料庫系統使用第三種方法
 
 
@@ -1740,33 +1740,33 @@
 
 <h2 id="0081">Address Binding</h2> 
 
-* ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
+* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/c_compile.png)
 
-* [參考Computer_Organization_And_Architecture的memory部分](https：//github.com/a13140120a/Computer_Organization_And_Architecture#007)
-* [當編譯到執行](https：//github.com/a13140120a/Computer_Organization_And_Architecture#0065)
+* [參考Computer_Organization_And_Architecture的memory部分](https://github.com/a13140120a/Computer_Organization_And_Architecture#007)
+* [當編譯到執行](https://github.com/a13140120a/Computer_Organization_And_Architecture#0065)
 * ![Loader and Linker請參考](#0024)
 * source檔中的位址通常是符號化的(symbolized)，而通常compiler 會將這些符號bind到一個可重定位的位址(例如離某個segment開始14個bytes的地方)，而lin
 * 指令和資料至記憶體位置的連結(bind)可在以下任何步驟完成：
   * Compile time：
-    * ![comepile_time](https：//github.com/a13140120a/Operation_System/blob/main/imgs/compile_time.PNG)
+    * ![comepile_time](https://github.com/a13140120a/Operation_System/blob/main/imgs/compile_time.PNG)
     * 最早期的方式，在compile的時候就去assign phisycal address
     * 生成出來的是absolute code(絕對碼)，裡面的address都會被bind到真實且固定的phisycal address
     * 缺乏彈性，除非recompile否則無法搬動(因為virtual swapin再swapout回來的時候原來的空間可能已經被占用，所以需要搬動)，但是run-time的時候非常快，因為直接可以access address，不需要做額外運算
   * Load time：
-    * ![load_time](https：//github.com/a13140120a/Operation_System/blob/main/imgs/load_time.PNG)
+    * ![load_time](https://github.com/a13140120a/Operation_System/blob/main/imgs/load_time.PNG)
     * 若程式在compile時不能確定在記憶體中的位置，則compiler必須產生relocatable code(可重定位程式碼)，並由loader來決定address的binding(例如.BS+0x14，BS由loader決定)。
     * 一但記憶體位置搬動，必須要reload(把程式kill掉)，沒辦法在runtime的時候搬移。
   * Execution time：
-    * ![execution_time](https：//github.com/a13140120a/Operation_System/blob/main/imgs/execution_time.PNG)
+    * ![execution_time](https://github.com/a13140120a/Operation_System/blob/main/imgs/execution_time.PNG)
     * 必須要有特殊的硬體才可以(MMU)
     * 0x18為相對於此process的位址的偏移值
     * 上圖0x18其實是指0x2018，但是load到memory之後來是0x18，原因是因為會經由MMU轉換(CPU自己不知道)
     * compile出來與load到memory的都是所謂的logical-address(virtual address)
     * 是現在電腦大部分的作法
 * logical address： CPU發送出來的address，
-* phisycal adderss：memory真正看到的，也就是載入MBR(https：//github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0041)的數值，而此數值通常是CPU發出來的address經由MMU轉換而來的
+* phisycal adderss：memory真正看到的，也就是載入MBR(https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0041)的數值，而此數值通常是CPU發出來的address經由MMU轉換而來的
 * MMU(memory-managment unit 記憶體管理單元)：
-  * ![MMU](https：//github.com/a13140120a/Operation_System/blob/main/imgs/MMU.PNG)
+  * ![MMU](https://github.com/a13140120a/Operation_System/blob/main/imgs/MMU.PNG)
   * 是一種硬體裝置
   * 會有一個relocation register裡面會儲存藥加上得值(例如14000)
   * context switch的時候會把memory base address load到relocation register裡面
@@ -1826,16 +1826,16 @@
 * 允許**physical-address space**是不連續的
 * 沒有external fragmentation，而且降低internal fragmentation(page size越小的話internal fragmentation越少)
 * Dynamic linking的實作使用的技術就是共享的page。
-* [詳細資料可以參考](https：//github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
+* [詳細資料可以參考](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
 * page number經過查詢page table之後會得到相對應的frame number：
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/page_map.jpg)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_map.jpg)
 * page table是一個由OS mantain的structure，放在memory裡面，每個process都有它自己的page table，page table裡也只會有這個process的page而已，process不能隨意access自己以外的memory space。
 * 由CPU產生出來的address都分成兩個部分： page number 和 page offset：
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/page_offset.png)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_offset.png)
 * N bits的process可以allocate 2的N次方的pages，也就是最多會有2的N次方乘以page size的memory size
 * N bits的offset代表page size是2的N次方
 * Physical addr = frame base addr + frame offset
-* ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
+* ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
 * 例子：
   * 假設Page size是1KB(2^10)，Page2 maps到frame5，今有13個bits的logical address(p=2,d=20), physical addr就是5*(1KB)+20 =1,010,000,000,000+0,000,010,100=1,010,000,010,100
   * 假設logical address有32 bits,physical address有36 bits，則：
@@ -1854,9 +1854,9 @@
     * 是一個特殊的小型硬體快取記憶體
     * 由Associative memory所組成
     * 包含一個key跟一個value，Associative memory可以同時跟所有的key做比較
-    * [wiki 典型的TLB](https：//zh.wikipedia.org/wiki/%E8%BD%89%E8%AD%AF%E5%BE%8C%E5%82%99%E7%B7%A9%E8%A1%9D%E5%8D%80#%E5%85%B8%E5%9E%8B%E7%9A%84_TLB)
+    * [wiki 典型的TLB](https://zh.wikipedia.org/wiki/%E8%BD%89%E8%AD%AF%E5%BE%8C%E5%82%99%E7%B7%A9%E8%A1%9D%E5%8D%80#%E5%85%B8%E5%9E%8B%E7%9A%84_TLB)
     * 加上TLB之後的Access memory流程圖：
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/page_table2.PNG)
     * 假設access TLB要20ns，access memory要100秒，有70% TLB hit-ratio，EMAT(Effective Memory-Access Time)就等於0.7x(20 + 100)+(1-0.70)x(20+100+100)=150ns
     * 如果TLB滿了，就必須要找到一個key來犧牲掉
     * Intel Core i7有128個entry的L1 instruction TLB跟64個entry的L1 data TLB，L1 cache miss之後會到L2，L2有512個entry的TLB。L2 cache miss之後就要到Memory裡面去找。
@@ -1886,23 +1886,23 @@
     * 與virtual addr的bit數量無關，所以更有彈性，如果使用到的page很少，就不會存在bucket，可以節省大量記憶體空間
     * 壞處是如果collision就要一直traverse link，而且pointer會浪費記憶體空間
     * 示意圖：
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/hash_table.png)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/hash_table.png)
     * 改良後的page table：
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/better_hash_table.PNG)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/better_hash_table.PNG)
 
   * Inverted Page Table：
     * 不使用每個process都有一個page table，而使用單一個frame table，節省記憶體空間，而且table的使用率是百分之百(不會有多餘的frame)
     * 每個access都必須要search整個frame table，可以使用hashing解決這個問題
     * 每個entry不能有多個pid跟page，所以無法共享實體frame。
     * 通常一個entry會由process id(PID)、page number、offset三項所組成
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/inverted_page_table.png)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/inverted_page_table.png)
 
 
 <h2 id="0084">Non-Contiguous Memory Allocation(Segmentation)</h2> 
 
 * 是Non-Contiguous Memory Allocation的variable size
 * 是以使用者的角度去切割(page是以系統管理的角度)
-* ![Segmentation-table-example](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Segmentation-table-example.jpg)
+* ![Segmentation-table-example](https://github.com/a13140120a/Operation_System/blob/main/imgs/Segmentation-table-example.jpg)
 * Segmentation Table：
   * Logical address格式： [Segment, offset]，一個page的size可以是4KB等等，但這裡的offset必須要跟系統定義的能長到最大的physical addr的長度一致(例如4GB，23個bit)
   * 每個entry都必須要有：
@@ -1910,9 +1910,9 @@
     * Limit (4 bytes)： Segment的長度
   * 會有STBR(Segment-table base register)：segmentation table的base addr
   * 還有STLR(Segment-table length register)：segmentation table的長度，用來檢查存取的位置是否超過segment的範圍
-  * ![segmentationHardware](https：//github.com/a13140120a/Operation_System/blob/main/imgs/segmentationHardware.jpg)
+  * ![segmentationHardware](https://github.com/a13140120a/Operation_System/blob/main/imgs/segmentationHardware.jpg)
 * Sharing of Segments： 因為要program在memory可能是非常複雜的，必須要知道在哪幾個page可以share，而且會有internel fragmentation的問題，所以比較上層的Segments sharing就比較親近programmer。
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/segmentation_share.PNG)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/segmentation_share.PNG)
 * Protection & Sharing
   * Protection bits associated with segments
     *  paging所提到的protection bit是一個例子，存取記憶體真正的protection通常是在segmentation5
@@ -1925,7 +1925,7 @@
 * Segmentation with Paging：
   * Apply segmentation in logical address space
   * Apply paging in physical address space
-  * ![Segmentation_with_page](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Segmentation_with_page.png)
+  * ![Segmentation_with_page](https://github.com/a13140120a/Operation_System/blob/main/imgs/Segmentation_with_page.png)
 
 <h2 id="0085">Swapping</h2> 
 
@@ -1933,7 +1933,7 @@
 * backing store(備份儲存體，或稱swap space)： 一塊用來儲存從memory swap到disk的儲存空間，通常在安裝OS的時候設定Swap space的大小，通常Swap space跟檔案系統是分開的，使用midterm scheduling。
 
 * swap page示意圖：
-  * ![swap_page](https：//github.com/a13140120a/Operation_System/blob/main/imgs/swap_page.jpg)
+  * ![swap_page](https://github.com/a13140120a/Operation_System/blob/main/imgs/swap_page.jpg)
 * 如果memory addr的binding是在load time或者compile time的話，那麼當disk中的page swap回memory當中就必須要到相同的記憶體位址
 * 但如果memory arrd的binding是在executing time的話，就可以swap到memory的任意位置
 * 當一個process被swap的時候，必須要是Idle的狀態(不能是在正做IO的狀態)，因為如果IO寫回memory的時候剛好這個位址的page(或process)已經被swap掉(換成其他page或process)了，就會寫到別的page裡面去，有兩種解決辦法：
@@ -1953,7 +1953,7 @@
   * IA-32 架構：
     * IA-32 架構的記憶體管理被分成兩個元件，segmentation unit跟paging unit，cpu產生的logical address會先送到segmentation unit，然後產生一個linear address之後再送到paging unit產生physical address
     * 流程圖：
-    * ![流程圖](https：//github.com/a13140120a/Operation_System/blob/main/imgs/IA32_1.PNG)
+    * ![流程圖](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_1.PNG)
     * IA-32 架構允許segment的大小最大可以到4GB，並且最多可以擁有16K個segment，其logical address由兩個部分組成：(selector, offset)
     * 段描述符表(descriptor table)：IA-32處理器把所有段描述符按順序組織成線性表放在主記憶體中，稱為段描述符表。
       * 分為三類：全局描述符表GDT、局部描述符表LDT、中斷描述符表IDT。
@@ -1965,24 +1965,24 @@
     * 段選擇器(selector)：
       * 32位彙編中16位段寄存器(CS、DS、ES、SS、FS、GS)存放段描述符在段描述符表中的索引值、指示位TI(TI=0指示從全局描述表GDT中讀取描述符，TI=1指示從局部描述符中LDT中讀取描述符)、優先級(RPL用於特權檢查)。這些信息總稱段選擇器(段選擇子).
       * CS 暫存器具有另外一個重要的功能 ： 它包含一個2位元欄位, 用來指定CPU當前的特權等級
-      * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/IA32_selector.PNG)
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_selector.PNG)
       * cpu從descriptor table 中找到段描述符(descriptor)之後加上offset得到linear address
-      * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/IA32_discriptor_table.PNG)
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_discriptor_table.PNG)
     * 產生出來的linear address會再送到paging unit：
       * IA-32 架構允許兩種分頁大小，4KB與4MB，在4KB的page中，IA-32使用two-level的階層分頁法，32位元的linear address分割如下：
-      * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/IA32_page.PNG)
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_page.PNG)
       * 最高位的10個bit referece到outer table(IA32稱為page directiry)的entry(進入點)，而中間10個bit(1024個)為inner table的index，最低的12個位原則是4KB的page offset
-      * CR3：是一種處理有關分頁目錄 (page directory)的控制暫存器，CR3中含有頁目錄表實體記憶體基地址，因此該暫存器也被稱為頁目錄基地址暫存器PDBR（Page-Directory Base address Register），[詳細內容](https：//wanker742126.neocities.org/new/dos_asm/ap03.html)
-      * 如果PSE(page size extensions, CR4的bit 4，在Pentium和以後的處理器才有)旗標設為1時，才可以使用4MB的分頁大小，那麼p1就會是page table的index，而剩下的22bit就是offset。否則就只能只用4KB的page，那麼p1跟p2就分別用來表示outer table跟inner table的index。[詳細](https：//www.csie.ntu.edu.tw/~wcchen/asm98/asm/proj/b85506061/chap2/paging.html)
-      * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/IA_32_2level_page.PNG)
-    * [PAE(Physical Address Extension)](https：//zh.wikipedia.org/wiki/%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E6%89%A9%E5%B1%95#%E9%A1%B5%E8%A1%A8%E7%BB%93%E6%9E%84)技術使得32位元處理器可以處理大於4GB的實體位址空間。
+      * CR3：是一種處理有關分頁目錄 (page directory)的控制暫存器，CR3中含有頁目錄表實體記憶體基地址，因此該暫存器也被稱為頁目錄基地址暫存器PDBR（Page-Directory Base address Register），[詳細內容](https://wanker742126.neocities.org/new/dos_asm/ap03.html)
+      * 如果PSE(page size extensions, CR4的bit 4，在Pentium和以後的處理器才有)旗標設為1時，才可以使用4MB的分頁大小，那麼p1就會是page table的index，而剩下的22bit就是offset。否則就只能只用4KB的page，那麼p1跟p2就分別用來表示outer table跟inner table的index。[詳細](https://www.csie.ntu.edu.tw/~wcchen/asm98/asm/proj/b85506061/chap2/paging.html)
+      * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA_32_2level_page.PNG)
+    * [PAE(Physical Address Extension)](https://zh.wikipedia.org/wiki/%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E6%89%A9%E5%B1%95#%E9%A1%B5%E8%A1%A8%E7%BB%93%E6%9E%84)技術使得32位元處理器可以處理大於4GB的實體位址空間。
     * 其他名詞：PDE(page directory entry, windows page table的outer table)
-    * [參考資料](https：//www.cntofu.com/book/46/linux_kernel/1217.md)
+    * [參考資料](https://www.cntofu.com/book/46/linux_kernel/1217.md)
 
   * x86-64 架構：
     * Intel一開始的64位元架是IA-64，但是這時候AMD也開始發展64位元架構，稱為 x86-64，它是以現有IA-32 指令集為基礎下去擴展和支援更大的logical 和physical address，當 x86-64架構出現時，原本AMD根據Intel架構發展晶片的情況反轉，變成Intel採取AMD的x86-64架構，後來AMD64與Intel64通稱為x86-64。
     * 64位元的address space支援2^64次方(16 exabytes)的記憶體定址，但實際上，目前x86-64只提供48位元的虛擬地址，使用四層的分頁結構，支援4KB、2MB或1GB的分頁，x86-64的virtial address大小是48個bit，有PAE的話則可以支援到52 bits(1024兆個bytes)。
-    * ![x86_64_page_translation](https：//github.com/a13140120a/Operation_System/blob/main/imgs/x86_64_page_translation.png)
+    * ![x86_64_page_translation](https://github.com/a13140120a/Operation_System/blob/main/imgs/x86_64_page_translation.png)
 
 * ARM架構：
   * ARM除了行動裝置以外，還提供嵌入式系統的架構，以下將描述64位元ARMv8的架構。
@@ -1993,9 +1993,9 @@
     | 4 KB | 4 KB | 2 MB |
     | 16 KB | 16 KB| 32 MB |
     | 64 KB | 64 KB | 512 MB |
-  * ![ARMv8_page_translation](https：//github.com/a13140120a/Operation_System/blob/main/imgs/ARMv8_page_translation.png)
+  * ![ARMv8_page_translation](https://github.com/a13140120a/Operation_System/blob/main/imgs/ARMv8_page_translation.png)
   * 如果使用的是4KB的translation granules的話，那麼第0/~11個bit是page的offset，此時如果使用的region是2MB的話，那麼0/~20個bit就是region內的offset，但如果使用的region是1GB的話，那麼0/~29個bit就是region內的offset。
-  * [詳細](https：//www.cnblogs.com/-9-8/p/8406345.html)
+  * [詳細](https://www.cnblogs.com/-9-8/p/8406345.html)
 
 
 
@@ -2013,15 +2013,15 @@
   * 提高cpu/resourese的使用率(multi programming)
   * load program的速度較快
 * VirtualMemory是意圖：
-  * ![VirtualMemory](https：//github.com/a13140120a/Operation_System/blob/main/imgs/VirtualMemory.jpg)
+  * ![VirtualMemory](https://github.com/a13140120a/Operation_System/blob/main/imgs/VirtualMemory.jpg)
 * virtual是屬於鬆散空間，因為這樣才有位置可以塞進成長的stack、heap或者DLL的code部分到自己的virtual memory：
-  * ![process_between_dll](https：//github.com/a13140120a/Operation_System/blob/main/imgs/process_between_dll.png)
+  * ![process_between_dll](https://github.com/a13140120a/Operation_System/blob/main/imgs/process_between_dll.png)
 
 <h2 id="0091">Demand Paging</h2> 
 
 * 只有在需要用到的時候才把page load到memory
 * **page fault**： 通常會有每個PTE會有一個valid-invalid bit的欄位來表示此page存在memory與否(limit用來保護違規存取)，如果不存在的話將會觸發**page fault**，並交由OS處理：
-  * 可以參考Computer_Organization_And_Architecture的[page fault流程](https：//github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
+  * 可以參考Computer_Organization_And_Architecture的[page fault流程](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0077)
   * 補充：發生page fault時會先檢查internel table(通常會再PCB裡面)，來決定是有效還是無效的reference，若是無效，便終止process，若是有效，才把page從disk load到memory當中，在這中途可能會context switch到另一個process，等待load的動作結束之後才會切換回來。
   * 
 * pure demand paging：在沒有任何page在memory裡面的情況下執行process，簡單來說就是當execute一個process的時候可能就create一個page table、PCB就好。 
@@ -2046,16 +2046,16 @@
 * Optimizations：
   * 儘管是在同一顆disk上面，系統對於swap space的存取速度還是會大於對file system控制範圍的存取速度，原因是因為file system在存取硬碟的時候需要做很多的檢查、以及控管，另一個原因是因為swap space 通常會有比較大的chunk size，這會增加一次access的資料量，進而增加存取速度，也因為如此，有些OS會在一開始就把整個process的image檔都load到swap space裡面。
   * 而一開始就把整個process的image檔都load到swap space裡面的方法也會造成一些缺點，其中一個缺點便是process的load time會特別久，所以另一種做法是： 需要的page(demand page)才會從file system讀出來到memory當中，當這個page要被swap到disk時，系統會先檢查有沒有modify過，如果有的話就存到swap space，如果沒有的話就直接覆寫掉該page(而不是swap到disk)，需要的話就再從file system載入，這種做法可以把減少系統對於swap space的使用量。
-  * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。[(sbrk()參考)](https：//stackoverflow.com/questions/6988487/what-does-the-brk-system-call-do)
+  * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。[(sbrk()參考)](https://stackoverflow.com/questions/6988487/what-does-the-brk-system-call-do)
 
 <h2 id="0093">Copy-on-Write</h2> 
 
 * Copy-on-Write(寫入時複製)： 藉由共享page來取代複製，當有寫入的動作發生的時候，才複製出一份新的page讓其中一個process使用(parent or child)
 * `fork()` system call使用此技巧，當呼叫`fork()`的時候，傳統的做法是，child會複製parent的memory content，然而，考慮到通常`fork()`之後會接著`exec()`、複製整個parent process的memory 空間是一件浪費時間與空間的事情，因此，我們可以讓parent與child最初共享parent的memory page，這些memory page會被標註為copy-on-write的page，這表示如果有其中一個process想要寫入共享的page，才會copy 一份新的page讓process寫入
 * process1修改 page C之前：
-  * ![copy_on_write_1](https：//github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_1.jpg)
+  * ![copy_on_write_1](https://github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_1.jpg)
 * process1修改 page C之後：
-  * ![copy_on_write_2](https：//github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_2.jpg)
+  * ![copy_on_write_2](https://github.com/a13140120a/Operation_System/blob/main/imgs/copy_on_write_2.jpg)
 * 有些UNIX版本(包括Linux、MacOS、BSD Linux)會提供`vfork()`system call，vfork的全名是"virtual memory fork"，使用`vfork()`時，parent process會被suspend，而child process會使用parent的memory space，因為`vfork()`在使用時不會有Copy-on-Write，所以child的任何改動，parent都是看的見的，通常`vfork()`使用完之後會馬上接著`exec()`，也因為不會發生分頁的複製，所以`vfork()`是一種非常有效率的process產生方式。
 
 
@@ -2072,14 +2072,14 @@
   * 假設 Reference string： 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5
   * 一開始有3個free frames
   * 使用FIFO Algorithm會出現9個page fault：
-  * ![FIFO](https：//github.com/a13140120a/Operation_System/blob/main/imgs/FIFO.PNG)
+  * ![FIFO](https://github.com/a13140120a/Operation_System/blob/main/imgs/FIFO.PNG)
 * Belady's anomaly：
   * FIFO會發生的現象
   * 當frame數提高的時候page fault可能不會提升或甚至反而下降的現象。
   * 如下圖，當使用上述的Reference string，並把frame數提升到4個的時候，page fault反而上升到了10個
-  * ![beladys](https：//github.com/a13140120a/Operation_System/blob/main/imgs/beladys.PNG)
+  * ![beladys](https://github.com/a13140120a/Operation_System/blob/main/imgs/beladys.PNG)
   * Belady's anomaly FIFO的page fault發生曲線圖(非與上述Reference string相同)：
-  * ![beladys_plot](https：//github.com/a13140120a/Operation_System/blob/main/imgs/beladys_plot.PNG)
+  * ![beladys_plot](https://github.com/a13140120a/Operation_System/blob/main/imgs/beladys_plot.PNG)
 * Optimal Page Replacement：
   * 把未來最長時間之內不會被用到的那一頁替換掉
   * 被證明是「一定是最好的演算法」
@@ -2087,13 +2087,13 @@
   * 實際上是無法達成的，因為我們無法知道未來會出要那些page
   * 常常會用來被跟其他演算法比較，藉此評估效能。
   * 注意下圖並不是每個page真的在memory裡面搬來搬去，而是為了方便觀察而改變順序
-  * ![optimal_algorithm](https：//github.com/a13140120a/Operation_System/blob/main/imgs/optimal_algorithm.PNG)
+  * ![optimal_algorithm](https://github.com/a13140120a/Operation_System/blob/main/imgs/optimal_algorithm.PNG)
 * LRU Algorithm (Least Recently Used)：
   * 近來最少使用演算法，白話文就是最久未被使用演算法
   * 比起Optimal Page Replacement是使用「向前看」的方式，那麼LRU就是「向後看」(跟FIFO一樣都是向後看)
   * 一個有趣的地方是，如果我們把Reference string倒過來(5, 4, 3, 2, 1, 5, 2, 1, 4, 3, 2, 1)那麼page fault的次數也不會改變
   * 可以看到使用相同的Reference string之下，出現了8個page fault，雖然沒辦法跟optimal一樣，但是比FIFO還多。
-  * ![LRU](https：//github.com/a13140120a/Operation_System/blob/main/imgs/LRU.PNG)
+  * ![LRU](https://github.com/a13140120a/Operation_System/blob/main/imgs/LRU.PNG)
   * LRU的實作方法有兩種：
     * Counter： 把time stamp copy 進去counter裡面，搜尋的時候只要搜尋最小的counter的值就可以了，需要注意overflow的問題。
     * stack： 美當一個page被access時，就把該page從stack中移出，並且放到最頂端，如此一來最頂端的page就是最近被用過的，那麼最底端的page就是要被犧牲的page，可以使用double linked list來實作，每當要移動一個page並放在頂端的時候，就需要更改六個pointer，使用hash map來儲存每個page在double linked list的位置，如此一來要搜尋該page就只需要order one的時間。
@@ -2114,7 +2114,7 @@
     * 如果為1的話，我們就把他的reference bit清除為0，然後給他second chance，並且繼續往下搜尋整個queue，直到所有的page都被替換掉，或者被給予second chance。
     * 如果這個page經常被使用，那麼他的reference一直都會是1，代表他永遠不會被swap到disk裡面
     * 當每個page的reference bit都為1時，Second-Chance Algorithm就會退化成FIFO了(第一次search 整個queue的時候會把全部的page都設成0，然後挑最頂端的)。
-    * ![Second_chance_algorithm](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Second_chance_algorithm.jpg)
+    * ![Second_chance_algorithm](https://github.com/a13140120a/Operation_System/blob/main/imgs/Second_chance_algorithm.jpg)
   * Enhanced Second-Chance Algorithm：
     * 使用跟Second-Chance Algorithm相同的技巧，但會有一個reference bit(表示被access過)跟一個dirty bit(表示被修改過)
     * 有了這兩個bit可以得到以下四種類型：
@@ -2156,13 +2156,13 @@
     * process可以使用共享程式庫(dll)，在這種情況下，process只需要更新page table就可以了。
     * 第2種原因是，當系統回收(reclaim)page，並將其放在free frame list裡面的時候，這時該page的內容尚未被清空(之前使用的內容尚在，會有安全的疑慮)，這時只要把該page清空，然後重新分配給該process就可以了，第2種原因通常會發生在allocate heap的時候。
     * 可以使用`ps -eo min_flt,maj_flt,cmd` 來查看Linux系統當中major和minor的page fault數量以及啟動該process的command。
-    * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/major_minor_page_fault_command.PNG)
-    * [詳細參考](https：//www.learnsteps.com/difference-between-minor-page-faults-vs-major-page-faults/)
+    * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/major_minor_page_fault_command.PNG)
+    * [詳細參考](https://www.learnsteps.com/difference-between-minor-page-faults-vs-major-page-faults/)
 
 <h2 id="0095">Allocation of Frames</h2> 
 
 * 每個process都有一個最少配置frame的數量，若少於這個數量，process將無法執行。
-* 舉例來說，如果使用[間接定址(indirect addressing)](https：//github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#%E5%AE%9A%E5%9D%80)，例如load可能會涉及第0個page，而第0個page又會去reference第6個page等等，這樣這個process至少需要三個frame才能夠執行。
+* 舉例來說，如果使用[間接定址(indirect addressing)](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#%E5%AE%9A%E5%9D%80)，例如load可能會涉及第0個page，而第0個page又會去reference第6個page等等，這樣這個process至少需要三個frame才能夠執行。
 * Allocation Algorithms：
   * Equal Allocation(同等分配)：每個process平均分到相同的frame，例如system當中有93個frame和5個process，那麼每個frame可以分到18個frame，而剩下的3個可以當作free frame的庫存，這種分配方法會造成較大的process可能沒有足夠的frame，或者較小的process分配到太多沒有用到的frame。
   * Proportional Allocation(比例分配)：按照每個process的大小去分配，例如有62個frame，分給兩個process，一個是10KB的小型程式，一個則是127KB的大型程式， 那麼總共的size是137KB，於是我們分給小process 10/137 * 62約等於四個frame，而大的process則獲得127/137 * 62約等於57個frame，如果有新的process近來或者舊的process執行完畢，都會改變系統配置給每個process的數量。
@@ -2180,7 +2180,7 @@
     * 通常會產生較好的系統效能，是較常用的方法
   * 系統中通常會有一種核心常式(kernel routine)，該routine會從所有process中回收page(reclaim page)，而這種常式通常被稱為**reaper(收割者)**，他們會應用上述的任何演算法，當可用記憶體數量到達最大的閾值(threshold)的時候系統會suspend routine，直到低於最低的閾值的時候會再resume routine，並且將回收回來的frame放到free frame list當中。
   * 如下圖，當達到最低直a的時候啟動reapers，直到達到最高點b的時候suspend reapers。
-  * ![](https：//github.com/a13140120a/Operation_System/blob/main/imgs/reaper.jpg)
+  * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/reaper.jpg)
   * 收割常式(reaper)，通常會使用一些如上述的類似LRU演算法，如果仍然無法將free frame list保持在最小閾值以上的話，這時候可能會暫停使用Second-Chance Algorithm，改成使用FIFO，
   * 或者更極端的例子： Linux 系統中，當記憶體數量降到極低時，OOM(out-of-memory killer)這個process會選擇一個process將其終止，每個process都會有所謂的OOM score，較高的score會增加該process被終止的機會，OOM score是根據process使用的記憶體百分比來計算，其中，pid為2500的process其OOM score可以使用`cat /proc/2500/oom_score`查看，reaper不僅可以reclaiming page，還可以隨著時間調整最大與最小閾值，而這些值管理者都可以根據需求調整預設值。
 
@@ -2190,15 +2190,15 @@
 * 如果一個process花在paging的時間比花在executing的時間還多，這種現象就稱為Thrashing
 * 如果一個process沒有足夠的frame，那執行中將會大量出現page fault，因為每個page都很忙碌，所以把這個page swap到disk之後馬上又須要把他swap回來。
 * 當一個process突然進入到新的狀況，並且需要更多的frame，於是他開始產生page fault，然後從其他的process拿走frame，其他的process因為frame減少了，於是又開始大量的產生page fault，造成所有的process都在排隊等待frame，這時候cpu的queue就空了，空了之後cpu就認為cpu使用率變低，於是就增加degree of multiprogramming，讓更多的process進到cpu scheduling裡面，更多的process需要更多的frame，如此惡性循環，早成cpu使用率急遽下降
-* ![Thrashing](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Thrashing.jpg)
+* ![Thrashing](https://github.com/a13140120a/Operation_System/blob/main/imgs/Thrashing.jpg)
 * 使用Local page replacement(process不能搶奪其他process的frames)可以限制thrashing，但如果多個process都出現thrashing現象，仍然會阻塞IO queue，造成效能下降。
 * locality model(局部區域模式)： 藉著觀察process上一段時間使用的page，來決定process目前需要多少個frame，所謂的locality就是指一組同時被使用的page，舉例來說，當一個function被呼叫的時候，這個process就到了一個新的locality，而當這個function return的時候，就又來開了這個locality。
-* ![locality](https：//github.com/a13140120a/Operation_System/blob/main/imgs/Locality.jpg)
+* ![locality](https://github.com/a13140120a/Operation_System/blob/main/imgs/Locality.jpg)
 * 如果我們分配的frame比locality的大小還少，那麼該process就會出現thrashing，而如何為每個locality定義他的frame數? 以下有兩種方法：
   * working-set model：
     * 定義一個參數∆，這個∆代表working-set window，也就是最近∆個page的reference，而在最近∆個page所組成的set就是working set。
     * 下圖中t1時間內的working set是{1,2,5,6,7}，t2的working set是{3,4}
-    * ![WorkingSetModel](https：//github.com/a13140120a/Operation_System/blob/main/imgs/WorkingSetModel.jpg)
+    * ![WorkingSetModel](https://github.com/a13140120a/Operation_System/blob/main/imgs/WorkingSetModel.jpg)
     * D = ∑WSSi，WSSi是Wirking set size，D是process目前working set對frame的需求，如果需求大於可用frame數(D>m)的話，將會發生thrashing，那我們就必須選擇另一個process，把他的frame給這個thrashing的process，反之，如果D<m的話，那麼就可以把這個process多出來的frame拿給其他需要的process使用。
     * 要實現working-set model是非常困難的事情，因為每次的reference都必須把working-set window的一端加入新的紀錄，且另一端要移除舊的紀錄，就像working-set window在移動一樣
     * 另一種類似working-set window的方法是，假設∆為10000，我們可以每5000次的reference就觸發一次clock interrupt，並且把這5000次的每一個page的reference bit記錄下來(例如page 1在過去5000到10000次有被reference，還有過去10000次到15000次有被reference，那麼用兩個bit來表示就是11)，這樣如果產生了page fault，我們就可以去參考過去5000/~15000次的reference中(因為∆=10000)，當然我們可以增加用來記錄的bit數以及觸發clock interrupt的次數來增加精確度，可是更頻繁的unterrupt將會付出更高的代價。
@@ -2212,9 +2212,9 @@
 * paging(in/out)的替代方法
 * 當我們要replace一個page的時候，這個page有可能已經被modify過了，所以必須要先把原本的content寫回disk(或secondary storage)，另外一種方法，也就是Memory Compression，可以把多個modify過的frame壓縮到一個frame當中，這樣就不用一直存回disk(或secondary storage)當中了。
 * 舉例來說，當free frame的數量低於某個閾值的時候，會觸發replacement的動作，假設選擇了第13, 3, 35, 26個frame放到free frame list裡面，通常這些page當中，如果有被修改過的話就會被寫入disk當中：
-* ![memory_compression_before](https：//github.com/a13140120a/Operation_System/blob/main/imgs/memory_compression_before.jpg)
+* ![memory_compression_before](https://github.com/a13140120a/Operation_System/blob/main/imgs/memory_compression_before.jpg)
 * 而Memory Compression的做法則會把其中三個frame壓縮成一個frame，並存在compressed frame list裡面：
-* ![memory_compression_after](https：//github.com/a13140120a/Operation_System/blob/main/imgs/memory_compression_after.jpg)
+* ![memory_compression_after](https://github.com/a13140120a/Operation_System/blob/main/imgs/memory_compression_after.jpg)
 * Windows 10和MacOS都支援Memory compression
 * MacOS一開始會先使用Compression LRU page，如果記憶體不足的話才會用paging。
 * 行動裝置不支援paging(in/out)，所以絕大部分行動裝置都是使用這種方式管理記憶體。
@@ -2232,7 +2232,7 @@
     * 比如我們要裝一個21KB的structure，可以把一個256KB的連續實體記憶體切成兩分AL跟AR，再把AL切成BL跟BR，再把BL切成CL，於是變成32KB就可以符合21KB的structure
     * Buddy system的一個很好的優點是：只要把chunk的地址與chunk的大小進行xor運算就可以獲得Buddy的地址，因此可以非常快速的合併。
     * Buddy system的一個很明顯的缺點就是容易造成fragmentation，像是33KB的就只能使用64KB的page，浪費了31KB的空間。
-    * ![BuddySystem](https：//github.com/a13140120a/Operation_System/blob/main/imgs/BuddySystem.jpg)
+    * ![BuddySystem](https://github.com/a13140120a/Operation_System/blob/main/imgs/BuddySystem.jpg)
   * Slab allocator(平板分配)：
     * 一個slab由一個或多個實體的連續page所組成(不能是半個或不到一個)
     * 一個cache由一個或多個slab所組成，每個cache只能裝一種object
@@ -2248,8 +2248,8 @@
       * OBJS指的是這個process調用了多少個object。
       * ACTIVE代表有多少object正在使用中，USE是active的比例。
       * SLABS指這個process使用多少個slab來管理，而OBJ/SLAB就是指一個slab擁有多少個object。
-    * [參考資料](https：//hackmd.io/@sysprog/linux-memory)
-    * ![SlabAlloc](https：//github.com/a13140120a/Operation_System/blob/main/imgs/SlabAlloc.jpg)
+    * [參考資料](https://hackmd.io/@sysprog/linux-memory)
+    * ![SlabAlloc](https://github.com/a13140120a/Operation_System/blob/main/imgs/SlabAlloc.jpg)
 
 
 <h2 id="0099">Other Considerations</h2> 
