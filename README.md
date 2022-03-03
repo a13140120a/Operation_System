@@ -11,7 +11,17 @@
 * ## [Virtual Memory](#009) #
 * ## [pass](#010) #
 * ## [pass](#011) # 
+* ## [pass](#012) # 
+* ## [pass](#013) # 
+* ## [pass](#014) # 
+* ## [pass](#015) # 
+
+
 ****
+
+
+
+
 
 <h1 id="001">Overview</h1> 
 
@@ -22,6 +32,9 @@
   * ## [Duel-Mode Operation](#0015) #
   * ## [Component 名詞定義](#0016) #
   * ## [Memory Access Architecture](#0017) #
+ 
+ 
+ 
  
 <h2 id="0011">Definition</h2> 
 
@@ -91,6 +104,10 @@
 * ![NUMA](https://github.com/a13140120a/Operation_System/blob/main/imgs/NUMA-Architecture.png)
 
 ****
+
+
+
+
 <h1 id="002">OS structure</h1> 
 
   * ## [Services](#0021) #
@@ -101,6 +118,9 @@
   * ## [Structure](#0026) #
   * ## [系統啟動](#0027) #
   * ## [除錯](#0028) #
+
+
+
 
 <h2 id="0021">Services</h2>   
 
@@ -321,11 +341,17 @@
 * BCC： BCC是[eBPF](https://hackmd.io/@sysprog/linux-ebpf)工具的前端介面，而eBPF是擴展的[BPF](https://zh.wikipedia.org/wiki/BPF)，eBPF可動態插入正在運行的Linux系統，其指令可讀取特定事件(例如正在呼叫某個system call)，或者監視系統效能(例如IO時間)，BCC提供了python的前端介面，並嵌入了eBPF工具連接的C程式碼，而eBPF又與核心連接，BCC提供的許多工具均可用於特定應用程式，例如MySQL, Java或Python 程式
 
 ****
+
+
+
+
 <h1 id="003">Process Concept</h1> 
 
   * ## [Concept](#0031) #
   * ## [Process Creation](#0032) #
   * ## [Process Communication](#0033) #
+
+
 
 
 <h2 id="0031">Concept</h2> 
@@ -526,6 +552,10 @@
   * [詳細資訊](https://www.itread01.com/p/585471.html)
 
 ****
+
+
+
+
 <h1 id="004">Thread</h1> 
 
   * ## [Concept](#0041) #
@@ -533,6 +563,9 @@
   * ## [Library](#0043) #
   * ## [Threading Issues](#0044) #
   * ## [OS Example](#0045) #
+
+
+
 
 <h2 id="0041">Concept</h2> 
 
@@ -711,6 +744,10 @@
   * task_struct(見3章PCB)結構中存在許多指標指向儲存這些資料的其他struct，如開啟檔案的linked-list、signal處理訊息和virtual memory的資料結構等，當`fork()`被呼叫時會clone這些data, 而`clone()`則會根據flag指向parent的儲存這些資料的struct，`clone()`技術也造就了虛擬化技術。
 
 ****
+
+
+
+
 <h1 id="005">CPU Scheduling</h1> 
 
   * ## [Concept](#0051) #
@@ -720,6 +757,9 @@
   * ## [Real-time Scheduling](#0055) #
   * ## [OS Example](#0056) #
   * ## [Evaluation Methods](#0057) #
+
+
+
 
 <h2 id="0051">Concept</h2> 
 
@@ -902,7 +942,25 @@
 * Simulation：以應用程式的方式設計一個電腦系統的模型，用來驅動模型的資料產生可以是隨機分布、常態分布、指數分布、卜瓦松分布等等，並且收集LOG、workload等資料
 * Implementation：即使是模擬，也沒辦法得到完全正確的評估，因此還需要Implementation。
 
+****
+
+
+
+
 <h1 id="006">Synchronization</h1> 
+
+  * ## [Algorithm for Two Processes](#0061) #
+  * ## [Peterson’s Solution for Two Processes](#0062) #
+  * ## [Synchronization Hardware Support](#0063) #
+  * ## [Mutex lock](#0064) #
+  * ## [Semaphores](#0065) #
+  * ## [Monitor](#0066) #
+  * ## [Classical Problem](#0067) #
+  * ## [Example](#0068) #
+  * ## [替代方法](#0069) #
+
+
+
 
 * race condition：
   * [process communication](#0033)裡頭提到的producer與consumer的例子可以修改如下：
@@ -1651,7 +1709,19 @@
   * 例如Scala或Erlang
   * Functional language和命令式語言的差別在於，Functional language不必維護狀態，變數一旦被定義，並且assign一個數值，就不可以被改變，也因為不允許可變，所以不會有race condition的情況發生。
 
+
+****
+
+
+
+
 <h1 id="007">Deadlock</h1> 
+
+  * ## [Resource-Allocation Graph](#0071) #
+  * ## [Handling Deadlocks](#0072) #
+
+
+
 
 * 在正常的情況下，一個thread只能依照下列的順序來使用resource：
   1. request
@@ -1736,7 +1806,22 @@
     * 某些資料庫系統使用第三種方法
 
 
+****
+
+
+
+
 <h1 id="008">Memory Management</h1> 
+
+  * ## [Address Binding](#0081) #
+  * ## [Contiguous Memory Allocation](#0082) #
+  * ## [Non-Contiguous Memory Allocation(Paging)](#0083) #
+  * ## [Non-Contiguous Memory Allocation(Segmentation)](#0084) #
+  * ## [Swapping](#0085) #
+  * ## [Example](#0086) #
+
+
+
 
 <h2 id="0081">Address Binding</h2> 
 
@@ -1998,8 +2083,26 @@
   * [詳細](https://www.cnblogs.com/-9-8/p/8406345.html)
 
 
+****
+
+
+
 
 <h1 id="009">Virtual Memory</h1> 
+
+  * ## [Bcakground](#0091) #
+  * ## [Bcakground](#0092) #
+  * ## [Bcakground](#0093) #
+  * ## [Bcakground](#0094) #
+  * ## [Bcakground](#0095) #
+  * ## [Bcakground](#0096) #
+  * ## [Bcakground](#0097) #
+  * ## [Bcakground](#0098) #
+  * ## [Bcakground](#0099) #
+  * ## [Bcakground](#00910) #
+  * ## [Bcakground](#00911) #
+
+
 
 
 <h2 id="0091">Bcakground</h2> 
@@ -2017,7 +2120,7 @@
 * virtual是屬於鬆散空間，因為這樣才有位置可以塞進成長的stack、heap或者DLL的code部分到自己的virtual memory：
   * ![process_between_dll](https://github.com/a13140120a/Operation_System/blob/main/imgs/process_between_dll.png)
 
-<h2 id="0091">Demand Paging</h2> 
+<h2 id="0092">Demand Paging</h2> 
 
 * 只有在需要用到的時候才把page load到memory
 * **page fault**： 通常會有每個PTE會有一個valid-invalid bit的欄位來表示此page存在memory與否(limit用來保護違規存取)，如果不存在的話將會觸發**page fault**，並交由OS處理：
@@ -2033,7 +2136,7 @@
 * swaper跟pager不會衝突，例如swap要把這個process存到disk裡面，然後交給pager處理，pager再決定要把這個process的哪個page存到disk裡面。
 * Free-Frame List： OS通常會有一個free-frame list，裡面裝著空白的frame，而OS通常會使用一種叫做「**zero-fill-on-demand**」的技術來把free-frame list裡面的frame在被配置之前填(清)零。
 
-<h2 id="0092">Demand Paging Performance</h2> 
+<h2 id="0093">Demand Paging Performance</h2> 
 
 * 其EAT(有效存取時間) = (1-P) x ma(memory access time) + p x pft(page falt time)：
   * 假設ma = 200ns, pft = 8ms
@@ -2048,7 +2151,7 @@
   * 而一開始就把整個process的image檔都load到swap space裡面的方法也會造成一些缺點，其中一個缺點便是process的load time會特別久，所以另一種做法是： 需要的page(demand page)才會從file system讀出來到memory當中，當這個page要被swap到disk時，系統會先檢查有沒有modify過，如果有的話就存到swap space，如果沒有的話就直接覆寫掉該page(而不是swap到disk)，需要的話就再從file system載入，這種做法可以把減少系統對於swap space的使用量。
   * 像這種不會寫回file system(可能被overwrite或者swap到swap space)的memory page又稱為「Anonymous memory」(匿名記憶體)，這些page所存放的資料通常是stack、heap裡面的資料，也就是使用`malloc()`、`sbrk()`、`brk()`、`mmapp()`這些system call所配置出來的記憶體空間。[(sbrk()參考)](https://stackoverflow.com/questions/6988487/what-does-the-brk-system-call-do)
 
-<h2 id="0093">Copy-on-Write</h2> 
+<h2 id="0094">Copy-on-Write</h2> 
 
 * Copy-on-Write(寫入時複製)： 藉由共享page來取代複製，當有寫入的動作發生的時候，才複製出一份新的page讓其中一個process使用(parent or child)
 * `fork()` system call使用此技巧，當呼叫`fork()`的時候，傳統的做法是，child會複製parent的memory content，然而，考慮到通常`fork()`之後會接著`exec()`、複製整個parent process的memory 空間是一件浪費時間與空間的事情，因此，我們可以讓parent與child最初共享parent的memory page，這些memory page會被標註為copy-on-write的page，這表示如果有其中一個process想要寫入共享的page，才會copy 一份新的page讓process寫入
@@ -2060,7 +2163,7 @@
 
 
 
-<h2 id="0094">Page Replacement</h2> 
+<h2 id="0095">Page Replacement</h2> 
 
 * virtual memory的其中一項好處是可以增加degree of multiprogrammimg，假設今天配置了6個process，系統中有40個frame可以使用，每個process大小都是10個page，但實際用到的其實只有5個page，這時候就可以裝得下，但假設突然間這6個process都必須要使用完整的10個page，這樣子就over-allocating記憶體了。
 * 當page fault發生時，可能會需要一個空的(free)frame來放這個「我們需要但是不在記憶體裡面的page」，而這時候如果系統上卻已經沒有空的frame，就必須選擇一個犧牲的欄位(稱為victim frame)，把這個victim frame swap 到disk，讓我們需要的page可以load到memory上面來。
@@ -2159,7 +2262,7 @@
     * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/major_minor_page_fault_command.PNG)
     * [詳細參考](https://www.learnsteps.com/difference-between-minor-page-faults-vs-major-page-faults/)
 
-<h2 id="0095">Allocation of Frames</h2> 
+<h2 id="0096">Allocation of Frames</h2> 
 
 * 每個process都有一個最少配置frame的數量，若少於這個數量，process將無法執行。
 * 舉例來說，如果使用[間接定址(indirect addressing)](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#%E5%AE%9A%E5%9D%80)，例如load可能會涉及第0個page，而第0個page又會去reference第6個page等等，這樣這個process至少需要三個frame才能夠執行。
@@ -2185,7 +2288,7 @@
   * 或者更極端的例子： Linux 系統中，當記憶體數量降到極低時，OOM(out-of-memory killer)這個process會選擇一個process將其終止，每個process都會有所謂的OOM score，較高的score會增加該process被終止的機會，OOM score是根據process使用的記憶體百分比來計算，其中，pid為2500的process其OOM score可以使用`cat /proc/2500/oom_score`查看，reaper不僅可以reclaiming page，還可以隨著時間調整最大與最小閾值，而這些值管理者都可以根據需求調整預設值。
 
 
-<h2 id="0096">Thrashing</h2> 
+<h2 id="0097">Thrashing</h2> 
 
 * 如果一個process花在paging的時間比花在executing的時間還多，這種現象就稱為Thrashing
 * 如果一個process沒有足夠的frame，那執行中將會大量出現page fault，因為每個page都很忙碌，所以把這個page swap到disk之後馬上又須要把他swap回來。
@@ -2207,7 +2310,7 @@
     * 當Page-Fault Frequency太高的時候，代表發生thrashing，代表需要更多的frame，反之亦然
     * 使用這種方法的cost會比working-set model要低很多，因為working-set model要記錄每個access，而Page-Fault Frequency只有發生page fault的時候才需要紀錄。
 
-<h2 id="0097">Memory Compression</h2> 
+<h2 id="0098">Memory Compression</h2> 
 
 * paging(in/out)的替代方法
 * 當我們要replace一個page的時候，這個page有可能已經被modify過了，所以必須要先把原本的content寫回disk(或secondary storage)，另外一種方法，也就是Memory Compression，可以把多個modify過的frame壓縮到一個frame當中，這樣就不用一直存回disk(或secondary storage)當中了。
@@ -2221,7 +2324,7 @@
 * 這種方法被證明確實可以減少記憶體空間，並且使用SSD當成backing store的paging更快速。
 
 
-<h2 id="0098">Allocating Kernel Memory</h2> 
+<h2 id="0099">Allocating Kernel Memory</h2> 
 
 * kernel的記憶體空間不同於user program，不能輕易地被paging或切割，例如I/O buffering這種必須要直接與硬體溝通的地方，一定要是連續的實體記憶體空間
 * 再者，有些kernel的structure不能隨意的被swap到disk當中，必須常駐於記憶體，且須小心地管理這些不同大小的structure，避免產生internal fragmentation，才可以給user更大的記憶體使用空間。
@@ -2252,7 +2355,7 @@
     * ![SlabAlloc](https://github.com/a13140120a/Operation_System/blob/main/imgs/SlabAlloc.jpg)
 
 
-<h2 id="0099">Other Considerations</h2> 
+<h2 id="00910">Other Considerations</h2> 
 
 * Preparing：
   * 在pure demand paging剛開始執行時，會發生大量的page fault，會影響CPU的效能，所以Prepaging的目的就是要減少process startup(或process context switch)的時候大量的page fault。
@@ -2312,7 +2415,7 @@
   * kernel中的許多位置都是被所在記憶體當中的。
 
 
-<h2 id="00910">Operating System Examples</h2> 
+<h2 id="00911">Operating System Examples</h2> 
 
 * Linux:
   * Linux使用demand paging並且從free frame list分配page
