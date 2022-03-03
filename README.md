@@ -2244,6 +2244,10 @@
     * 例如Linux的struct task_struct大概需要1.7KB的記憶體，當產生一個新的task的時候kernel會需要為這個structure配置一個1.7KB的記憶體，此時一個struct task_struct的object已經在在slab當中，可以大大增加速度。
     * 使用這個技術不會有fragmentation的問題，因為每個object的大小都是量身訂製的。
     * Linux使用SLUB取代SLAB，SLUB降低許多SLAB造成的overhead(負擔)。
+    * 在Ubuntu上面可以用 sudo cat /proc/slabinfo or sudo slabtop 看到 slab caches的相關資訊。
+      * OBJS指的是這個process調用了多少個object。
+      * ACTIVE代表有多少object正在使用中，USE是active的比例。
+      * SLABS指這個process使用多少個slab來管理，而OBJ/SLAB就是指一個slab擁有多少個object。
     * [參考資料](https：//hackmd.io/@sysprog/linux-memory)
     * ![SlabAlloc](https：//github.com/a13140120a/Operation_System/blob/main/imgs/SlabAlloc.jpg)
 
