@@ -2091,16 +2091,16 @@
 <h1 id="009">Virtual Memory</h1> 
 
   * ## [Bcakground](#0091) #
-  * ## [Bcakground](#0092) #
-  * ## [Bcakground](#0093) #
-  * ## [Bcakground](#0094) #
-  * ## [Bcakground](#0095) #
-  * ## [Bcakground](#0096) #
-  * ## [Bcakground](#0097) #
-  * ## [Bcakground](#0098) #
-  * ## [Bcakground](#0099) #
-  * ## [Bcakground](#00910) #
-  * ## [Bcakground](#00911) #
+  * ## [Demand Paging](#0092) #
+  * ## [Demand Paging Performance](#0093) #
+  * ## [Copy-on-Write](#0094) #
+  * ## [Page Replacement](#0095) #
+  * ## [Allocation of Frames](#0096) #
+  * ## [Thrashing](#0097) #
+  * ## [Memory Compression](#0098) #
+  * ## [Allocating Kernel Memory](#0099) #
+  * ## [Other Considerations](#00910) #
+  * ## [Operating System Examples](#00911) #
 
 
 
@@ -2510,12 +2510,9 @@
   *  ![wear_leveling](https://github.com/a13140120a/Operation_System/blob/main/imgs/wear_leveling.PNG)
   *  由於 NAND 閃存不可能進行覆蓋，因此必須首先抹除現有數據才能將新數據寫入該單元，這會產生許多無效的頁(當想要更新page的時候會寫一份新的到free blok裡面)，並且會降低 SSD 的整體寫入性能，而且通常抹除數據比寫入數據需要更長的時間。
   *  為了緩解這種寫入性能的下降，實施稱為[垃圾收集 (GC, garbage collection)](https://zh.wikipedia.org/wiki/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_(%E8%A8%88%E7%AE%97%E6%A9%9F%E7%A7%91%E5%AD%B8)) 的過程以在 SSD 內創建空閒塊。這項技術，通過將有效頁面收集到一個位置並抹除由無效頁面組成的塊來保護空閒塊。
-  *  而這些有效頁面被收集到的地方就稱為over-povisioning(OP)。
+  *  而這些有效頁面被收集到的地方就稱為over-povisioning(OP)，通常會暫總儲存量的20%。
   *  ![garbage_collection.PNG](https://github.com/a13140120a/Operation_System/blob/main/imgs/garbage_collection.PNG)
   *  [詳細白皮書](https://semiconductor.samsung.com/resources/white-paper/S190311-SAMSUNG-Memory-Over-Provisioning-White-paper.pdf)
-
-
-
 
 <h2 id="0103">Volatile Memory</h2> 
 
@@ -2602,36 +2599,39 @@
     * NVMs 會在在raw formatting的階段會初始化pages並建立FTL。
   * 在磁碟可以用來保存資料之前，作業系統仍然需要記錄自己在裝置上的資料結構，OS使用三個步驟來處理:
     * 第一個步驟是partition(分割)：
-      * 將磁碟切成多個partition，即使要將該disk用作單個大partition也必須完成此步驟，那麼這樣就可以將partition table寫進disk的開頭(通常partition table會寫在disk上的固定位置)。
+      * 將磁碟切成多個partition，即使要將該disk用作單個大partition也必須完成此步驟，那麼這樣就可以將partition information會寫在disk上的固定位置(例如通常partition table會寫在disk的開頭)。
       * 一個partition只能存在於一個disk上，無法跨disk。
       * 基礎的檔案系統管理中，通常一個 partition 只能作為一個 filesystem。但實際上，我們可以透過 RAID 的技術以及 LVM 的技術將不同的 partition/disk 整合成為一個大的檔案系統，而這些檔案系統又能具有硬體容錯的功能在。
       * Linux 可以使用[fdisk](https://blog.gtwang.org/linux/linux-add-format-mount-harddisk/)來管理partition，並且當partition被作業系統認到以後，會幫這個partition create 一個device entry(可以在/dev裡面看到，並且device entry（例如 [/etc/fstab(其實就是filesystem table)](https://codertw.com/%E7%A8%8B%E5%BC%8F%E8%AA%9E%E8%A8%80/483041/)）告訴OS將包含file system的每個partition掛載到的位置以及資訊。
 )。
     * 第二個步驟是volume(卷)的建立與管理：
-      * volume又分成physical volume與logical volume。
-      * volume(或logical drive)是一個具有單一file system的一個可訪問存儲區域，概念類似partition
-      * 一個volume可以有多個partition
+      * 有時候這個步驟是implicit的(意思就是例如當file system放進partition裡面的時候，這個volume就已經建立好了)
+      * 在其他時候個步驟也可以是explicit的(例如自己手動建立 volume)。
+      * volume(或logical drive)是一個具有單一file system的一個可訪問存儲區域，並且一個volume可以包含多個partition
       * volume代表一個命名的存儲區域(named area of storage)，使user和應用程式能夠訪問底層設備上的數據，每個volume都配置有特定的file system(例如NTFS)，並且還分配有一個系統唯一的名稱或編號來標識該volume。
       * 為了使計算機能夠訪問物理卷(physical volume)上的數據，OS必須首先掛載(mounting)該卷，然後，計算機才能夠讀取或修改底層磁盤上的數據
-      * physical volume僅存在於他所存在的disk(不可跨disk)，而logical volume可以。
-      * 術語partition和volume經常相互混淆，這是因為OS及其文檔經常互換使用這些術語
-      * 但是，volume和partition通常被認為是管理存儲的不同方法。
+      * 術語partition和volume經常相互混淆，這是因為OS及其文檔經常互換使用這些術語，但是，volume和partition通常被認為是管理存儲的不同方法。
+      * volume又分成physical volume與logical volume。
       * Linux的[lvm2](https://sc8log.blogspot.com/2017/03/linux-lvm-lvm.html)以及zfs可以提供管理的功能
       * [詳細資料](https://www.cnblogs.com/lijiaman/p/12885649.html)
     * 第三個步驟是logical formating(邏輯格式化)：
       * 或稱為建立一個檔案系統
-      * 在這個步驟中，作業系統將檔案系統的資料結構儲存到disk當中，而這些資料結構可能包含未使用和已配置空間的配置圖，以及一個起始的空目錄。
-  * 通常在一般電腦中，檔案系統由所有已掛載的volume所組成(例如C槽、D槽、E槽等等)
+      * 在這個步驟中，作業系統將初始化用的檔案系統的資料結構儲存到disk當中，而這些資料結構可能包含未使用和已配置空間的配置圖，以及一個起始的空目錄。
+  * partition information還記載著那些partition包含了bootable file system(或OS啟動程式碼)，Linux中被標記為boot的partition會用來被建立檔案系統的根目錄。
+  * 通常在一般電腦中，檔案系統由所有已掛載的volume所組成，例如windows 的C槽、D槽、E槽等等(C,D,E槽可以在同一個partition裡面)，Linux在開機時，會先掛載boot file system，才會掛載其他檔案系統。
   * 可以由windows的disk management(磁碟管理)中看到目前disk 的partitio狀況。
-  * 一些作業系統為一些特殊程式(例如資料庫)提供使用partition的能力，這些partition稱為raw disk，而對他的IO則稱為raw IO，但少了file system必須要自己解決緩衝區、檔案鎖定、預取、空間分配等等功能。
-  * Linux不支援raw IO
+  * 為了提高效率，大多數檔案系統將chunk組合成更大的chunk，通常稱為cluster，設備I/O是通過chunk完成的，而檔案系統I/O是通過cluster完成的，有效地確保了I/O具有更多的sequential和更少的random access特徵，例如檔案系統會把檔案的內容放在檔案的metadata附近，以減少seek time。
+  * 一些作業系統為一些特殊程式(例如資料庫)提供使用partition的能力(不需要檔案系統的data structures)，這些partition稱為raw disk，而對他的IO則稱為raw IO，跳過了了file system的緩衝區(buffer and cache)、檔案鎖定(file locking)、預取(prefetching)、空間分配(space allocation)、文件名(file name)和目錄(directories)等等功能，也代表programmer要自己處理這些問題。
+  * Linux不支援raw IO，但可以藉由在`open()`system call使用`DIRECT`這個flag來達到類似的access。
 
 * Boot Block
   * 當打開電源或重新啟動時，為了使電腦開始運作，必須有一個起始程式才能開始運作，而這個起始程式就叫做bootstrap program(靴帶式程式，或稱靴帶式載入器bootstrap loader)，通常會儲存在主機板的NVM快閃記憶體當中，並映射到已知的記憶體中位置(代表有可能被病毒感染)。
-  * 有些電腦系統，把這個步驟分成兩個階段，先有一個非常簡單的bootstrap loader，再從磁碟載入一個更複雜的載入程式，然後再由後者載入核心，而這個更複雜的載入程式式儲存在一個稱為boot block(啟動區塊)的partition當中，通常會在disk上的固定位置。
-  * 以windows為例子，windows會把其中一個partition視為boot partition，這個partition包含了整個OS kernel跟驅動程式，windows將複雜的啟動程式放在第一個邏輯區塊(sector, 或NVMs上的第一個page)，這個區塊就稱為主要啟動磁區(master boot record, MBR)。
-  * MBR包含了啟動程式碼，並且還包含了一個硬碟分割區表，以及一個指定由哪個partition啟動的旗標(也就是指向boot partition的意思)。
+  * 有些電腦系統，把這個步驟分成兩個階段，一個非常簡單的bootstrap loader(存在motherboard的快閃記憶體裡)，會引導controler去讀取disk的boot block(此時還未載入任何驅動程式)，並載入一個更複雜的bootstrap program，然後再由後者載入核心，這個更複雜的載入程式式儲存在一個稱為boot block(啟動區塊)的partition當中，且通常會在disk上的固定位置。
+  * 以windows為例子，windows會把其中一個partition標記為boot partition，(擁有boot partition的硬碟又稱為開機碟，boot disk or system disk)，這個partition包含了整個OS kernel跟驅動程式。
+  * [MBR](https://topalan.pixnet.net/blog/post/24292326)放在硬碟機最開頭的第一個磁區，位於硬碟第0面，第0軌，第1磁區的位置，包含了啟動程式碼，並且還包含了一個硬碟分割區表，以及一個指定由哪個partition啟動的旗標(也就是指向boot partition的意思)。
+  * 一旦系統從MBR中找到了boot partition，就會從該partition讀取第一個sector(又稱boot sector)，並載入kernel，然後載入各種subsystem以及service。
   * ![booting_from_disk](https://github.com/a13140120a/Operation_System/blob/main/imgs/booting_from_disk.jpg)
+  * Linux 的default bootstrap loader是grub2。
 
 * bad block:
   * 毀損區塊
@@ -2658,23 +2658,37 @@
   * 但放在檔案系統就會比較方便(不用管理)。
   * 有些作業系統比較有彈性，可以同時放raw partition以及file system當中，例如Linux允許管理員要使用哪一種形式
 * An Example
- * 在下面顯示的 Linux 系統映射系統中，swap space的映射保存在memory中，其中每個條目對應於swap space中的 4KB的block，零表示空閒槽，非零表示有多少process map到該block（>1 僅用於共享頁面。）
- * ![LinuxSwapping](https://github.com/a13140120a/Operation_System/blob/main/imgs/LinuxSwapping.jpg)
+  * 在下面顯示的 Linux 系統映射系統中，swap space的映射保存在memory中，其中每個條目對應於swap space中的 4KB的block，零表示空閒槽，非零表示有多少process map到該block（>1 僅用於共享頁面。）
+  * ![LinuxSwapping](https://github.com/a13140120a/Operation_System/blob/main/imgs/LinuxSwapping.jpg)
 
 <h2 id="0109">Storage Attachment</h2> 
 
-
-* 主機附加儲存(host-attahed storage): "Host-Attached" 是指經由IO port來進行傳輸，這些port使用多種技術，最常見的為SATA。
+* 主機附加儲存(host-attahed storage): "Host-Attached" 是指經由本地的IO port來進行傳輸，這些port使用多種技術，最常見的為SATA。
+  * 為了使系統能有更多的儲存空間，可以透過多個USBFireWire或者Thunderbolt來連接多個儲存裝置。
+  * 比較高級的工作站和server一般需要更多存儲空間或需要共享存儲，因此使用更複雜的I/O架構，例如光纖通道 (FC)
 * NAS(network-attached storage)：[wiki](https://zh.wikipedia.org/wiki/%E7%BD%91%E7%BB%9C%E9%99%84%E6%8E%A5%E5%AD%98%E5%82%A8)
+  * NAS是將儲存裝置透過檔案伺服器，與區域網路連接的儲存系統，只要能連上區域網路（LAN），便能存取儲存硬碟裡的資料。有了專門用於資料存取的「檔案伺服器」，企業內部的其他伺服器可以發揮正常的處理效率，大幅提升整體效能。相較於DAS，NAS的建置費用較高，但卻能滿足中大型企業存取大量文件資料的需求。
+  * NAS可以是special-purpose 的儲存系統，也可以是為網絡上的其他主機提供存儲的通用計算機系統。
+  * 客戶端通過RPC interface(例如UNIX和Linux系統的NFS或Windows的CIFS)來access NAS，該RPC通常是通過IP網絡上的TCP或UDP傳輸的(通常是同一個區網(LAN))，它將所有數據流量傳輸到客戶端。
 * SAN(storage area network): [wiki](https://zh.wikipedia.org/wiki/%E5%AD%98%E5%82%A8%E5%8C%BA%E5%9F%9F%E7%BD%91%E7%BB%9C)
-* 
-
-<h2 id="01010">RAID</h2> 
+  * SAN是將儲存裝置從區域網路中獨立出來，成為另一個網路，並透過專屬的高速網路／光纖通道（FC）來連接各個伺服器與儲存系統。SAN可以帶來超高效的資料存取服務，其建置費用高且費時，須加裝光纖纜線、路由器、主匯流排介面卡（HBA）等裝置，適合業務上操作運算資料量大的企業。
+  * SAN使用存儲協議而不是網絡協議。
+  * SAN 的強大之處在於其靈活性，多個host和多個存儲陣列可以連接到同一個 SAN，並且存儲可以動態分配給host，例如如果host的磁盤空間不足，則可以將SAN 配置為為該host分配更多存儲空間，SAN使服務器集群可以共享相同的存儲，並使存儲陣列可以包括多個直接主機連接
+  * SAN 通常比存儲陣列擁有更多port，而且成本更高。 SAN連接距離很短，通常沒有路由，因此NAS可以擁有比SAN更多的連接主機。 
+  * 存儲陣列是特製的device，它包含存儲數據的硬碟和一個控制器來管理存儲，並允許跨網絡訪問存儲，控制器由 CPU、內存和實現陣列功能的software組成，包括網絡協議、用戶界面、RAID 保護、快照、複製、壓縮、重複數據刪除和加密。
+  * 陣列可能僅包含SSD，從而獲得最佳性能但容量較小，或者可能包含 SSD 和 HDD 的混合(使用SSD當作快取)。
 
 * [詳細](https://www.itread01.com/content/1545690255.html)
 * [ZFS](https://zh.wikipedia.org/wiki/ZFS)
 
+<h2 id="0109">RAID Structure</h2> 
 
+* redundant arrays of independent disks
+* 將許多硬碟連接到計算機系統是較有經濟效益的(比起購買更大的昂貴的disk)。
+* 如果硬碟以並行方式運行，則在系統中擁有大量硬碟可以提高讀取或寫入數據的速率。
+* 此外，因為冗餘信息(redundant information)可以存儲在多個驅動器上，因此這種設置提供了提高了reliable(數據回復)的能力，我們存儲了通常不需要的額外信息，但可以在磁盤故障時用於重建丟失的信息。
+* mirroting(鏡射)：複製每個磁碟，例如一台邏輯磁碟機若是由兩台時體磁碟機組成，而且每次寫入都會在兩台磁碟機上一起執行(寫入重複的資料)，這個結果稱為鏡像卷區(mirrored volume)，如果其中一台磁碟機壞了，可以從另一台磁碟機讀取資料，只有當兩台同時壞掉時，資料才會遺失。
+* 有了多個磁碟機，我們可以藉由在多台磁碟機間分割資料儲存來增進效能，例如將一個byte分散到八台磁碟機上，每台磁碟機都參與每次存取，因此速度便為八倍。
 
 
 
