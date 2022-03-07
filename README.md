@@ -2446,6 +2446,239 @@
   * 從較大的idle process開始(優先於較小的idle process)，必要時會將已經低於working set minimum的process繼續刪除page。
 
 
+****
+
+
+
+
+<h1 id="010">Mass-Storage Structure</h1> 
+
+  * ## [Bcakground](#0101) #
+
+
+
+
+
+
+
+<h2 id="0101">Overview of Mass-Storage Structure</h2> 
+
+* 傳統HDD磁碟機具有以下結構:
+  * ![HDD_DiskMechanism](https://github.com/a13140120a/Operation_System/blob/main/imgs/HDD_DiskMechanism.jpg)
+  * 磁盤(platter)：一個或多個磁盤形式的盤片，磁盤的兩面皆有覆蓋磁性介質，較舊的硬碟不會使用最頂端的那面以及最底端的那面，因為這兩面較容易受到損壞。
+  * 磁軌(track)：每個表面被分成許多稱為磁軌的同心環。
+  * 磁柱(cylinder)：與盤片邊緣距離相同的所有磁軌的集合（即上圖中的所有表面的同一磁軌）稱為磁柱(cylinder)。
+  * 磁區(sector)：每個磁軌進一步分為磁區，傳統上每個磁區包含512 bytes的數據，有些現代硬碟偶爾會使用更大的扇區大小，磁區還包括標頭(header)和標尾(trailer)，其中包括校驗信息(checksum information)。較大的磁區大小會減少標頭和標尾佔用的磁盤比例(較少的header和trailer)，但會增加Internal fragmentation。
+  * 讀寫頭(或磁頭，read-write head)：硬碟由讀寫頭讀取數據，標準配置（如上圖所示）每個表面使用一個讀寫頭，每個讀寫頭在一個單獨的磁臂(arm)上，並由一個通用磁臂組件控制(arm assembly)，該組件將所有讀寫頭同時從一個磁柱移動到另一個磁柱。（每個表現都有獨立的讀寫頭，可以加快硬碟速度，但會涉及嚴重的技術難題。）
+  * 傳統硬碟的存儲容量等於讀寫頭數量（即表面的數量）乘以每個表面的磁軌數，乘以每個磁軌的磁區數，乘以每個磁區的bytes數。
+  * 硬碟透過 **head-sector-cylinder number** 來定位要讀寫的區塊。
+* 當磁碟機運轉時，磁碟機馬達會以高速運轉，大多數驅動器每秒旋轉 60 到 250 次，以每分鐘轉數(rotation per minute, RPM)表示，例如 7200 rpm（每分鐘7500轉，每秒120轉）
+* positioning time(稱定位時間，或稱隨機存取時間，random access time)是由以下兩部份所組成：
+  * 搜尋時間(seek time)：是將讀寫頭從一個磁柱移動到另一個磁柱以及讀寫頭在移動後穩定下來所需的時間。這通常是過程中最慢的步驟，也是整體傳輸速率的主要瓶頸。
+  * 旋轉延遲(rotational latency)：所需的sector旋轉到磁頭位置所需要的時間
+* 傳輸速率(transfer rate)：即以電子方式將數據從磁盤移動到計算機所需的時間（一些人也可能使用transfer rate來指代整體傳輸速率，包括seek time和rotational latency以及電子數據傳輸時間。）
+* 磁碟速度可透過硬碟controler裡面的buffer來提高效能。
+
+* 硬碟磁頭在極薄的(以微米測量)一層空氣或其他氣體(氣墊)（如氦氣）上飛行，並且磁頭有與磁盤表面接觸的危險，雖然磁盤盤片塗有一層薄薄的保護層，但磁頭有時會損壞磁面，這種損壞就稱為head crash，head crash 通常無法修復，必須更換整個磁盤。
+
+<h2 id="0102">Nonvolatile Memory Devices(NVM，非揮發性記憶體裝置)</h2> 
+
+* NVM裝置通常由 controler 和 NAND快閃半導體晶片組成
+* 硬碟、光碟與磁帶雖然也是非揮發性儲存裝置，但被歸類為現行NVM一般特指非機械式之電子類記憶體元件。
+* USB、SSD、和有電池的DRAM都屬於NVM。
+* 快閃記憶體（flash memory），是一種電子清除式可程式唯讀記憶體(EEPROM)的形式，又分為NOR與NAND兩型。
+* 一些NVMs被設計成可以直接連線到system bus(例如PCIe)
+* NAND NVM 的壽命不是以年為單位，而是以每天的驅動器寫入(DWPD, Drive Writes Per Day)為單位，例如，一個5 DWPD rating的 1TB NAND deiver(SSD)預計在保固期內每天有5TB的寫入數據而不會出現故障。 
+* 優點(相較傳統磁碟):
+  * 沒有移動性的元件，所以更reliable(較抗震，所以手機都是用此類型裝置做儲存)
+  * 沒有seek time或rotational latency，所以較快
+  * 較不耗電
+  * 體積較小
+* 缺點(相較傳統磁碟):
+  * 較貴
+  * 容量較小
+  * 壽命較短
+
+
+*  SSD 在寫入數據時將電子存儲在 NAND 單元上。使用 NAND 閃存，一個記憶單元經過寫入(Program)，可由邏輯1變成邏輯0，但無法再經由寫入將此單元回復到邏輯1，需經過抹除(Erase)才可回復邏輯1。因此，存儲或刪除新數據時無法覆蓋已存儲的數據。
+*  寫入(Program)和抹除(Erase)操作SSD 的執行是在不同的單元中進行的，寫操作以頁(pages)為單位執行，而抹除操作以塊(blocks)為單位執行，
+*  NVMs(SSD)由許多NABD晶片所組成，而每個晶片都有multiple data path，因此操作之間可以平行發生。
+*  OS只負責簡單地讀取和寫入邏輯塊，而硬體設備則負責管理"如何完成"，然而，NVM設備的性能會根據其操作的演算法而有所不同，因此有必要簡要討論控制器的功能:
+  * 如果某些block被一直重複Program/Erase，那麼block就會被很快磨損殆盡，因此應該防止重複寫入相同的block
+  * 為了追蹤哪些block包含有效的資料，因此在快閃記憶體檔案系統中，會經由[快閃記憶體轉換層(Flash Translation Layer, FTL)](https://zh.wikipedia.org/wiki/%E5%BF%AB%E9%96%83%E8%A8%98%E6%86%B6%E9%AB%94%E8%BD%89%E6%8F%9B%E5%B1%A4)來進行對讀、寫、抹除操作的管理。
+  *  Wear-leveling(磨損均衡)：是FTL提供的其中一種防止對某個區域的重複寫入操作的功能，通過將暴露於大量 P/E(Program/Erase) 的塊與空閒塊交換，使單元能夠被均勻地利用，從而允許用戶在給定條件下使用 SSD 更長時間。
+  *  ![wear_leveling](https://github.com/a13140120a/Operation_System/blob/main/imgs/wear_leveling.PNG)
+  *  由於 NAND 閃存不可能進行覆蓋，因此必須首先抹除現有數據才能將新數據寫入該單元，這會產生許多無效的頁(當想要更新page的時候會寫一份新的到free blok裡面)，並且會降低 SSD 的整體寫入性能，而且通常抹除數據比寫入數據需要更長的時間。
+  *  為了緩解這種寫入性能的下降，實施稱為[垃圾收集 (GC, garbage collection)](https://zh.wikipedia.org/wiki/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_(%E8%A8%88%E7%AE%97%E6%A9%9F%E7%A7%91%E5%AD%B8)) 的過程以在 SSD 內創建空閒塊。這項技術，通過將有效頁面收集到一個位置並抹除由無效頁面組成的塊來保護空閒塊。
+  *  而這些有效頁面被收集到的地方就稱為over-povisioning(OP)。
+  *  ![garbage_collection.PNG](https://github.com/a13140120a/Operation_System/blob/main/imgs/garbage_collection.PNG)
+  *  [詳細白皮書](https://semiconductor.samsung.com/resources/white-paper/S190311-SAMSUNG-Memory-Over-Provisioning-White-paper.pdf)
+
+
+
+
+<h2 id="0103">Volatile Memory</h2> 
+
+* 例如DRAM
+* 當儲存在RAM裝置上的資料在系統發生當機，關閉或斷電後將無法繼續保存資料
+* RAM裝置允許使用者(Programmer)向檔案一樣操作他，得以在記憶體中暫時保管資料，在Linux有`/dev/ram`，windows則要透過第三方工具
+* RAM可用做高速暫存空間，速度比NVM更快
+
+<h2 id="0104">Secondary Storage Connection Methods</h2> 
+
+* 儲存裝置都常會有一組線，稱為I/O匯流排(I/O bus)連接到電腦，常用的幾種匯流排技術有:
+  * 進階技術連接(ATA, advanced technology attachment)
+  * 串列進階技術連接(SATA, serial ATA)
+  * 外部串列進階技術連接(Externel serial ATA)
+  * 小型電腦系統介面(SCSI, small computer systems interface)
+  * 串列式傳輸介面技術(SAS, serial attached SCSI)
+  * 萬用串列匯流排(USB, universal serial bus)
+  * 光纖通道(FC, fiberchannel)
+* 資料經由控制器(controler)或主機匯流排轉接器(HBA, host bus adapter)，的特殊電子處理器在匯流排上進行傳遞
+
+<h2 id="0105">Address Mapping</h2> 
+
+* 儲存裝置被定址為一個一維的邏輯區塊(logical block)大型陣列。
+* logical block是資料傳輸的最小單位
+* logical block會被map到實體的sector或page(上述SSD的page單位)
+* sector 0 通常為硬碟最外圈的第一條磁軌的第一個磁區
+* [邏輯區塊位址（Logical Block Address，LBA）](https://zh.wikipedia.org/wiki/%E9%82%8F%E8%BC%AF%E5%8D%80%E5%A1%8A%E4%BD%8D%E5%9D%80): 是描述電腦儲存裝置上資料所在區塊的通用機制，一般用在像硬碟這樣的輔助記憶裝置。LBA可以意指某個資料區塊的位址或是某個位址所指向的資料區塊。現今電腦上所謂一個邏輯區塊通常是512或1024位元組。
+* 將邏輯區塊號碼轉換成舊形式的(CHS(cylinders-heads-sectors，磁柱-磁頭-磁區)定址模式)磁碟位址是非常不容易的，其原因有三：第一，磁碟上可能會出現損毀的磁區，那麼logical就會map到其他的地方來代替這些損毀的磁區，第二，而且在某些硬碟上每個磁道的磁區數是會變動的，第三，map的方式通常會由製造商內部管理。
+* 恆定線性速度(constant linear velocity, CLV)：每個磁軌的密度是相同的，因為外圈的磁軌有較大的長度，所以當磁頭從外側移到內圈的時候，會增加旋轉速度，這種方法常被用在CD-ROM或DVD-ROM當中。
+* 恆角速度(constant angular velocity, CAV)：磁碟旋轉速度保持固定，但外圈的磁軌密度較低，內圈較高，以保持資料速度穩定。
+
+
+<h2 id="0106">HDD Scheduling</h2> 
+
+* 因為整個硬碟的讀取速度中，seek time是佔最大部份時間的，因此就需要有Scheduling去盡可能減少磁頭移動的距離
+* 當OS發出一個IO request的時候，需要指定以下必要資訊:
+  * 是input還是output?
+  * 指向操作的檔案
+  * 傳送的記憶體位置
+  * 要傳送多少資料量?
+* 頻寬(bandwidth): 傳送的位元組總數除以從第一個request到最後完成傳送所需的總時間
+* HDD Scheduling的目標是公平、快速、最佳化。
+
+* 假設現在IO request queue裡面有以下排列：98、183、37、122、14、124、65、67
+* FCFS(First come, first serve)：
+  * 假設起始地點為53，則順序53、98、183、37、122、14、124、65、67
+  * 是公平的，但不能提供最快的服務
+  * 最簡單的演算法
+  * ![HDD_FCFS](https://github.com/a13140120a/Operation_System/blob/main/imgs/HDD_FCFS.PNG)
+* SSTF(Shortest-Seek-Time-First)：
+  * 假設起始地點為53，則順序53、65、67、37、14、98、122、124、183
+  * 最短尋道時間演算法，尋找下一個最短時間的點
+  * 可能造成starvation
+  * ![HDD_SSTF](https://github.com/a13140120a/Operation_System/blob/main/imgs/HDD_SSTF.PNG)
+* SCAN Scheduling
+  * 假設起始地點為53，則順序53、37、14、65、67、98、122、124、183
+  * 朝向某一個方向移動，直到碰到0或最大值才會迴轉
+  * 這種方法不公平，例如要是剛好往右到37的時候突然出現36的request，那他回來要等很久才會被serve
+  * ![HDD_SCAN](https://github.com/a13140120a/Operation_System/blob/main/imgs/HDD_SCAN.PNG)
+* C-SCAN Scheduling
+  * 假設起始地點為53，則順序53、65、67、98、122、124、183、199、0、14、37
+  * 往同一個方向scan，到底了之後就從頭繼續往同一個方向scan
+  * 這種方法很公平，因為最多每個request只會等一圈
+  * ![HDD_CSCAN](https://github.com/a13140120a/Operation_System/blob/main/imgs/HDD_CSCAN.PNG)
+* C-LOOK Scheduling
+  * 假設起始地點為53，則順序53、65、67、98、122、124、183、199、14、37
+  * 往同一個方向scan，到queue裡面的最後外面的request(不會碰到底)之後就從最裡面的request(不會回到0)繼續往同一個方向scan
+  * C-SCAN Scheduling的優化
+  * ![HDD_CLOOK](https://github.com/a13140120a/Operation_System/blob/main/imgs/HDD_CLOOK.PNG)
+
+<h2 id="0107">ECC</h2> 
+
+* [詳情請見](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#error-detecting-and-error-correcting)
+
+<h2 id="0107">Storage Device Management</h2> 
+
+
+* Drive Formatting, Partitions, and Volumes
+  * 低階初始化(low-level formatting或physical formatting)：
+    * HDDS和NVMs都必須先經過raw formatting，
+    * raw formatting通常會在生產的工廠裡面就已經完成，
+    * raw formatting會把磁軌劃分成多個磁區，並且會將一種特殊的資料結構寫入裝置，而這個資料結構通常會包含標頭(header)、資料區域(data area)和標尾(trailer)所組成，標頭和標尾包含磁區號碼和糾錯碼(ECC)。
+    * 通常data area的大小會是512bytes 或 4KB，較大的sector會有較少的header和trailer資料，意味著較多的使用空間。
+    * NVMs 會在在raw formatting的階段會初始化pages並建立FTL。
+  * 在磁碟可以用來保存資料之前，作業系統仍然需要記錄自己在裝置上的資料結構，OS使用三個步驟來處理:
+    * 第一個步驟是partition(分割)：
+      * 將磁碟切成多個partition，即使要將該disk用作單個大partition也必須完成此步驟，那麼這樣就可以將partition table寫進disk的開頭(通常partition table會寫在disk上的固定位置)。
+      * 一個partition只能存在於一個disk上，無法跨disk。
+      * 基礎的檔案系統管理中，通常一個 partition 只能作為一個 filesystem。但實際上，我們可以透過 RAID 的技術以及 LVM 的技術將不同的 partition/disk 整合成為一個大的檔案系統，而這些檔案系統又能具有硬體容錯的功能在。
+      * Linux 可以使用[fdisk](https://blog.gtwang.org/linux/linux-add-format-mount-harddisk/)來管理partition，並且當partition被作業系統認到以後，會幫這個partition create 一個device entry(可以在/dev裡面看到，並且device entry（例如 [/etc/fstab(其實就是filesystem table)](https://codertw.com/%E7%A8%8B%E5%BC%8F%E8%AA%9E%E8%A8%80/483041/)）告訴OS將包含file system的每個partition掛載到的位置以及資訊。
+)。
+    * 第二個步驟是volume(卷)的建立與管理：
+      * volume又分成physical volume與logical volume。
+      * volume(或logical drive)是一個具有單一file system的一個可訪問存儲區域，概念類似partition
+      * 一個volume可以有多個partition
+      * volume代表一個命名的存儲區域(named area of storage)，使user和應用程式能夠訪問底層設備上的數據，每個volume都配置有特定的file system(例如NTFS)，並且還分配有一個系統唯一的名稱或編號來標識該volume。
+      * 為了使計算機能夠訪問物理卷(physical volume)上的數據，OS必須首先掛載(mounting)該卷，然後，計算機才能夠讀取或修改底層磁盤上的數據
+      * physical volume僅存在於他所存在的disk(不可跨disk)，而logical volume可以。
+      * 術語partition和volume經常相互混淆，這是因為OS及其文檔經常互換使用這些術語
+      * 但是，volume和partition通常被認為是管理存儲的不同方法。
+      * Linux的[lvm2](https://sc8log.blogspot.com/2017/03/linux-lvm-lvm.html)以及zfs可以提供管理的功能
+      * [詳細資料](https://www.cnblogs.com/lijiaman/p/12885649.html)
+    * 第三個步驟是logical formating(邏輯格式化)：
+      * 或稱為建立一個檔案系統
+      * 在這個步驟中，作業系統將檔案系統的資料結構儲存到disk當中，而這些資料結構可能包含未使用和已配置空間的配置圖，以及一個起始的空目錄。
+  * 通常在一般電腦中，檔案系統由所有已掛載的volume所組成(例如C槽、D槽、E槽等等)
+  * 可以由windows的disk management(磁碟管理)中看到目前disk 的partitio狀況。
+  * 一些作業系統為一些特殊程式(例如資料庫)提供使用partition的能力，這些partition稱為raw disk，而對他的IO則稱為raw IO，但少了file system必須要自己解決緩衝區、檔案鎖定、預取、空間分配等等功能。
+  * Linux不支援raw IO
+
+* Boot Block
+  * 當打開電源或重新啟動時，為了使電腦開始運作，必須有一個起始程式才能開始運作，而這個起始程式就叫做bootstrap program(靴帶式程式，或稱靴帶式載入器bootstrap loader)，通常會儲存在主機板的NVM快閃記憶體當中，並映射到已知的記憶體中位置(代表有可能被病毒感染)。
+  * 有些電腦系統，把這個步驟分成兩個階段，先有一個非常簡單的bootstrap loader，再從磁碟載入一個更複雜的載入程式，然後再由後者載入核心，而這個更複雜的載入程式式儲存在一個稱為boot block(啟動區塊)的partition當中，通常會在disk上的固定位置。
+  * 以windows為例子，windows會把其中一個partition視為boot partition，這個partition包含了整個OS kernel跟驅動程式，windows將複雜的啟動程式放在第一個邏輯區塊(sector, 或NVMs上的第一個page)，這個區塊就稱為主要啟動磁區(master boot record, MBR)。
+  * MBR包含了啟動程式碼，並且還包含了一個硬碟分割區表，以及一個指定由哪個partition啟動的旗標(也就是指向boot partition的意思)。
+  * ![booting_from_disk](https://github.com/a13140120a/Operation_System/blob/main/imgs/booting_from_disk.jpg)
+
+* bad block:
+  * 毀損區塊
+  * 大部分硬碟從工廠出來的時候就會有一些bad block了。
+  * 在較舊的disk當中(例如IDE)，bad block是由人工處理的(例如linux的badblocks)，其中一種方式是在磁碟格式化的時候掃描硬碟，以便發現bad block，然後把這些bad block mark起來，並且不會再使用這些block
+  * 較複雜的硬碟(例如SCSI disk)在整個使用壽命期間都會不斷地更新資料，且他的low-level formatting也設置一些額外的磁碟備份(sector sparing)，或磁區轉換(sector forwarding)的機制。
+    * 典型的磁區轉換: 當作業系統試圖讀取某塊資料，controler計算ECC值之後發現該磁區損毀，於是發出錯誤給作業系統，並且將該邏輯位址map到一個備份的磁區，往後存取該邏輯區塊時，都會改map到這個備份磁區，由於該方法可能會導致磁碟排班演算法失效，所以大部分磁碟在格式化之後，在每個磁柱隻中都會提供一些備份磁區，同時最好也提供一個備份磁柱，以減少備份磁區對演算法的影響。
+    * 另外一種方法是使用磁區順延(sector slipping)，例如假設邏輯區塊17變成失效，就把原本的18從新label成17，19label成18，以此類推，但可想而知這種方法的cost非常大(需要花很多的時間)。
+  * NVM的故障管理區域比HDD更簡單，因為沒有搜尋的順序問題，controler將maintaim一個壞的page的table去追蹤。
+
+<h2 id="0108">Swap-Space Management</h2> 
+
+
+* 現代系統都是swap 一個page而不是swap整個process
+* swap space的設計對於系統swap page的吞吐量影響很大。
+* Swap-Space Use:
+  * 每個系統對於swap space的空間大小有著不同的看法，例如Solaris建議設置swap space等於許你記憶體超過可分頁實體記憶體的數量，而Linux則建議設置swap space為實體記憶體數量的兩倍，但現在大部分Linux都使用相當少的swap space。
+  * 多分配swap space比少分配還要安全，因為少分配很有可能造成系統當機或process被kill掉。
+  * 有些作業系統可以有多個swap space(例如Linux)，把swap space放在不同的儲存裝置上，可以分散IO造成的負擔(平行存取)，增加IO的頻寬。
+* Swap-Space Location
+  * swap space可以放在正常的檔案系統當中，也可以放在獨立的raw partition(原始磁碟分割)當中。
+  * 放在檔案系統當中的話swap就是一個大型檔案。
+  * 放在raw partition的效能會比放在檔案系統當中還要好。
+  * 但放在檔案系統就會比較方便(不用管理)。
+  * 有些作業系統比較有彈性，可以同時放raw partition以及file system當中，例如Linux允許管理員要使用哪一種形式
+* An Example
+ * 在下面顯示的 Linux 系統映射系統中，swap space的映射保存在memory中，其中每個條目對應於swap space中的 4KB的block，零表示空閒槽，非零表示有多少process map到該block（>1 僅用於共享頁面。）
+ * ![LinuxSwapping](https://github.com/a13140120a/Operation_System/blob/main/imgs/LinuxSwapping.jpg)
+
+<h2 id="0109">Storage Attachment</h2> 
+
+
+* 主機附加儲存(host-attahed storage): "Host-Attached" 是指經由IO port來進行傳輸，這些port使用多種技術，最常見的為SATA。
+* NAS(network-attached storage)：[wiki](https://zh.wikipedia.org/wiki/%E7%BD%91%E7%BB%9C%E9%99%84%E6%8E%A5%E5%AD%98%E5%82%A8)
+* SAN(storage area network): [wiki](https://zh.wikipedia.org/wiki/%E5%AD%98%E5%82%A8%E5%8C%BA%E5%9F%9F%E7%BD%91%E7%BB%9C)
+* 
+
+<h2 id="01010">RAID</h2> 
+
+* [詳細](https://www.itread01.com/content/1545690255.html)
+* [ZFS](https://zh.wikipedia.org/wiki/ZFS)
+
+
+
+
+
+<h1 id="011">I/O Systems</h1> 
 
 
 
