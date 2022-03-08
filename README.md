@@ -2707,6 +2707,31 @@
   * JBOD(Just a Bunch Of Disks)：它的功能就跟它的全名一樣，「只是將多顆磁碟湊在一起」，當作一顆超大硬碟來用，並沒有striping或mirroring。
   * ![raid_Levels](https://github.com/a13140120a/Operation_System/blob/main/imgs/raid_Levels.jpg)
 
+* implementation:
+  * Volume-management的software可以於kernel層或系統軟體層 implement RAID，這種情況下hardware可以提供較少的功能。
+  * 或者是RAID 可以在host bus-adapter(HBA)中implement，速度較快但會缺乏彈性。
+  * 或者是在可以在存儲陣列的硬體(例如controler、hardware)中實現。
+* Other features:
+  * snapshot(快照)：上次更新前檔案系統的狀況記錄
+  * Replication(複製)：不同站點之間自動複製寫入以實現冗餘和災難恢復。複製可以是同步的或異步的，在同步複製中，寫入local的block同時也必須寫入remote端，而在異步複製中，寫入內容被聚集在一起並定期寫入(譬如每天的幾點等等)。
+  * hot spare drive(熱備援磁碟機)：RAID 中如果有disk壞掉，hot spare disk可以自動的重建壞掉的disk，不需等到人工替換的時候才做替換。
+* Problem:
+  * 雖然有如此多的保護措施，但RAID還是不保證資料永遠不會損毀，例如指向文件的poiter可能是錯誤的，或者file structure中的pointer可能是錯誤的，這會導致寫入時寫到不正確的位置，進而導致檔案損毀。
+  * 或者是有一些process意外的overwrite了檔案系統的結構
+  * RAID 的controller故障或是軟體上的bug都會導致資料損壞。
+* ZFS：
+  * Solaris ZFS檔案系統採用一種創新的方法來解決這些問題，而這種方法就是checksum。
+  * ZFS的block不跟其checksum放在一起。
+  * ZFS 的checksum 是跟指向block的pointer放在一起的。
+  * ![ZFS_Checksums](https://github.com/a13140120a/Operation_System/blob/main/imgs/ZFS_Checksums.jpg)
+  * inode 是一種儲存file system 的metadata的structure。
+  * 如過資料被mirroring，並且存在一個帶有正確的checksum的block以及一個帶有錯誤checksum的block，ZFS會自動用好的block更新壞掉的block。
+  * 相同地，指向inode的directory entry也會具有該inode的checksum，當訪問directory的時候ZFS會檢測到inode中的任何問題。
+  * checksum計算和額外的block讀取修改寫入周期所產生的overhead並不明顯，因為 ZFS 的整體性能非常快。
+  * [詳細資料](https://btrfs.wiki.kernel.org/index.php/Btrfs_design)
+  * 
+
+
 <h1 id="011">I/O Systems</h1> 
 
 
