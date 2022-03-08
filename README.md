@@ -2729,7 +2729,29 @@
   * 相同地，指向inode的directory entry也會具有該inode的checksum，當訪問directory的時候ZFS會檢測到inode中的任何問題。
   * checksum計算和額外的block讀取修改寫入周期所產生的overhead並不明顯，因為 ZFS 的整體性能非常快。
   * [詳細資料](https://btrfs.wiki.kernel.org/index.php/Btrfs_design)
-  * 
+  * 然而，RAID的缺點是缺乏靈活性，假設有一個由二十個disk組成的存儲陣列，這些disk分為四組，每組五個驅動器(也就是有四個獨立的volume)，可能有些file system，無法放進其中一個volume，或者有一些只需要用到非常小的空間，那就會浪費volume裡面的空間。
+  * 即使使用所有20個disk作為一個大型RAID時，可能會出現其他問題，例如，雖然我們在上面建裡多個不同大小的volume，然而，驅動器的使用和需求經常會隨著時間而變化，而且某些卷管理器不允許我們更改卷的大小，就算使用可以更改大小的卷管理器，但一些file system不允許空間增長或收縮。
+  * 為了解決上述問題，ZFS 將檔案系統管理和卷管理結合，disk或partition通過多個RAID組合成一個儲存池(pool)(即多個disk或partition組合成RAID，多個RAID再組成成pool)，一個pool可以容納一個或多個 ZFS file system，整個pool的可用空間可供該pool中的所有file system使用，ZFS把記憶體管理的`malloc()` 和 `free()`的那套方法放在儲存空間的管理上，因此，無需在卷之間重新定位文件系統或調整捲大小，消除了上述的儲存限制，並且也提供管理者可以限制(控管)能夠增長的量，且隨時可以改變這些變量。
+  * ![ZFS_Pools](https://github.com/a13140120a/Operation_System/blob/main/imgs/ZFS_Pools.jpg)
+* 其他系統（如 Linux）具有捲管理器，允許邏輯上連接多個disk以創建大於disk的volume以容納大型檔案系統。
+
+
+<h2 id="0109">Object Storage</h2> 
+
+* 一般計算機系統使用file systems來儲存使用者資料，另一種方法是建立一個儲存池(storage pool)，並將所謂的"物件"(object)放進儲存池裡面。
+* 與一般檔案系統不同的是，object無法在pool裡面被navigate(尋找)。
+* object storage是computer-oriented而不是user-oriented，是專門設計來給program使用的。
+* 一般的順序為:
+  1. 在存儲池中創建一個object，並接收一個object ID。
+  2. 在需要時通過object ID 訪問object。
+  3. 通過object ID 刪除對象。 
+* Object storage management software(例如Hadoop file system(HDFS)和Ceph)會決定要把object儲存在哪裡，並且提供對object的管理以及保護措施。
+* 舉例來說，例如，HDFS可以在 N 台不同的計算機上存儲一個object的 N 個copies，這種方法的成本甚至可以低於存儲陣列。
+* Hadoop cluster中的所有系統都可以訪問該對象，但擁有copy的系統會有較快的access速度，而其他系統需要網絡連接來讀取和寫入object(較慢)。因此，Object Storage通常用於大容量存儲，而不是高速random access。
+* object storage具有高scalability，我們隨時都可以添加更多的系統(computer)進去。
+* 每個object都具備self-describing(自我描述)的功能，包括對該object的內容的描述，內容沒有固定的格式，所以系統存儲的是非結構化數據。 
+* Dropbox、Spotify、以及Facebook的相片都是使用object storage來保存資料、Amazon S3使object storage來保存檔案系統以及在雲端計算機上運行的客戶應用程式的data object。 
+
 
 
 <h1 id="011">I/O Systems</h1> 
