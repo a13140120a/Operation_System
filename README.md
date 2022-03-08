@@ -931,7 +931,7 @@
   * 當thread的time quantum用完之後會被interrupt，並且如果此thread是variable class，他的priority會被降低，但不會被降到低於基本優先權，如果從waiting狀態中被釋放出來，就會提升priority，提升量取決於等待的是什麼，例如鍵盤IO將獲得大幅提升，若是磁碟IO則適量提升。
   * windows對於foreground process(前景)和background process(背景)有所區別，當一個process由background移動到foreground時，windows會增加其排班量(通常是3)
   * windows 7引入了[user-mode scheduling(UMS)](https://zhuanlan.zhihu.com/p/43652554)，允許user獨立於kernel外自行產生以及管理thread，對於大量產生 thread的process，在user mode排班會比在kernel mode排班更有效率，因為不需要介入kernel。
-  * 早期版本的windows提供類似的特性，稱為[fiber](https://docs.microsoft.com/zh-tw/windows/win32/procthread/fibers)，[(fiber wiki)](https://zh.wikipedia.org/wiki/%E7%BA%96%E7%A8%8B)，允許user mode的thread(纖程)被map到單一的kernel thread，fiber不能呼叫windows API，因為所有fiber都必須分享他們執行之thread的**TEB**[(Thread Environment Block 執行緒環境區塊)](https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-teb)，如果windows api 將資訊狀態放入一個fiber的TEB，會讓此資訊被另一個fiber覆蓋，UMS藉由提供每個user thread自己的執行緒內容來克服此障礙。
+  * 早期版本的windows提供類似的特性，稱為[fiber](https://docs.microsoft.com/zh-tw/windows/win32/procthread/fibers)，[(fiber wiki)](https://zh.wikipedia.org/wiki/%E7%BA%96%E7%A8%8B)，允許user mode的thread被map到單一的kernel thread，fiber不能呼叫windows API，因為所有fiber(纖程)都必須分享他們執行之thread的**TEB**[(Thread Environment Block 執行緒環境區塊)](https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-teb)，如果windows api 將資訊狀態放入一個fiber的TEB，會讓此資訊被另一個fiber覆蓋，UMS藉由提供每個user thread自己的執行緒內容來克服此障礙。
   * Windows也支援multicore processor系統來進行thread在processor上的排程，使用的技術是建立[SMT Set(邏輯處理器集)](https://docs.microsoft.com/zh-tw/windows-hardware/drivers/debugger/-smt)，例如四核二緒(8 logic processor)包括四個SMT集：{0,1}{2,3}{4,5}{6,7}，Windows能夠維持同一個SMT set中logic processor上的執行緒執行，為了在不同processor之間load balancing，每個thread會分配給一個ideal processor(理想處理器)，每個process都會有一個初始種子值，用於標示屬於該process的thread的理想CPU，該process每建立一個thread，種子值的數字就會增加，藉此分散負載在不同的logic processor上，在SMT系統中，下一個ideal processor的增量會在下一個SMT set中，例如某個process的thread的ideal processor為0,2,4,6,0,2...，如果第二個process的種子值為1，則分配1,3,5,7,1,3....。
 
 
@@ -2048,7 +2048,7 @@
       * 目前使用的LDT, 其位址和limit存放在 LDTR暫存器中
       * 主記憶體的GDT, 其位址和limit存放在 GDTR暫存器中
     * 段選擇器(selector)：
-      * 32位彙編中16位段寄存器(CS、DS、ES、SS、FS、GS)存放段描述符在段描述符表中的索引值、指示位TI(TI=0指示從全局描述表GDT中讀取描述符，TI=1指示從局部描述符中LDT中讀取描述符)、優先級(RPL用於特權檢查)。這些信息總稱段選擇器(段選擇子).
+      * 32位彙編中16位段寄存器(CS、DS、ES、SS、[FS](https://www.firbug.com/a/202106/196009.html)、GS)存放段描述符在段描述符表中的索引值、指示位TI(TI=0指示從全局描述表GDT中讀取描述符，TI=1指示從局部描述符中LDT中讀取描述符)、優先級(RPL用於特權檢查)。這些信息總稱段選擇器(段選擇子).
       * CS 暫存器具有另外一個重要的功能 ： 它包含一個2位元欄位, 用來指定CPU當前的特權等級
       * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_selector.PNG)
       * cpu從descriptor table 中找到段描述符(descriptor)之後加上offset得到linear address
@@ -2063,6 +2063,7 @@
     * [PAE(Physical Address Extension)](https://zh.wikipedia.org/wiki/%E7%89%A9%E7%90%86%E5%9C%B0%E5%9D%80%E6%89%A9%E5%B1%95#%E9%A1%B5%E8%A1%A8%E7%BB%93%E6%9E%84)技術使得32位元處理器可以處理大於4GB的實體位址空間。
     * 其他名詞：PDE(page directory entry, windows page table的outer table)
     * [參考資料](https://www.cntofu.com/book/46/linux_kernel/1217.md)
+    * [其他參考資料](https://www.cnblogs.com/shiqi17/p/12650640.html)
 
   * x86-64 架構：
     * Intel一開始的64位元架是IA-64，但是這時候AMD也開始發展64位元架構，稱為 x86-64，它是以現有IA-32 指令集為基礎下去擴展和支援更大的logical 和physical address，當 x86-64架構出現時，原本AMD根據Intel架構發展晶片的情況反轉，變成Intel採取AMD的x86-64架構，後來AMD64與Intel64通稱為x86-64。
@@ -2676,7 +2677,7 @@
   * SAN 的強大之處在於其靈活性，多個host和多個存儲陣列可以連接到同一個 SAN，並且存儲可以動態分配給host，例如如果host的磁盤空間不足，則可以將SAN 配置為為該host分配更多存儲空間，SAN使服務器集群可以共享相同的存儲，並使存儲陣列可以包括多個直接主機連接
   * SAN 通常比存儲陣列擁有更多port，而且成本更高。 SAN連接距離很短，通常沒有路由，因此NAS可以擁有比SAN更多的連接主機。 
   * 存儲陣列是特製的device，它包含存儲數據的硬碟和一個控制器來管理存儲，並允許跨網絡訪問存儲，控制器由 CPU、內存和實現陣列功能的software組成，包括網絡協議、用戶界面、RAID 保護、快照、複製、壓縮、重複數據刪除和加密。
-  * 陣列可能僅包含SSD，從而獲得最佳性能但容量較小，或者可能包含 SSD 和 HDD 的混合(使用SSD當作快取)。
+  * 陣列可能僅包含SSD，從而獲得最佳性能但容量較小，或者可能包含 SSD 和 HDD 的混合(通常會使用SSD當作快取)。
 
 * [詳細](https://www.itread01.com/content/1545690255.html)
 * [ZFS](https://zh.wikipedia.org/wiki/ZFS)
@@ -2687,10 +2688,24 @@
 * 將許多硬碟連接到計算機系統是較有經濟效益的(比起購買更大的昂貴的disk)。
 * 如果硬碟以並行方式運行，則在系統中擁有大量硬碟可以提高讀取或寫入數據的速率。
 * 此外，因為冗餘信息(redundant information)可以存儲在多個驅動器上，因此這種設置提供了提高了reliable(數據回復)的能力，我們存儲了通常不需要的額外信息，但可以在磁盤故障時用於重建丟失的信息。
-* mirroting(鏡射)：複製每個磁碟，例如一台邏輯磁碟機若是由兩台時體磁碟機組成，而且每次寫入都會在兩台磁碟機上一起執行(寫入重複的資料)，這個結果稱為鏡像卷區(mirrored volume)，如果其中一台磁碟機壞了，可以從另一台磁碟機讀取資料，只有當兩台同時壞掉時，資料才會遺失。
-* 有了多個磁碟機，我們可以藉由在多台磁碟機間分割資料儲存來增進效能，例如將一個byte分散到八台磁碟機上，每台磁碟機都參與每次存取，因此速度便為八倍。
-
-
+* mirroring(鏡射)：複製每個磁碟，例如一台邏輯磁碟機若是由兩台時體磁碟機組成，而且每次寫入都會在兩台磁碟機上一起執行(寫入重複的資料)，這個結果稱為鏡像卷區(mirrored volume)，如果其中一台磁碟機壞了，可以從另一台磁碟機讀取資料，只有當兩台同時壞掉時，資料才會遺失。
+* striping(條帶化)：條帶化技術就是一種自動的將 I/O 的負載均衡到多個物理磁盤上的技術，條帶化技術就是將一塊連續的數據分成很多小部分並把他們分別存儲到不同磁盤上去。例如，假設有多個disk，我們可以藉由在多顆disk間分割資料儲存來增進效能，例如將一個byte分散到八顆disk上，每顆disk都參與每次存取，因此速度便為八倍，又分成bit-level以及block-level
+  * bit-level striping：將每個 byte 的bit拆分到多個disk上，幾乎不會使用
+  * block-level striping：以block為單位，將每個file拆分成多個block，最常使用的striping
+* mirroring提供了高可靠性，但價格昂貴，striping 提供了高數據傳輸率，但並沒有提高可靠性。
+* RAID 的各種級別決定了reliable 以及速度的權衡:
+  * RAID 0：容量最大，因為不用寫[parity](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#error-detecting-and-error-correcting)資料，也因此不用多餘的計算，因此速度也最快。
+  * RAID 1：至少要兩顆disk，可以容許最多顆disk的損壞t(50%)，但同時也是最昂貴(需要最多顆disk可以儲存最少容量)。
+  * RAID 3：會有一顆disk儲存parity資料，並將parity資料放在同一顆disk上(稱為同位碟)，以byte為單位做striping以及mirroring。
+  * RAID 4：基本上跟RAID 3一樣，但RAID 4以block做striping以及mirroring，RAID 3與RAID 4的同位碟通常會是效能上的瓶頸，因為很多顆disk一起寫入代表很多顆disk一起製造parity並且寫入到同一顆disk
+  * RAID 5：最少要三顆disk，與RAID 3、RAID 4不同的是，parity會分散寫入每顆disk，這項技術突破了RAID 3、RAID 4的瓶頸，RAID 5只能容忍一顆disk壞掉。
+  * RAID 6：每顆硬碟會有兩個redundant，與RAID5 使用XOR來correcting的方式不同，RAID 6通常不使用同位位元，而使用一些複雜的數學技巧來計算Q(例如[Galois field](https://blogs.oracle.com/solaris/post/understanding-raid-6-with-junior-high-math))，RAID 6可以容忍兩顆disk損壞。
+  * RAID 10：RAID 10是先分割資料再鏡像，再將所有硬碟分為兩組，視為以RAID 1作為最低組合，然後將每組RAID 1視為一個「硬碟」組合為RAID 0運作，當RAID 10有一個硬碟受損，其餘硬碟會繼續運作，RAID 10遠較RAID 01常用。
+    * ![RAID_10](https://github.com/a13140120a/Operation_System/blob/main/imgs/RAID_10.png)
+  * RAID 01：跟RAID 10的程式相反，是先鏡像再將資料到分割兩組硬碟。它將所有的硬碟分為兩組，每組各自構成為RAID 0作為最低組合，而將兩組硬碟組合為RAID 1運作，RAID 01只要有一個硬碟受損，同組RAID 0的所有硬碟都會停止運作，只剩下其他組的硬碟運作，可靠性較低。如果以六個硬碟建RAID 01，鏡像再用三個建RAID 0，那麼壞一個硬碟便會有三個硬碟離線，
+    * ![RAID_01](https://github.com/a13140120a/Operation_System/blob/main/imgs/RAID_01.png)
+  * JBOD(Just a Bunch Of Disks)：它的功能就跟它的全名一樣，「只是將多顆磁碟湊在一起」，當作一顆超大硬碟來用，並沒有striping或mirroring。
+  * ![raid_Levels](https://github.com/a13140120a/Operation_System/blob/main/imgs/raid_Levels.jpg)
 
 <h1 id="011">I/O Systems</h1> 
 
