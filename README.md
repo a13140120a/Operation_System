@@ -9,7 +9,7 @@
 * ## [Deadlock](#007) #
 * ## [Memory Management](#008) #
 * ## [Virtual Memory](#009) #
-* ## [pass](#010) #
+* ## [Mass-Storage Structure](#010) #
 * ## [pass](#011) # 
 * ## [pass](#012) # 
 * ## [pass](#013) # 
@@ -2454,10 +2454,17 @@
 
 <h1 id="010">Mass-Storage Structure</h1> 
 
-  * ## [Bcakground](#0101) #
-
-
-
+  * ## [Overview of Mass-Storage Structure](#0101) #
+  * ## [Nonvolatile Memory Devices](#010) #
+  * ## [Volatile Memory](#0103) #
+  * ## [Secondary Storage Connection Methods](#0104) #
+  * ## [Address Mapping](#0105) #
+  * ## [HDD Scheduling](#0106) #
+  * ## [ECC](#0107) #
+  * ## [Storage Device Management](#0108) #
+  * ## [Swap-Space Management](#0109) #
+  * ## [RAID Structure](#01010) #
+  * ## [Object Storage](#01011) #
 
 
 
@@ -2499,7 +2506,6 @@
   * 較貴
   * 容量較小
   * 壽命較短
-
 
 *  SSD 在寫入數據時將電子存儲在 NAND 單元上。使用 NAND 閃存，一個記憶單元經過寫入(Program)，可由邏輯1變成邏輯0，但無法再經由寫入將此單元回復到邏輯1，需經過抹除(Erase)才可回復邏輯1。因此，存儲或刪除新數據時無法覆蓋已存儲的數據。
 *  寫入(Program)和抹除(Erase)操作SSD 的執行是在不同的單元中進行的，寫操作以頁(pages)為單位執行，而抹除操作以塊(blocks)為單位執行，
@@ -2588,7 +2594,7 @@
 
 * [詳情請見](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#error-detecting-and-error-correcting)
 
-<h2 id="0107">Storage Device Management</h2> 
+<h2 id="0108">Storage Device Management</h2> 
 
 
 * Drive Formatting, Partitions, and Volumes
@@ -2643,7 +2649,7 @@
     * 另外一種方法是使用磁區順延(sector slipping)，例如假設邏輯區塊17變成失效，就把原本的18從新label成17，19label成18，以此類推，但可想而知這種方法的cost非常大(需要花很多的時間)。
   * NVM的故障管理區域比HDD更簡單，因為沒有搜尋的順序問題，controler將maintaim一個壞的page的table去追蹤。
 
-<h2 id="0108">Swap-Space Management</h2> 
+<h2 id="0109">Swap-Space Management</h2> 
 
 
 * 現代系統都是swap 一個page而不是swap整個process
@@ -2682,7 +2688,7 @@
 * [詳細](https://www.itread01.com/content/1545690255.html)
 * [ZFS](https://zh.wikipedia.org/wiki/ZFS)
 
-<h2 id="0109">RAID Structure</h2> 
+<h2 id="01010">RAID Structure</h2> 
 
 * redundant arrays of independent disks
 * 將許多硬碟連接到計算機系統是較有經濟效益的(比起購買更大的昂貴的disk)。
@@ -2736,7 +2742,7 @@
 * 其他系統（如 Linux）具有捲管理器，允許邏輯上連接多個disk以創建大於disk的volume以容納大型檔案系統。
 
 
-<h2 id="0109">Object Storage</h2> 
+<h2 id="01011">Object Storage</h2> 
 
 * 一般計算機系統使用file systems來儲存使用者資料，另一種方法是建立一個儲存池(storage pool)，並將所謂的"物件"(object)放進儲存池裡面。
 * 與一般檔案系統不同的是，object無法在pool裡面被navigate(尋找)。
