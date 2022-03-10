@@ -66,17 +66,28 @@
   * Hook就是利用安裝interrpt vector來達成的，使用此技術組譯器必須知道實體記憶體的絕對地址。
   * 下圖為intel 8086微處理器的interrupt vector table。
   * ![8086_Interrupts_vec_table](https://github.com/a13140120a/Operation_System/blob/main/imgs/8086_Interrupts_vec_table.jpg)
-* 有心人士有可能會透過修改interrupt routine 或者是interrupt vector來達成偷取資料(或其他破壞行為)的目的
-* 當ID devices的數量多於interrupt vector的位址時，會使用中斷串鏈(interrupt chaining)，當發生interrupt時cpu會去traverse，直到找到相對應的routine，處理完之後執行return_from_interrupt並返回之前的狀態。
 * interrupt chaining(中斷串鏈)：
   * 當interrupt vactor太多時(超過256個)，就會使用到interrupt chaining的技術
   * 每一個interript vector都指向一個由ISR組成的linked-list，**而不是直接指向ISR**。當有interrupt發生時，會先找到interrupt vector，然後再traverse整個list。
   * 這是在效率與節省空間之間折衷的方法。
 * Interrupt Request Lines(中斷請求線)：大部分的cpu會有兩條Interrupt Request Lines, 一條是maskable, 一條是nonmaskable。
   * 當cpu偵測到Interrupt Request Line 發出interrupt時，會讀取interrupt的編號，跳轉到interrupt vector中相對應的routine
-  * 通常Interrupt 會有prioriy level, priority較高的在處理的時候，priority較低的會被mask掉，相對的priority較低的在處理的時候若有priority較高的interrupt出現則會先被執行。
+* Interrupt prioriy level：
+  * priority較高的在處理的時候，priority較低的會被mask掉，相對的priority較低的在處理的時候若有priority較高的interrupt出現則會先被執行。
+  * 通常會有一個priority arbiter(優先權仲裁器)的電路來決最高優先權的硬體
+* interrupt grant(中斷同意線)：
+  * priority arbiter決定好某硬體後,用來傳送中斷同意信號給該硬體
+* 運作過程：
+  * 當有事件發生時，process會透過interrupt request向priority arbiter發出中斷信號,並進入等待狀態
+  * priority arbiter收到一個或多個中斷信號後,使用priority arbiter電路決定最高優先權的硬體
+  * priority arbiter傳送中斷同意信號給最高優先權的硬體,並清除interrupt request上的中斷信號
+  * 如果使用interrupt vector的話，當硬體收到中斷同意信號後再送出interrupt vector(中斷向量)給cpu
+  * cpu到interrupt vector table(中斷向量表)被指定的欄位取出ISR起始位址並執行指定ISR
+
+* 處理完interrupt之後執行return_from_interrupt並返回之前的狀態。
+* 有心人士有可能會透過修改interrupt routine 或者是interrupt vector來達成偷取資料(或其他破壞行為)的目的
 * Hardware 發出的**signal**導致interrupt, 而software 則是發出error，或是透過system call導致interrupt
-* Software的interrupt叫做trap或exception，software產生interrupt之後可以跳轉到自己定義的module當中
+* Software的interrupt也叫做trap或exception，software產生interrupt之後可以跳轉到自己定義的module當中
 * [更多](#0112)
 
 
@@ -2841,10 +2852,55 @@
     6. controler清除command-ready位元，並清除再status resigter中的error位元，表示IO已經成功，並清除busy位元。
   * 如上述，於步驟1當中，host就處於busy waiting(或polling)的狀態。
   * 如果等待的時間夠小，使用polling是較好的選擇
+  * polling適合programmed IO
 * Interrupt：
-  * 如[之前提到](#0013)，
+  * 如[之前提到](#0013)
+  * 由於在許多情況下中斷處理受時間和資源限制，因此實作起來很複雜，系統經常將中斷管理分為第一級中斷處理程序（FLIH, first-leve interrupt handler）和第二級中斷處理程序（SLIH, second-level interrupt handler），FLIH 執行上下文切換、狀態存儲和處理操作的排隊柱列，而SLIH則執行request operation的處理 。
+  * interrupt的技術也應用在許多OS的kernel，例如製作virtual memory的page fault、system call等等
+  * interrupt也可以用來控制kernel的流程(control flow)，例如有一user process要讀取硬碟資料，其中的一個步驟是將從硬碟讀取並存在kernel buffer的資料copy到user program的space，另一個步驟則是啟動IO queue裡面的下一個IO request，我們可以藉由調整interrupt的piority來讓後者先執行，待另一個IO request開始執行IO之後再執行前者(把資料copy到user program space)。
+  * interrupt技術可以允許devices通知cpu，如此就不需要為了完成IO動作而做多餘的等待
+  * 但是會消耗context switch的時間，interrupt適合memory-mapped I/O
+  
+<h2 id="0112">Direct Memory Access</h2> 
+
+* programmed IO(PIO)：使用昂貴的general-purpose processor來監控資料傳輸的狀態，以及一次一個(或少許) byte傳送資料，非常浪費cpu資源。
+* 為了改善上述那種狀況，於是有了DMA的技術，DMA是一種special-purpose的controler，當初始化「資料傳輸」的動作時，CPU會把一個「DMA command block(DMA指令區塊)」寫進記憶體，這個block可能包含了傳輸目的及來源的pointer，還有傳輸的資料長度，也可能包含了更複雜的資料(例如不連續的來源及目的address的列表)
+* 這種方法又稱為scatter–gather(分散收集)的方法，這種方法允許通過單個DMA 指令執行多個傳輸，cpu只要把DMA command block的位址寫進去DMA controler裡面，cpu就可以去做其他的事情了，待DMA處理完IO之後會發出interrupt，然後cpu再接手處理。
+* 大部分電腦(包含行動裝置)都會有一個簡單的DMA
+* 為了防止user program修改存放DMA command那塊memory的內容，一定是存在kernel space，因為user不能去修改它。
+* DMA執行IO時，會占用系統匯流排，此時可會影響CPU的效能，但根據實驗證明，整體效能還是比較佳的。
+* VDMA(virtual direct memory access)技術可以讓DMA直接使用虛擬記憶體的位址。
 
 
+<h2 id="0112">Application I/O Interface</h2> 
+
+* 各種不同的hardeare的差異及細節被封裝在device driver，下圖說明kernel中與I/O相關的部分是如何在軟件層中構建的 
+* ![Kernel_IO_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/Kernel_IO_Structure.jpg)
+* 我們必須找到devices的各個特徵，才能抽離IO的細節與差異，大多是device的特徵可以是以下：
+  * Character-stream or block： 資料傳輸可以是以byte為單位，也可以是以block為單位
+  * Sequential or random access： 序列化或隨機
+  * Synchronous or asynchronous：同步設備與系統的其他方面協調，以可預測的response time執行數據傳輸。 異步設備表現出與其他計算機事件不規則或不可預測的response time。 
+  * Sharable or dedicated(共用或指定)：sharable devices可以被多個thread或processor共用，dedicated devices則不行
+  * Speed of operation：不同的devices之間有著不同的速度差異
+  * Read–write, read only, write once：例如螢幕是write only，disk可以read-write。
+  * ![DeviceCharacteristics](https://github.com/a13140120a/Operation_System/blob/main/imgs/DeviceCharacteristics.jpg)
+* Back-door interfaces：大部分的會有escape(或稱back door)可以直接將某process的指令原封不動地傳給驅動程式，這種interface通常會有風險，因為可以直接通過許多安全機制的檢查。
+  * 例如UNIX的`ioctl()`，這個system call讓應用程式可以直接存取任何驅動程式上的功能，`ioctl()`共有三個參數，第一個是裝置識別碼(device id)，它透過device將應用程式與驅動程式連接，第二個參數是一個整數，它可以選擇此裝置的指令，第三個參數是一個指標，可以指向記憶體中的任何資料結構，讓應用程式及驅動程式傳達信息(參數)。
+* UNIX和Linux 中的device id分為"major"以及"minor"，第一個是裝置類型，第二個是裝置的instance，例如系統中有4顆SSD以下command，8代表是SSD，0123代表第幾顆SSD：
+```
+% ls -l /dev/sda*
+[output:]
+brw-rw---- 1 root disk 8, 0 Mar 16 09:18 /dev/sda
+brw-rw---- 1 root disk 8, 1 Mar 16 09:18 /dev/sda1
+brw-rw---- 1 root disk 8, 2 Mar 16 09:18 /dev/sda2
+brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
+```
+
+* Block and Character Devices：
+  * block-device interface包括所有存取磁碟機，以及block-oriented裝置時所需的功能，
+  * 像`read()`、`write()`、`seek()`這種指令就已經掌握住區塊儲存裝置的核心特徵，因此應用程式並不需要知道low-level的細節是如何實現的。
+  * raw IO(原始IO)：原始 I/O 直接發送到disk偏移量，完全繞過檔案系統。它已被某些應用程式（尤其是數據庫）使用，這些應用程序可以比檔案系統更好地管理buffer以及lock。缺點是軟件更複雜。根據 Oracle 的官方網站，原始I/O比對帶有檔案系統的 I/O性能提高了大約 5% 到 10%。
+  * direct IO：屬於「完全繞過作業系統」、以及「完全使用作業系統」的折衷方案，讓使用者使用檔案系統，但繞過buffer和上鎖。
 
 
 
