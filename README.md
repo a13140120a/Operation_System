@@ -282,7 +282,7 @@
 * Policy and mechanism：
   * mechanism(機制)：決定如何做某些事
   * Policy(策略)：決定做什麼
-  * 例如作為cpu保護的機制(mechanism)，[Timer](#0012)就是一種策略(Policy)
+  * 例如作為cpu保護的機制(mechanism)，[Timer](#0014)就是一種策略(Policy)
   * microkernel 為mechanism與Policy分離的極端例子
 * 早期作業系統都是由組合語言撰寫，而現今大多都是以C/C++撰寫，少部分較瓶頸的常式(routine)則是用組合語言替換重構，以實現較好的效率。
 * Android 使用一種以上的語言撰寫而成，其大部分系統程式庫都是以C/C++撰寫，而應用程式框架以及API則都是以Java撰寫而成。
@@ -2877,9 +2877,19 @@
 * 各種不同的hardeare的差異及細節被封裝在device driver，下圖說明kernel中與I/O相關的部分是如何在軟件層中構建的 
 * ![Kernel_IO_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/Kernel_IO_Structure.jpg)
 * 我們必須找到devices的各個特徵，才能抽離IO的細節與差異，大多是device的特徵可以是以下：
-  * Character-stream or block： 資料傳輸可以是以byte為單位，也可以是以block為單位
+  * Character-stream or block： 
+    * 資料傳輸可以是以byte為單位，也可以是以block為單位
+    * block-device interface：
+      * 包括所有存取disk，以及block-oriented裝置時所需的功能，
+      * 像`read()`、`write()`、`seek()`這種指令就已經掌握住區塊儲存裝置的核心特徵，因此應用程式並不需要知道low-level的細節是如何實現的。
+      * raw IO(原始IO)：原始 I/O 直接發送到disk偏移量，完全繞過檔案系統。它已被某些應用程式（尤其是數據庫）使用，這些應用程序可以比檔案系統更好地管理buffer以及lock。缺點是軟件更複雜。根據 Oracle 的官方網站，原始I/O比對帶有檔案系統的 I/O性能提高了大約 5% 到 10%。
+      * direct IO：屬於「完全繞過作業系統」、以及「完全使用作業系統」的折衷方案，讓使用者使用檔案系統，但繞過buffer和上鎖。
+    * character-stream interface：
+      * 對於鍵盤、滑鼠、數據機等等非常方便。
+      * system call `get()`、`put()`等等，一次存取一個字元。
   * Sequential or random access： 序列化或隨機
-  * Synchronous or asynchronous：同步設備與系統的其他方面協調，以可預測的response time執行數據傳輸。 異步設備表現出與其他計算機事件不規則或不可預測的response time。 
+  * Synchronous or asynchronous：
+    * 同步設備與系統的其他方面協調，以可預測的response time執行數據傳輸。 異步設備表現出與其他計算機事件不規則或不可預測的response time。 
   * Sharable or dedicated(共用或指定)：sharable devices可以被多個thread或processor共用，dedicated devices則不行
   * Speed of operation：不同的devices之間有著不同的速度差異
   * Read–write, read only, write once：例如螢幕是write only，disk可以read-write。
@@ -2896,11 +2906,50 @@ brw-rw---- 1 root disk 8, 2 Mar 16 09:18 /dev/sda2
 brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 ```
 
-* Block and Character Devices：
-  * block-device interface包括所有存取磁碟機，以及block-oriented裝置時所需的功能，
-  * 像`read()`、`write()`、`seek()`這種指令就已經掌握住區塊儲存裝置的核心特徵，因此應用程式並不需要知道low-level的細節是如何實現的。
-  * raw IO(原始IO)：原始 I/O 直接發送到disk偏移量，完全繞過檔案系統。它已被某些應用程式（尤其是數據庫）使用，這些應用程序可以比檔案系統更好地管理buffer以及lock。缺點是軟件更複雜。根據 Oracle 的官方網站，原始I/O比對帶有檔案系統的 I/O性能提高了大約 5% 到 10%。
-  * direct IO：屬於「完全繞過作業系統」、以及「完全使用作業系統」的折衷方案，讓使用者使用檔案系統，但繞過buffer和上鎖。
+* Network Devices：
+  * 由於網絡 I/O 的性能和尋址特性與disk I/O有很大的不同，除了提供跟disk一樣的`read()`、`write()`、`seek()`以外，
+  * 還有socket interface，顧名思義，就像插座一樣，program使用socket相關的system call來create 一個socket，那麼遠端的program就可以插入這個socket(插座)，反之亦然，透過連接發送和接收數據封包。
+  * socket還提供了`select()`函數來管理一組socket，`select()`返回「有關哪些socket有正在等待接收的封包」以及「哪些socket有空間可以接受要發送的數據包」的信息。
+  * `select()`的使用消除了網絡 I/O 所必需的polling和busy waiting。這些函數封裝了網絡的基本行為，極大地促進了可以使用任何底層網絡硬體和protocal stack的分散式應用程式的創建。
+* Clocks and Timers
+  * [Timer基本介紹](#0014)
+  * 大多數計算機都有硬體時鐘和計時器，它們提供三種基本的功能：
+    * 給出當前時間。
+    * 給出經過的時間。
+    * 設置定時器以在時間 T 觸發操作 X 
+  * 這些函數被作業系統以及對時間敏感(time sensitive)的應用程序大量使用。 不幸的是，實現這些功能在各個作業系統之間沒有一個固定的標準。
+  * 測量經過時間以及觸發操作的硬體又稱為programmable interval timer(PIT, 可編程間隔計時器)，該硬體可以設置為等待一定時間後產生中斷，也可以設置為執行一次或重複該過程產生週期性中斷。
+  * scheduler 使用這種技術來觸發interrupt，讓OS可以multiprogramming 或Time-sharing。
+  * Disk 的IO system使用這種技術來每隔一段時間把buffer的內容flush到disk內，網路subsystem使用它來取消由於擁塞或故障而進行得太慢的操作。
+  * OS還可以為process提供使用Timer的interface。
+  * 可以透過virtual clocks模擬比實際存在更多的定時器，為此，kernel（或計時器的device driver）維護其自己的routine和user requests所需的interrupt list，按最早時間優先順序排序(earliest-time-first order)，它將計時器設置為列表內最早的(所需要的interrupt)時間。當定時器中斷時，kernel向請求者發出信號並用下一個最早的時間重新加載定時器(重新開始計時)。 
+  * 現代 PC 包括一個高性能事件計時器 (high-performance event timer，HPET)。
+  * NTP(the network time protocol)：可以糾正有偏移的時間的協議。
+
+* Blocking(阻塞) and Non-blocking(非阻塞) I/O：
+  * IO devices通常是asynchronous的，因為他們需要的時間不一定，而且通常很久，但許多OS還是有提供Blocking的
+  * Blocking：使用阻塞 I/O 時，當發出 I/O 請求時，進程將移至等待隊列，並在請求完成時移回就緒隊列，同時允許其他進程運行。
+  * non-Blocking：對於非阻塞 I/O，無論請求的 I/O 操作是否（完全）發生，I/O 請求都會立即返回。
+  * 應用程序編寫者可以與 I/O 重疊執行的方法有三種：
+    * 使用multithread
+    * 使用non blocking的system call
+    * 使用asynchronous的system call
+  * asynchronous與non-blocking的差異在於：
+    * asynchronous：會在執行完之後透過variable、interrupt、或者callback function回傳。
+    * non-blocking：會立刻回傳一些當下可用的值，譬如有沒有成功(回傳1或0)，或者回傳資料是否已全部傳達，部份傳達，或者尚未傳達等等
+  * 同步與異步比較圖
+  * ![sync_async_IO_Methods](https://github.com/a13140120a/Operation_System/blob/main/imgs/sync_async_IO_Methods.jpg)
+
+* Vectored I/O：
+  * 允許一個system call對多個位置進行多個IO操作
+  * 例如UNIX的`ready()` system call
+  * 多個單獨的緩衝區可以通過一個system call傳輸其內容，從而避免context switch和system call的overhead。 
+
+
+
+<h2 id="0112">Kernel I/O Subsystem</h2> 
+
+
 
 
 
