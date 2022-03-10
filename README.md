@@ -56,11 +56,23 @@
   * ![cONTROLER](https://github.com/a13140120a/Operation_System/blob/main/imgs/controler.PNG)
 * 現代OS大部分都是Interrupt-driven IO的方式執行IO
   * cpu 發出request 使IO devices工作，自己則可以去執行其他指令，等到controler執行完之後會通知cpu，然後cpu才會繼續處理
-* 當CPU發生Interrupt時，會停止正在執行的工作，並依照Interrupt的種類轉換到一個的位址，而這個位址通常是interrupt service routine(中斷服務常式，或稱中斷處理器interrupt handler)的起始位址
-  * 又或者會有一個interrupt vector處理，cpu會依照這個vector跑去相對應的routine處理interrupt，通常位於記憶體的前100個位置
-  * 有心人士有可能會透過修改interrupt routine 或者是interrupt vector來達成偷取資料(或其他破壞行為)的目的
-  * 當ID devices的數量多於interrupt vector的位址時，會使用中斷串鏈(interrupt chaining)，當發生interrupt時cpu會去traverse，直到找到相對應的routine，處理完之後執行return_from_interrupt並返回之前的狀態。
-* 大部分的cpu會有兩條Interrupt Request Lines, 一條是maskable, 一條是nonmaskable。
+* 當CPU發生Interrupt時，會停止正在執行的工作，並依照Interrupt的種類轉換到一個的位址，而這個位址通常是interrupt service routine(ISR, 中斷服務常式，或稱中斷處理器interrupt handler)的起始位址。
+* interrupt vector(中斷向量)：
+  * 中斷向量是處理中斷的一種技術，它會通知中斷處理程序在哪裡找到 ISR的地址，所有的interrupt都會有一個number，通常是0~255，每個interrupt都會對應到一個interrupt vector。
+  * 使用這項技術是為了避免「跳轉到ISR之後還要搜尋並確定是哪一種中斷」這種老舊的技術造成時間上的浪費。
+  * 中斷向量表(interrupt vector table)通常位於memory的000000H/~0003FFH的前1024個bytes，它包含 256 個不同的中斷向量。每個向量長 4 個bytes，並且包含了ISR的起始位址
+  * 中斷向量表中，前五個向量從8086到Pentium都是相同的，並且intel保留前32個中斷向量供其在各種微處理器系列成員中使用。最後224個向量可用作用戶中斷向量。
+  * ISR的起始位址由段(CS內容)和偏移量(IP內容，IP就是intel的PC)組成
+  * Hook就是利用安裝interrpt vector來達成的，使用此技術組譯器必須知道實體記憶體的絕對地址。
+  * 下圖為intel 8086微處理器的interrupt vector table。
+  * ![8086_Interrupts_vec_table](https://github.com/a13140120a/Operation_System/blob/main/imgs/8086_Interrupts_vec_table.jpg)
+* 有心人士有可能會透過修改interrupt routine 或者是interrupt vector來達成偷取資料(或其他破壞行為)的目的
+* 當ID devices的數量多於interrupt vector的位址時，會使用中斷串鏈(interrupt chaining)，當發生interrupt時cpu會去traverse，直到找到相對應的routine，處理完之後執行return_from_interrupt並返回之前的狀態。
+* interrupt chaining(中斷串鏈)：
+  * 當interrupt vactor太多時(超過256個)，就會使用到interrupt chaining的技術
+  * 每一個interript vector都指向一個由ISR組成的linked-list，**而不是直接指向ISR**。當有interrupt發生時，會先找到interrupt vector，然後再traverse整個list。
+  * 這是在效率與節省空間之間折衷的方法。
+* Interrupt Request Lines(中斷請求線)：大部分的cpu會有兩條Interrupt Request Lines, 一條是maskable, 一條是nonmaskable。
   * 當cpu偵測到Interrupt Request Line 發出interrupt時，會讀取interrupt的編號，跳轉到interrupt vector中相對應的routine
   * 通常Interrupt 會有prioriy level, priority較高的在處理的時候，priority較低的會被mask掉，相對的priority較低的在處理的時候若有priority較高的interrupt出現則會先被執行。
 * Hardware 發出的**signal**導致interrupt, 而software 則是發出error，或是透過system call導致interrupt
@@ -2049,7 +2061,7 @@
       * 目前使用的LDT, 其位址和limit存放在 LDTR暫存器中
       * 主記憶體的GDT, 其位址和limit存放在 GDTR暫存器中
     * 段選擇器(selector)：
-      * 32位彙編中16位段寄存器(CS、DS、ES、SS、[FS](https://www.firbug.com/a/202106/196009.html)、GS)存放段描述符在段描述符表中的索引值、指示位TI(TI=0指示從全局描述表GDT中讀取描述符，TI=1指示從局部描述符中LDT中讀取描述符)、優先級(RPL用於特權檢查)。這些信息總稱段選擇器(段選擇子).
+      * 32位彙編中16位段寄存器([CS](https://iter01.com/560468.html)、DS、ES、SS、[FS](https://www.firbug.com/a/202106/196009.html)、GS)存放段描述符在段描述符表中的索引值、指示位TI(TI=0指示從全局描述表GDT中讀取描述符，TI=1指示從局部描述符中LDT中讀取描述符)、優先級(RPL用於特權檢查)。這些信息總稱段選擇器(段選擇子).
       * CS 暫存器具有另外一個重要的功能 ： 它包含一個2位元欄位, 用來指定CPU當前的特權等級
       * ![](https://github.com/a13140120a/Operation_System/blob/main/imgs/IA32_selector.PNG)
       * cpu從descriptor table 中找到段描述符(descriptor)之後加上offset得到linear address
