@@ -56,15 +56,16 @@
   * ![cONTROLER](https://github.com/a13140120a/Operation_System/blob/main/imgs/controler.PNG)
 * 現代OS大部分都是Interrupt-driven IO的方式執行IO
   * cpu 發出request 使IO devices工作，自己則可以去執行其他指令，等到controler執行完之後會通知cpu，然後cpu才會繼續處理
-* 當CPU發生Interrupt時，會停止正在執行的工作，並依照Interrupt的種類轉換到一個的位址，而這個位址通常是interrupt service routine(中斷服務常式)的起始位址
-  * 又或者會有一個interrupt vector處理，cpu會依照這個vector跑去相對應的routine處理interrupt，通常位於記憶體的錢100個位置
+* 當CPU發生Interrupt時，會停止正在執行的工作，並依照Interrupt的種類轉換到一個的位址，而這個位址通常是interrupt service routine(中斷服務常式，或稱中斷處理器interrupt handler)的起始位址
+  * 又或者會有一個interrupt vector處理，cpu會依照這個vector跑去相對應的routine處理interrupt，通常位於記憶體的前100個位置
   * 有心人士有可能會透過修改interrupt routine 或者是interrupt vector來達成偷取資料(或其他破壞行為)的目的
-  * 當ID devices的數量多於interrupt vector的位址時，當發生interrupt時cpu會去traverse，直到找到相對應的routine，處理完之後執行return_from_interrupt並返回之前的狀態。
+  * 當ID devices的數量多於interrupt vector的位址時，會使用中斷串鏈(interrupt chaining)，當發生interrupt時cpu會去traverse，直到找到相對應的routine，處理完之後執行return_from_interrupt並返回之前的狀態。
 * 大部分的cpu會有兩條Interrupt Request Lines, 一條是maskable, 一條是nonmaskable。
   * 當cpu偵測到Interrupt Request Line 發出interrupt時，會讀取interrupt的編號，跳轉到interrupt vector中相對應的routine
   * 通常Interrupt 會有prioriy level, priority較高的在處理的時候，priority較低的會被mask掉，相對的priority較低的在處理的時候若有priority較高的interrupt出現則會先被執行。
 * Hardware 發出的**signal**導致interrupt, 而software 則是發出error，或是透過system call導致interrupt
 * Software的interrupt叫做trap或exception，software產生interrupt之後可以跳轉到自己定義的module當中
+* [更多](#0112)
 
 
 <h2 id="0014">Timer</h2>   
@@ -2758,9 +2759,78 @@
 * 每個object都具備self-describing(自我描述)的功能，包括對該object的內容的描述，內容沒有固定的格式，所以系統存儲的是非結構化數據。 
 * Dropbox、Spotify、以及Facebook的相片都是使用object storage來保存資料、Amazon S3使object storage來保存檔案系統以及在雲端計算機上運行的客戶應用程式的data object。 
 
+****
+
+
 
 
 <h1 id="011">I/O Systems</h1> 
+
+  * ## [Overview](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+
+
+
+
+<h2 id="0111">Overview</h2> 
+
+* 計算機的兩個主要工作是I/O和計算。在很多情況下，主要的工作是I/O，計算或處理只是其次。
+* 由於 I/O 設備的功能和速度差異很大（鼠標、HDD、SSD等等），因此需要不同的方法來控制它們。
+* 這些方法構成了內核的 I/O 子系統，它將內核的其餘部分與管理 I/O 設備的複雜性分開。 
+* IO devices正在往兩個衝突的方向發展，一個是軟體與硬體的介面逐漸趨於標準化，另一個則是一些更新技術的IO devcie出現，而這些新的IO device與就的device的差異極大，以至於將它們整合到既存的系統變的很有挑戰。
+* device-driver：為了封裝不同devices 之間的細節以及差異處，OS被設計為使用 device-driver modules(驅動程式模組)來為I/O subsystem提供統一的device access的interface。
+
+
+<h2 id="0112">I/O Hardware</h2> 
+
+* port：host 跟IO devices之間的連接點稱為port
+* bus(匯流排)：是一組線路和一個嚴格定義的協議(protocal)，該協議定義了一組可以在線路上發送的消息。
+* 下圖為典型的PCI匯流排，PCI匯流排負責處理較快速的devices，而expansion bus(擴充匯流排)則處理相對較慢的devices(例如鍵盤，serial port，USB port等等)。
+* ![Typical_PCIe_Bus](https://github.com/a13140120a/Operation_System/blob/main/imgs/Typical_PCIe_Bus.jpg)
+* 下圖可以看到北橋晶片(Northbridge)控制著速度較快的bus(例如PCIe bus)，而南橋晶片(Southbridge)則控制相對較慢的bus(例如一些expansion bus)。
+* PCIe：
+  * 是一種具有彈性的匯流排，可經由一個或多個lanes(通道)傳輸資料，一個lane由兩個signaling pairs組成，一個pair用於接收資料，另一個用於傳送，每個lane由四條線組成，每個lane都使用**全雙工位元組串流**(full-duplex bytes stream)，可以同時在雙向以八位元的位元組格式傳送封包。
+  * 從物理上講，PCIe線路可以包含 1、2、4、8、12、16 或 32 個通道，由“x”前綴表示，例如，使用8個通道的PCIe 介面卡或連接器被指定為x8，此外，PCIe 已經經歷了多個“世代”，未來還會有更多。因此，假如一張卡可能是“PCIe gen3 x8”，這意味著它可以與第三代PCIe 配合使用並使用 8 個通道。(詳情[https://pcisig.com/](https://pcisig.com/))
+* contrler(控制器)：可以操控port,bus,device的電子零件組合，通常會有獨立的晶片，以及一些memory。
+  * serial-port controler(序列埠控制器)：一個簡單的控制器，他是電腦中的獨立晶片，控制在序列埠纜線上的訊號。
+  * fibr channel (FC) bus controller(光纖通道控制器)：相較序列埠控制器之下較複雜，包含了microcode，processor，memory，能夠處理FC protocol的messages
+  * 硬碟的背面會有一張電路板，這張電路板即為disk controller。
+
+* Memory-Mapped I/O:
+  * comtroler通常會有一個或多個用於數據和控制信號的暫存器，processor通過讀取和寫入這些暫存器中的bit patterns與控制器通信。
+  * Port-mapped I/O：屬於最傳統的方法，使用特殊的I/O instructions(而非memory的instructions)來直接與I/O port溝通，，例如X86的IN, OUT，這些指令指定將bytes(或word)傳輸到I/O port address，而這種instructions通常都是Privileged Instructions(使用者無法直接操作，一定要透過OS)。
+  * 下圖為PC 的常用 I/O port address。
+  * ![IO_Ports](https://github.com/a13140120a/Operation_System/blob/main/imgs/IO_Ports.jpg)
+  * Memory-Mapped I/O：controler的暫存器被map到一個memory的地址空間，process通過把資料寫入memory-mapped 的記憶體空間(region)來操作IO device，透過操作這個被map的記憶體空間來間接的操控IO devices，這種方法一次可以寫入較多的數據，例如，process 通過將資料寫入一個"map到圖形控制器(graphics controller)"的記憶體空間來顯示圖形在螢幕上，將數百萬bytes寫入圖形內存比發出數百萬條I/O指令要快，現今大多數IO devices都是使用這種IO方式。
+  * I/O設備控制通常由四個暫存器組成：
+    * data-in register(資料輸入暫存器)：device到host，host由data-in register讀區資料。
+    * data-out register(資料輸出暫存器)：host到device，由host寫入要輸出的資料。
+    * status regiter：包含了可以被host讀取的位元資料，這些位元包含「目前的指令使否完成」、「在data-in register的資料是否可以讀取」、以及「是否有裝置錯誤發生」等等。
+    * control register：可由host寫入要執行的指令，或更改device moed。例如在serial port controler中的某個位元可以選擇全雙工或者半雙工通信，某個位元則可以啟動同位元檢查等等。
+  * 資料暫存器通常為1至4個bytes，某些controler擁有FIFO晶片。
+
+* Polling：
+  * 使用busy waiting的方式
+  * 基本的handshaking(握手)概念:
+    * 假設使用兩個bit(status register裡面的busy位元以及command register的command-ready位元)
+    1. host將重複讀取busy位元，直到busy被設為0
+    2. host設定在command register中的write位元，並將資料寫入data-out register
+    3. host設定command-ready的位元
+    4. 當controler發現command-ready位元被設定完成，即立刻設定busy位元為1
+    5. controler讀取指令，並且執行
+    6. controler清除command-ready位元，並清除再status resigter中的error位元，表示IO已經成功，並清除busy位元。
+  * 如上述，於步驟1當中，host就處於busy waiting(或polling)的狀態。
+  * 如果等待的時間夠小，使用polling是較好的選擇
+* Interrupt：
+  * 如[之前提到](#0013)，
 
 
 
