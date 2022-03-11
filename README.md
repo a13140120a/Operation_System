@@ -3003,7 +3003,76 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h2 id="0112">Transforming I/O Requests to Hardware Operations</h2> 
 
-* 
+* 應用程式通過文件名讀取資料。
+* DOS 使用冒號分隔符來指定特定設備（例如 C:、LPT: 等），冒號的前面代表"device name space"(裝置名稱空間)，後面則是"file-system name space"(檔案系統名稱空間)。
+* UNIX 使用mount table(掛載表)將filename prefixes(前綴)（例如 /usr）map到特定的掛載設備。如果mount table中的多個entry與文件名的不同前綴匹配，則選擇匹配最長前綴的條目。（例如/usr/home與/usr兩者都存在於掛載表中並且都匹配所需的文件，則會選擇/usr/home。）
+* 當 UNIX 在檔案系統目錄結構中查找此名稱時，它找到的不是inode編號，而是 <major, minor> 設備編號。major指出可被呼叫來處理此裝置的driver。minor則被傳遞給driver當成device table(設備表)中的索引。相應的device table entry紀載了controler的port address或memory-mapped address。
+* 一系列的lookup tables和mapping使不同設備的access變得靈活。
+* 某些作業系統具有隨時載入驅動程式的能力，在開機時，系統會先檢查硬體匯流排，來看看目前有哪裝置，接下來載入驅動程式，載入的方法有可能是開機時載入，或者是需要時才載入。
+* 下圖說明一個blocking 的`read()` request的流程：
+  1. process向先前打開的文件的file descriptor發出blocking read() system call。
+  2. kernel檢查參數是否正確，如果buffer中已經有數據，則將數據返回給進程，完成I/O請求(盡量避免真的傳到底層做IO以節省時間)。
+  3. 如果buffer中沒有數據，必須執行物理I/O。該process從running queue移到waiting queue中，並且I/O request被dispatch。 最終，I/O subsystem將request發送到driver。根據OS，request通過subroutine或kernel message發送。
+  4. device driver allocates kernel buffer space來接收data和排班，然後driver會把指令寫到controler的register裡面
+  5. device controler控制device開始執行IO
+  6. driver polling狀態與資料，若由DMA controler處理，完成之後會發出interrupt
+  7. interrupt handler接收interrupt並通知driver
+  8. driver收到信號，並向IO subsystem發出完成信號，
+  9. kernel將數據或返回碼傳送到process的address space，並將process從waiting queue移回ready queue。
+  10. 將process移動到ready queue會解除對process的blocking。當process分配給CPU 時，process在system call完成時恢復執行。
+* ![IO_LifeCycle](https://github.com/a13140120a/Operation_System/blob/main/imgs/IO_LifeCycle.jpg) 
+
+
+<h2 id="0112">STREAMS</h2> 
+
+* UNIX中的STREAMS機制在user program和設備驅動程式之間提供了全雙工連接通道，而且可以在其上添加modules，並且包含了「stream head」與「device end」。
+* 戶進程與「stream head」互動。
+* 設備驅動程式與「device end」互動。
+* 每個module都有一個read queue跟write queue。
+* 可以使用`ioctl()` system call將module推入STREAMS，(註：[ioctl函式介紹](https://blog.csdn.net/song_lee/article/details/104856385))
+* STREAMS可以選擇support或不support flow control，在support的情況下，每個module將會有buffer存放資料，直到相鄰的module準備好接收它。如果沒有開啟flow control，那麼資料一準備好就被傳遞，當buffer滿了的時候，就有可能會溢位到相鄰的module的queue裡面(因為都是相鄰的)。
+* STREAMS結構如下圖所示：
+* ![STREAMS](https://github.com/a13140120a/Operation_System/blob/main/imgs/STREAMS.jpg)
+* 當user process使用 `write()` 或 `putmsg()` system call 將data寫入devices，`write()` system call 將raw dara寫入STREAMS，而 `putmsg()`則允許user process設定(特製)message(消息)，無論user process使用何種system call，stream head都會將資料複製到message，並將其傳遞到queue中以供下一個module使用，這種消息複製一直持續到消息被複製到驅動程式端然後復製到設備為止，同樣地，user process使用`read()`或`getmsg()` system call從stream head讀取資料。 如果使用`read()`，則stream head從其相鄰的queue中獲取消息並將普通數據（非結構化的byte stream）返回給process。 如果使用 `getmsg()`，則會向process返回一條消息。 
+* STREAMS I/O是asynchronous(或non-blocking)的(除了用user process和stream之間的interface這個階段以外)。
+* 驅動程式必須接受並處理來自其設備的interrupt，如果相鄰module未準備好接受資料並且設備驅動程式的buffer已滿，則通常會丟棄資料，例如一個輸入緩衝區已滿的網卡。網卡必須丟棄消息。
+* 使用 STREAMS 的好處是他提供了一個"模組化"(modular，類似[OS Structure裡面的模組化概念](0026))以及可以隨時增加數量的方法去撰寫驅動程式以及network protocal。
+* module可以被不同的STREAM使用，也可以被不同的devices使用。System V UNIX 和 Solaris 使用 STREAMS 來實作socket。 
+* 詳細請參考[使用ioctl控制STREAMS file](https://linux.die.net/man/3/ioctl
+
+<h2 id="0112">STREAMS</h2> 
+
+* I/O是整個系統性能的一個主要因素，並且可以給系統的其他主要組件（中斷處理、進程切換、內存訪問、匯流排競爭和設備驅動程式的CPU負載等等）帶來沉重的負載
+* 儘管現代計算機每秒可以處理數千個中斷，但中斷處理是一項相對昂貴的任務。每個中斷都會導致系統執行狀態更改，執行中斷處理程序，然後恢復狀態。 如果busy waiting的周期數不太多，則programmed I/O 可能比產生interrupt的IO更有效。 I/O 完成通常會解除對process的block，這會增加context switch的overhead。
+* 網絡流量也會給系統帶來沉重的負擔，以下是在telnet session中鍵入單個字符時發生的事件序列：
+  * ![Intercomputer_communications](https://github.com/a13140120a/Operation_System/blob/main/imgs/Intercomputer_communications.PNG)
+* 使用front-end processors(獨立前端處理器)可以減少主CPU的負擔，而terminal concentrator(終端集中器)可以在大型計算機的單個port上與數百個終端進行處理。
+* 我們可以利用下列方法來改進IO的執行效率：
+  * 漸少context switch的次數
+  * 減少裝置與應用程式之間的傳輸時的記憶體複製次數
+  * 藉由一次大量的傳輸配合少量cycle的polling，盡量降低interrupt發生的次數
+  * 使用DMA來減輕CPU的負擔，並增加並行
+  * 將處理的基本功能轉移到硬體之中，使controler的操作可以跟cpu及匯流排的操作並行。
+  * 平衡CPU、記憶體子系統、匯流排與IO之效能，因為任一區域的額外負擔都會造成其他部份的閒置。
+* 下圖分別代表在應用層、驅動程式、核心及硬體製作IO功能的比較
+* ![Device_functionality_progression](https://github.com/a13140120a/Operation_System/blob/main/imgs/Device_functionality_progression.PNG)
+  * 越往上，越有彈性
+  * 越往下，月有效率，但開發成本越高，以及越抽象。
+
+****
+
+
+
+
+<h1 id="012">File-System Interface</h1> 
+
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+  * ## [ECC](#0111) #
+
+
 
 
 
