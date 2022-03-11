@@ -2935,7 +2935,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
     * 使用non blocking的system call
     * 使用asynchronous的system call
   * asynchronous與non-blocking的差異在於：
-    * asynchronous：會在執行完之後透過variable、interrupt、或者callback function回傳。
+    * asynchronous：會在執行完之後透過variable、interrupt、或者[callback function](https://hackmd.io/@Heidi-Liu/note-javascript-callback)回傳。
     * non-blocking：會立刻回傳一些當下可用的值，譬如有沒有成功(回傳1或0)，或者回傳資料是否已全部傳達，部份傳達，或者尚未傳達等等
   * 同步與異步比較圖
   * ![sync_async_IO_Methods](https://github.com/a13140120a/Operation_System/blob/main/imgs/sync_async_IO_Methods.jpg)
@@ -2945,11 +2945,64 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 例如UNIX的`ready()` system call
   * 多個單獨的緩衝區可以通過一個system call傳輸其內容，從而避免context switch和system call的overhead。 
 
-
-
 <h2 id="0112">Kernel I/O Subsystem</h2> 
 
+* I/O Scheduling：
+  * 好的Scheduling I/O可以大大提高整體效率。priority也可以在request scheduling中發揮作用。
+  * [上一章](#0106)的disk scheduling就是一個經典的I/O Scheduling的例子。
+  * 當kernel support異步(asynchronous ) I/O 時，它必須能夠同時跟踪許多 I/O request。為此，OS可能會將waiting queue device-status table到設備狀態表(device-status table)。kernel管理這個表，其中包含每個I/O 設備的entry，如下圖所示，每個entry會有device的type、address、state(例如not functioning, idle或 busy)，如果devcie處於busy的狀態，那麼request會被加到queue裡面。
+  * ![DeviceStatusTable](https://github.com/a13140120a/Operation_System/blob/main/imgs/DeviceStatusTable.jpg)
+  * Buffering and caching可以使scheduling更靈活。
 
+* Buffering：
+  * 使用buffer有三個原因：
+    * 一個原因是為了應對數據流的生產者(producer)和消費者(consumer)之間的速度不匹配，例如網路的速度大概比硬體慢了一千倍。
+    * 第二個原因是為了具有不同數據傳輸大小的device做調整，例如網路封包是藉由分割成多小封包下去傳輸的，使用buffer就可以將多個小封包組合成一個完整的封包。
+    * 第三個原因是**"copy semantics"**，假設process有一個希望寫入disk的buffer。它呼叫`write()` system call，提供指向buffer的pointer和指定要寫入的byte數。system call return後，如果process改變了buffer的內容就會造成錯誤，copy semantics就是藉由將控制權還給process之前將process的資料複製到kernel的buffer中。(disk寫入是從kernel buffer執行的，因此對process buffer的後續更改無效。)
+    * 因為buffer之間的copy會造成額外的overhead，所以巧妙的運用virtual memory mapping和copy-on-write可以改善效能。
+* Caching：
+  * Buffering跟Caching的差別在於，buffer可能是系統上現存的唯一一份資料，可是cache是系統上速度更快的其他地方的複製資料
+  * buffer不能隨便丟棄，cache可以。
+
+* Spooling and Device Reservation：
+  * spooling是關於慢速字元裝置（比如印表機）如何與計算機主機交換資訊的一種技術，通常稱為「假離線技術」。[詳細介紹(註：輸出井 output wells)](https://blog.csdn.net/william_munch/article/details/82865073)
+
+* Error Handling：
+  * I/O request失敗的原因有很多，可能是暫時的（緩衝區溢位），也可能是永久性的（硬碟損毀）。
+  * I/O request通常會返回一個error bit（或更多）來表示錯誤訊息。 UNIX 系統還將全局變量errno設置了大約一百個明確定義的值，以表示已發生的特定錯誤。（完整列表請參見 errno.h，或 man errno。）
+  * 某些device（例如 SCSI device）能夠提供有關錯誤的更詳細信息。
+
+* I/O Protection：
+  * privileged instructions(特權指令)：為了防止user執行非法 I/O，因此將所有I/O指令都為privileged instructions，因此，user不能直接發出 I/O 指令； 他們必須通過OS來完成。 
+  * 如下圖，為了執行I/O，user program執行system call讓OS幫它執行I/O，OS在kernel mode下執行，檢查request是否有效，如果有效，則執行I/O。 然後返回result給用戶。 
+  * ![SystemCall](https://github.com/a13140120a/Operation_System/blob/main/imgs/SystemCall.jpg)
+  * memory-mapped region和I/O port的memory locations 必須受到memory管理系統的保護，但不能完全拒絕user process access這些區域。（例如，影片、遊戲和一些其他應用程式需要能夠直接access到 memory-mapped 的graphics controller memory以獲得最佳性能，但memory保護系統會限制access，以便一次只有一個process可以訪問內存的其中一些特定部分，例如部分對應於特定視窗的screen memory。)
+
+* Kernel Data Structures：
+  * kernel需要保存有關I/O使用的狀態信息。它通過各種kernel data structure來跟踪網絡連接、字符設備通信和其他 I/O 活動(例如第 13.1.2 節中討論的打開文件表結構)。 
+  * UNIX 對各種entry(實體)的access都提供像是對檔案系統的access(也就是把所有的entry都是為檔案，user可以藉由這些檔案對entry進行操作)，包括user files、raw devices和process address space，而這些entry中的每一個都支持`read()`操作，但每種語法都不盡相同，
+    * UNIX要讀取user file之前，kernel需要在決定是否執行硬碟I/O之前檢查buffer，然後需要確保請求大小是硬碟sector大小的倍數，並且在sector邊界上對齊。
+    * 要讀取process image，只需從memory中複製資料。
+    * UNIX 通過使用物件導向的技術將這些差異封裝在一個統一的structure中，利如下圖是一個open-file record，包含了dispatch table(分派表，調度表?)，表內包含了指向適當的routine的pointer。
+    * ![UNIX_IO_struct](https://github.com/a13140120a/Operation_System/blob/main/imgs/UNIX_IO_struct.jpg)
+  * Windows 使用message-passing的方式來實現IO：
+  * IO request會被轉換成一個message(消息)，通過kernel發送到I/O manager ，然後發送到device driver，每個停留點都可能改變消息內容。
+  * 對於output，消息包含要寫入的數據。 對於input，消息包含一個buffer來接收數據。
+  * 與使用shared memory的技術相比，message-passing會增加開銷，但它簡化了I/O system的結構和設計並增加了靈活性。 
+
+
+* Power Management：
+  * 在移動裝置中，為了提供令人滿意的電池壽命，現代移動OS從頭開始設計，將電源管理作為關鍵功能，
+  * Android 移動系統能夠最大限度地延長電池壽命的三個主要功能：power collapse(電源陷縮)、component-level power management(元件級電源管理)、wakelocks(喚醒鎖)。 
+    * power collapse：power collapse使設備進入非常深度睡眠狀態的能力，通過關閉設備中的許多單獨組件（例如螢幕、喇叭和I/O system）來實現的，這樣它們就不會消耗電力，在這樣的狀態下，雖然 CPU 處於空閒狀態，但它可以很快地接收到中斷，喚醒並恢復之前的活動。
+    * component-level power management：Android 構建了一個「device tree(裝置樹)」來表示手機的物理設備拓撲(topology)，來表示組件之間的關係，例如，在這樣的拓撲中，快閃記憶體和USB是I/O subsystem和system bus的子節點，借助這些信息，Android 可以管理手機各個組件的電源：如果某個組件未使用，則將其關閉。如果system bus上的所有組件都未使用，則將system bus關閉。如果整個device tree中的所有組件都未使用，系統可能會進入power collapse狀態。 
+    * wakelocks：這是一個應用程式暫時防止系統進入power collapse的能力。 考慮使用者在玩遊戲、更新、觀看影片或等待網頁打開，在所有這些情況下，應用程式都需要一種方法來讓設備保持清醒，應用程式根據需要獲取和釋放喚醒鎖。當應用程序持有喚醒鎖時，kernel會阻止系統進入power collapse狀態，任務完成後將釋放喚醒鎖，讓系統進入power collapse狀態。 
+  * [advanced configuratio and power interface (ACPI)](http://www.acpi.info)是具有許多功能的業界標準。它提供的代碼作為可被kernel呼叫的routines，用於設備狀態發現(例如熱插拔的時候，系統必須認的到devices)和管理、設備錯誤管理和電源管理。例如，當kernel需要靜止一個device時，它會調用設備的driver，driver再調用ACPI routine，然後與設備對話。 
+
+
+<h2 id="0112">Transforming I/O Requests to Hardware Operations</h2> 
+
+* 
 
 
 
