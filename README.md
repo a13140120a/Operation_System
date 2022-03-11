@@ -2860,6 +2860,7 @@
   * interrupt也可以用來控制kernel的流程(control flow)，例如有一user process要讀取硬碟資料，其中的一個步驟是將從硬碟讀取並存在kernel buffer的資料copy到user program的space，另一個步驟則是啟動IO queue裡面的下一個IO request，我們可以藉由調整interrupt的piority來讓後者先執行，待另一個IO request開始執行IO之後再執行前者(把資料copy到user program space)。
   * interrupt技術可以允許devices通知cpu，如此就不需要為了完成IO動作而做多餘的等待
   * 但是會消耗context switch的時間，interrupt適合memory-mapped I/O
+  * [補充](https://cihcih.medium.com/%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1-interrupt-d2fced694da5)
   
 <h2 id="0112">Direct Memory Access</h2> 
 
