@@ -2797,8 +2797,6 @@
   * ## [Transforming I/O Requests to Hardware Operations](#0116) #
   * ## [STREAMS](#0117) #
   * ## [Performance](#0118) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
 
 
 
