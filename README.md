@@ -2790,13 +2790,13 @@
 <h1 id="011">I/O Systems</h1> 
 
   * ## [Overview](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
+  * ## [I/O Hardware](#0112) #
+  * ## [Direct Memory Access](#0113) #
+  * ## [Application I/O Interface](#0114) #
+  * ## [Kernel I/O Subsystem](#0115) #
+  * ## [Transforming I/O Requests to Hardware Operations](#0116) #
+  * ## [STREAMS](#0117) #
+  * ## [Performance](#0118) #
   * ## [ECC](#0111) #
   * ## [ECC](#0111) #
 
@@ -2862,7 +2862,7 @@
   * 但是會消耗context switch的時間，interrupt適合memory-mapped I/O
   * [補充](https://cihcih.medium.com/%E4%BD%9C%E6%A5%AD%E7%B3%BB%E7%B5%B1-interrupt-d2fced694da5)
   
-<h2 id="0112">Direct Memory Access</h2> 
+<h2 id="0113">Direct Memory Access</h2> 
 
 * programmed IO(PIO)：使用昂貴的general-purpose processor來監控資料傳輸的狀態，以及一次一個(或少許) byte傳送資料，非常浪費cpu資源。
 * 為了改善上述那種狀況，於是有了DMA的技術，DMA是一種special-purpose的controler，當初始化「資料傳輸」的動作時，CPU會把一個「DMA command block(DMA指令區塊)」寫進記憶體，這個block可能包含了傳輸目的及來源的pointer，還有傳輸的資料長度，也可能包含了更複雜的資料(例如不連續的來源及目的address的列表)
@@ -2873,7 +2873,7 @@
 * VDMA(virtual direct memory access)技術可以讓DMA直接使用虛擬記憶體的位址。
 
 
-<h2 id="0112">Application I/O Interface</h2> 
+<h2 id="0114">Application I/O Interface</h2> 
 
 * 各種不同的hardeare的差異及細節被封裝在device driver，下圖說明kernel中與I/O相關的部分是如何在軟件層中構建的 
 * ![Kernel_IO_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/Kernel_IO_Structure.jpg)
@@ -2946,7 +2946,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 例如UNIX的`ready()` system call
   * 多個單獨的緩衝區可以通過一個system call傳輸其內容，從而避免context switch和system call的overhead。 
 
-<h2 id="0112">Kernel I/O Subsystem</h2> 
+<h2 id="0115">Kernel I/O Subsystem</h2> 
 
 * I/O Scheduling：
   * 好的Scheduling I/O可以大大提高整體效率。priority也可以在request scheduling中發揮作用。
@@ -3001,7 +3001,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * [advanced configuratio and power interface (ACPI)](http://www.acpi.info)是具有許多功能的業界標準。它提供的代碼作為可被kernel呼叫的routines，用於設備狀態發現(例如熱插拔的時候，系統必須認的到devices)和管理、設備錯誤管理和電源管理。例如，當kernel需要靜止一個device時，它會調用設備的driver，driver再調用ACPI routine，然後與設備對話。 
 
 
-<h2 id="0112">Transforming I/O Requests to Hardware Operations</h2> 
+<h2 id="0116">Transforming I/O Requests to Hardware Operations</h2> 
 
 * 應用程式通過文件名讀取資料。
 * DOS 使用冒號分隔符來指定特定設備（例如 C:、LPT: 等），冒號的前面代表"device name space"(裝置名稱空間)，後面則是"file-system name space"(檔案系統名稱空間)。
@@ -3023,7 +3023,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 * ![IO_LifeCycle](https://github.com/a13140120a/Operation_System/blob/main/imgs/IO_LifeCycle.jpg) 
 
 
-<h2 id="0112">STREAMS</h2> 
+<h2 id="0117">STREAMS</h2> 
 
 * UNIX中的STREAMS機制在user program和設備驅動程式之間提供了全雙工連接通道，而且可以在其上添加modules，並且包含了「stream head」與「device end」。
 * 戶進程與「stream head」互動。
@@ -3040,7 +3040,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 * module可以被不同的STREAM使用，也可以被不同的devices使用。System V UNIX 和 Solaris 使用 STREAMS 來實作socket。 
 * 詳細請參考[使用ioctl控制STREAMS file](https://linux.die.net/man/3/ioctl
 
-<h2 id="0112">STREAMS</h2> 
+<h2 id="0118">Performance</h2> 
 
 * I/O是整個系統性能的一個主要因素，並且可以給系統的其他主要組件（中斷處理、進程切換、內存訪問、匯流排競爭和設備驅動程式的CPU負載等等）帶來沉重的負載
 * 儘管現代計算機每秒可以處理數千個中斷，但中斷處理是一項相對昂貴的任務。每個中斷都會導致系統執行狀態更改，執行中斷處理程序，然後恢復狀態。 如果busy waiting的周期數不太多，則programmed I/O 可能比產生interrupt的IO更有效。 I/O 完成通常會解除對process的block，這會增加context switch的overhead。
