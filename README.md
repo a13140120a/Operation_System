@@ -3217,19 +3217,31 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 * General Graph Directory：
   * 在General Graph Directory中，目錄的循環是允許存在的。
-  * 當這樣的循環成為可能時，設計正確搜索和遍歷檔案系統的演算法就變得更加困難，設計不當的演算法可能會導致無限循環不斷地搜索並且永遠不會終止，一種解決方案是限制搜索期間將訪問的目錄數量。 
+  * 當這樣的循環成為可能時，設計正確搜索和遍歷檔案系統的演算法就變得更加困難，設計不當的演算法可能會導致無限循環不斷地搜索並且永遠不會終止，一種解決方案是限制搜索期間將訪問(access)的目錄數量。 
   * 當我們試圖確定何時可以刪除檔案時，也存在類似的問題。對於Acyclic-Graph Directories結構，檔案的引用的count值為 0 意味著不再有對該檔案或目錄的引用，並且可以刪除該文件。但是，當循環存在時，即使無法再引用的目錄或文件，檔案的引用的count值也可能不為 0。
   * 在這種情況下，我們一般需要使用一種"**garbage collection**"的方法來確定最後一個引用何時被刪除，並且可以重新分配磁盤空間。
     * garbage collection遍歷整個檔案系統，標記可以訪問的所有內容。然後，把所有未標記到的內容刪除(或收集起來)，然而這種作法非常耗時。
-  * 一個更簡單的算法是在目錄遍歷期間繞過link。
-  * ![general_graph_direct_with_circle](https://github.com/a13140120a/Operation_System/blob/main/imgs/general_graph_direct_with_circle.jpg)
+  * 一個更簡單的方法是在目錄遍歷期間繞過link。
+  * ![general_graph_direct_with_circle](https://github.com/a13140120a/Operation_System/blob/main/imgs/general_graph_direct_with_circle.PNG)
 
 
+<h2 id="0123">Protection</h2> 
 
+* access type：
+  * 透過controll access，可以控制幾種不同類型的操作： 
+    * Read
+    * Write
+    * Execute
+    * Append
+    * Delete
+    * List：列出file
+    * Attribute Change
+  * 其他例如重新命名、複製和編輯檔案，這些higher-level functions也是由進行lower-level system call來實現。
+  * 所有保護機制都有優缺點，例如，小型計算機系統可能不需要與大型公司計算機相同類型的保護。
 
-
-
-
+*	Access Control：
+  *	**access-control list(ACL)**：當user請求access特定檔案時，OS會檢查與ACL，如果符合權限則允許，否則將拒絕user access。
+  *	
 
 
 
