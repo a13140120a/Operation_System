@@ -3225,7 +3225,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * ![general_graph_direct_with_circle](https://github.com/a13140120a/Operation_System/blob/main/imgs/general_graph_direct_with_circle.PNG)
 
 
-<h2 id="0123">Protection</h2> 
+<h2 id="0124">Protection</h2> 
 
 * access type：
   * 透過controll access，可以控制幾種不同類型的操作： 
@@ -3241,7 +3241,41 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 *	Access Control：
   *	**access-control list(ACL)**：當user請求access特定檔案時，OS會檢查與ACL，如果符合權限則允許，否則將拒絕user access。
-  *	
+  * 這項技術會遇到一些難題，一是如果系統中有很多user，那麼list將會變的很大，二是目錄的entry將會變的有些大有些小，這讓空間難以管理。
+  * 解決這項難題的其中一種辦法是，壓縮ACL的長度，許多系統識別出與每個文件相關的三類用戶：
+    * Owner：檔案擁有者
+    * Group：一個group裡面的所有user的權限是一樣的
+    * Other：其他所有使用者
+  * UNIX 系統定義了三個欄位，每個欄位為 3 bits(rwx)，其中 r 控制讀權限，w 控制寫權限，而 x 控制執行權限。
+* Other Protection Approaches：
+  * 或者我們可以藉由把文件或目錄加上密碼，來保護我們想要保護的資料。
+
+<h2 id="0125">Memory-Mapped Files</h2> 
+
+* 通過將disk block map到memory中的一個（或多個page）來間接操作file
+* 寫入memory中的map檔案內容不一定是立即（同步）寫入disk的，當檔案關閉時才會根據memory的更改來更新檔案，並刪除存在virtual memory中的內容。
+* 所有對這塊mapped memory的修改，都會馬上寫進swap space以免資料遺失，
+* Solaris的檔案如果使用 `mmap()`system call，就會將檔案map到process的address space中，如果使用普通的system call（例如 `open()`、`read()` 和 `write()`）來開啟檔案，仍會對該檔案進行Memory-Mapped，不同的是，該檔案會被map到kernel space。所以無論文件如何打開，Solaris 都將使用Memory-Mapped來增加效率 
+* ![MemMapFiles](https://github.com/a13140120a/Operation_System/blob/main/imgs/MemMapFiles.jpg)
+* 多個process可以同時map同一個檔案來共享數據，如下圖所示：
+* ![SharedMemMapd](https://github.com/a13140120a/Operation_System/blob/main/imgs/SharedMemMapd.jpg)
+* 使用這種方法可以讓process進行溝通，請見[winsos API producer](https://github.com/a13140120a/Operation_System/blob/main/windowsAPI_mmap_producer.c)、[winsos API consumer](https://github.com/a13140120a/Operation_System/blob/main/windowsAPI_mmap_consumer.c)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
