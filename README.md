@@ -2978,7 +2978,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * memory-mapped region和I/O port的memory locations 必須受到memory管理系統的保護，但不能完全拒絕user process access這些區域。（例如，影片、遊戲和一些其他應用程式需要能夠直接access到 memory-mapped 的graphics controller memory以獲得最佳性能，但memory保護系統會限制access，以便一次只有一個process可以訪問內存的其中一些特定部分，例如部分對應於特定視窗的screen memory。)
 
 * Kernel Data Structures：
-  * kernel需要保存有關I/O使用的狀態信息。它通過各種kernel data structure來跟踪網絡連接、字符設備通信和其他 I/O 活動(例如第 13.1.2 節中討論的打開文件表結構)。 
+  * kernel需要保存有關I/O使用的狀態信息。它通過各種kernel data structure來跟踪網絡連接、設備通信和其他 I/O 活動(例如[File Concept的open-file table](#0121))。 
   * UNIX 對各種entry(實體)的access都提供像是對檔案系統的access(也就是把所有的entry都是為檔案，user可以藉由這些檔案對entry進行操作)，包括user files、raw devices和process address space，而這些entry中的每一個都支持`read()`操作，但每種語法都不盡相同，
     * UNIX要讀取user file之前，kernel需要在決定是否執行硬碟I/O之前檢查buffer，然後需要確保請求大小是硬碟sector大小的倍數，並且在sector邊界上對齊。
     * 要讀取process image，只需從memory中複製資料。
@@ -3125,6 +3125,107 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * UNIX 系統使用存儲在一些二進製文件開頭的"**magic number**"來指示文件中數據的類型（例如，shell script開頭的`#!`），使用text magic number可以告訴OS腳本是用哪種 shell 語言編寫的，並非所有文件都有magic number。另外，UNIX 也不記錄創建程序的名稱。 UNIX 確實允許副檔名提示，但既不強制也不依賴副檔名，它們主要用於幫助「user」確定檔案內容類型。
     * 關於[magic number](https://go-compression.github.io/reference/magic_numbers/)的解釋
     * [magic number表](https://en.wikipedia.org/wiki/List_of_file_signatures)
+
+* File Structure：
+  * 每個OS必須完全支援至少一種可執行檔案類型，以便OS可以載入和執行程式(例如service以及subsystem等等)。
+  * OS支援的檔案格式越多，會增加OS的大小和復雜性。
+  * UNIX將所有檔案視為一連串的8位元的byte，並且無視內部結構(留給使用該檔案的應用程式或者user自己決定)。（除了二進制可執行檔，因為OS必須知道如何載入和找到第一個可執行的指令。）
+
+
+* Internal File Structure：
+  * Disk通常以block(physical)為單位，每個physical block通常為512 bytes 或其兩倍的冪。（較大的硬碟使用較大的block，以將block的number的範圍保持在32位整數的範圍內。）
+  * 通常會有一個適合的logic units的數量packing 到physical block裡面，例如，UNIX將所有file定義為簡單的byte stream，每個byte都可以通過其檔案的開頭（或結尾）的偏移量來單獨尋址，在這種情況下，logic unit大小為 1 byte，檔案系統會根據需要自動將bytes(也就是logic unit)packing到disk的physical block中（例如，每個block 512 bytes）。
+  * 如果每個block是 512 bytes，那麼一個1949 bytes的檔案將被分配四個block。
+
+
+<h2 id="0122">Access Methods</h2> 
+
+* Sequential Access：
+  * Sequential Access的概念就像對磁帶(tape)的操作，循序讀取。
+  * 最常見的access方式，例如，文字編輯器和編譯器通常以這種方式存取檔案。
+  * 可以同時在sequential-access以及random-access的devices上面使用
+  * 讀取操作`read_next()`讀取文件的下一部分並自動將檔案指標+1，該指標及是目前I/O的位置，寫操作`write_next()`亦相同。
+  * ![SequentialAccessFile](https://github.com/a13140120a/Operation_System/blob/main/imgs/SequentialAccessFile.jpg)
+* Direct Access(random access)：
+  * jump到任何block並讀取
+  * Direct Access中我們使用讀取操作`read(n)`(其中 n 是block number)，而不是`read_next()`，以及`write(n)`而不是`write_next()`。 
+  * data base通常屬於這種類型，當有query到達時，我們「**計算**」(例如使用hash)哪個block包含答案，然後直接讀取該塊以提供所需的信息。 
+  * Sequential access可以模擬Direct Access，但是複雜而且低效。
+  * ![Sequential_Access_Simulation](https://github.com/a13140120a/Operation_System/blob/main/imgs/Sequential_Access_Simulation.jpg)
+* user提供給OS的block number通常是一個相對的"**relative block number**"，relative block number是相對於檔案開頭的索引，例如，檔案的第一個relative block number是 0，下一個是 1，依此類推，即使第一個block的絕對物理硬碟地址可能是 14703，而第二個塊的絕對物理硬碟地址可能是 3192。 使用relative block number允許OS決定文件應該放在哪裡，並有助於防止用戶訪問可能不屬於文件系統的部分 她的檔案，有些系統從 0 開始，有些從 1 開始。 
+
+* Index Access：
+  * 這種做法是在random access上面再加一層index
+  * index包含指向各個block的pointer。 要在檔案中查找記錄，我們首先搜尋index，然後使用pointer直接訪問文件並找到所需的block。 
+  * 對於大型檔案，index檔案本身可能會變得太大而無法保存在memory中。一種解決方案是為index檔案創建另一層index。主索引檔案包含指向二級索引文件的pointer，這些pointer指向實際的block。 
+  * ![IndexAndRelativeFiles](https://github.com/a13140120a/Operation_System/blob/main/imgs/IndexAndRelativeFiles.jpg)
+
+<h2 id="0123">Directory Structure</h2> 
+
+* 目錄可以視為是一種把檔名轉換成file control blocks的符號表(symbol table)。
+* 我們希望能夠插入項目(entry)、刪除項目、搜索指定名稱的項目以及列出目錄中的所有項目。
+* 目錄結構應該包含以下操作：
+  * Search for a file：搜索目錄結構以找到特定檔案的entry，並且相似的名稱可能表示檔案之間的關係，因此我們可能希望能夠找到名稱與特定模式匹配的所有文件。 
+  * Create a file：建立新的檔案，並加到directory當中
+  * Deleting a file：刪除檔案會在目錄結構中留下一個洞(hole)，並且文件系統可能具有對目錄結構進行碎片整合的方法。 
+  * List a directory：列出目錄中的檔案以及列表中每個檔案的directiory entry的內容。 
+  * Rename a file：重新命名檔案可能會更改其在目錄結構中的位置。 
+  * Traverse the file system：為了reliable，定期保存整個檔案系統的內容和結構是個好主意
+
+* Single-Level Directory
+  * 最簡單的目錄結構，所有檔案都包含在同一目錄中，易於理解。 
+  * 當文件數量增加或系統有多個user時，會有很大的限制。
+  * 由於所有文件都在同一個目錄中，因此不能有相同名稱的檔案出現。系統有很多user的話，會導致檔案名稱的混淆，因為每個user的每個檔案都要取不同的名稱。
+  * ![SingleLevel_dir](https://github.com/a13140120a/Operation_System/blob/main/imgs/SingleLevel_dir.jpg)
+
+* Two-Level Directory
+  * ![TwoLevel_dir_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/TwoLevel_dir_Structure.jpg)
+  * 正如我們所見，Single-Level Directory會導致不同user之間的檔名混淆。 標準解決方案是為每個用戶創建一個單獨的目錄。 
+  * 每個user都有一個"**user file directory (UFD)**"，UFD僅列出該user的檔案，當user的程式執行時或user login時，將搜索系統的"**master file directory(MFD)**"。 MFD按使用者名或帳號進行索引，每個entry都指向該用戶的 UFD。 
+  * 當user引用特定檔案時，OS僅搜索他自己的UFD，因此，不同user可能擁有同名的檔案，只要每個 UFD 中的所有檔名都是唯一的。 要為用戶創建或刪除文件，OS僅搜索該用戶的 UFD 以確定是否存在該名稱的另一個檔案。
+  * 這種結構有效地將user之間隔離開來，當user完全獨立時，隔離是一個優勢，但當用戶想要合作時，隔離是一個劣勢
+  * 有些系統不允許其他用戶訪問本地用戶文件：
+  * 在允許的情況下，如果user A 希望訪問他自己的名為 test.txt 的測試文件，他可以簡單地引用 test.txt。 但是，要訪問user B（目錄名稱為 userb）的名為 test.txt 的文件，她可能必須引用/userb/test.txt，因此，用戶名和文件名定義了路徑名。每個系統都有自己的語法來命名用戶自己目錄以外的目錄中的文件。 
+  * 作為系統loader、assembler、compiler、utility routines、libraries等的一部分提供的program通常被定義為文件，如果為了要執行這些文件而在每個UFD，都放上一份相同的檔案的話會非常浪費空間，因此通常會定義了一個特殊的用戶目錄來包含系統檔案（例如，user 0）。 每當指定要加載的檔案名時，OS首先搜索本地UFD。 如果找到該檔案，則使用該檔案。 如果沒有找到，系統會自動搜索檔案系統的特殊用戶目錄。
+
+
+* Tree-Structured Directories
+  * ![Tree_dir_Structure](https://github.com/a13140120a/Operation_System/blob/main/imgs/Tree_dir_Structure.jpg)
+  * 最常見的目錄結構，會有一個根目錄，系統中的每個文件都有一個唯一的路徑名。
+  * 在許多系統中，目錄只是另一個文件，但它以特殊方式處理，所有目錄都具有相同的內部格式，每個目錄的entry中的一個bit將entry定義為文件或子目錄(0或1)。 特殊system call用於創建和刪除目錄。
+  * 在正常使用中，每個process都有一個當前目錄(current directory)。 當前目錄應該包含process會使用到的大部分檔案，如果需要不在當前目錄中的檔案，則通常必須指定路徑名或將當前目錄更改為保存該檔案的目錄，設計者可以提供一個system call，它將目錄名稱作為參數並使用它來重新定義當前目錄。
+  * user登錄 shell 的初始當前目錄是在user process執行時或user login時指定的。
+  * OS通常會有一個accounting file來保存指向用戶初始目錄的pointer
+  * 從shell產生的其他process的當前目錄通常是父process(也就是shell)生成時的當前目錄。 
+  * 在 UNIX 和 Linux 中，絕對路徑名從根（由初始"/"指定）開始，並沿著路徑向下到達指定檔案，給出路徑上的目錄名，並有相對路徑(relative path)與絕對路徑(absolute path)。
+  * 可執行文件在許多系統中被稱為"二進製文件"，它們通常存儲在 bin 目錄中。
+  * 處理刪除目錄的方法有兩種：
+    * 除非它是空的，否則無法被刪除
+    * 另一種方法，例如 UNIX rm 命令所採用的方法：當刪除一個目錄時，該目錄的所有檔案和子目錄也將被刪除
+
+* Acyclic-Graph Directories
+  * 當需要在目錄結構中的多個位置訪問相同的檔案時（例如，因為它們被多個user/process共享），Acyclic-Graph Directories就很有用。 
+  * link：UNIX系統有一種特殊的directory entry叫做"**link**"，link實際上是指向另一個檔案或子目錄的pointer。
+  * OS在遍歷目錄樹時會忽略這些link以保留系統的非循環結構。
+  * ![AcyclicGraph_dir](https://github.com/a13140120a/Operation_System/blob/main/imgs/AcyclicGraph_dir.jpg)
+  * Linux中包括兩種連結：硬連結(Hard Link)和軟連結(Soft Link),軟連結又稱為符號連結（Symbolic link），而硬連結又稱為非符號連結(non-symbolic link)。
+    * 當我們建立了一個檔案的硬連結時，硬連結會使用和檔案相同的inode號，硬連結會保留一個count來記錄有多少硬連結連結到這個檔案，當硬連結為0時，會刪除開檔案並釋放硬碟空間，另外，硬連結只能應用於檔案，而不能應用於目錄，而且不能跨檔案系統（或分割槽）。
+    * 在建立檔案的軟連結時，軟連結會使用一個新的inode，所以軟連結的inode號和檔案的inode號不同，軟連結的inode裡存放著指向檔案的路徑，刪除檔案，軟連結也無法使用了，因為檔案的路徑不存在了；當我們再次建立這個檔案時（檔名與之前的相同），軟連結又會重新指向這個檔案（inode號與之前的不同了）
+    * [參考資料](https://codertw.com/%E7%A8%8B%E5%BC%8F%E8%AA%9E%E8%A8%80/561681/)
+  * Windows 只支援 symbolic links(shortcuts，捷徑)。
+
+
+* General Graph Directory：
+  * 在General Graph Directory中，目錄的循環是允許存在的。
+  * 當這樣的循環成為可能時，設計正確搜索和遍歷檔案系統的演算法就變得更加困難，設計不當的演算法可能會導致無限循環不斷地搜索並且永遠不會終止，一種解決方案是限制搜索期間將訪問的目錄數量。 
+  * 當我們試圖確定何時可以刪除檔案時，也存在類似的問題。對於Acyclic-Graph Directories結構，檔案的引用的count值為 0 意味著不再有對該檔案或目錄的引用，並且可以刪除該文件。但是，當循環存在時，即使無法再引用的目錄或文件，檔案的引用的count值也可能不為 0。
+  * 在這種情況下，我們一般需要使用一種"**garbage collection**"的方法來確定最後一個引用何時被刪除，並且可以重新分配磁盤空間。
+    * garbage collection遍歷整個檔案系統，標記可以訪問的所有內容。然後，把所有未標記到的內容刪除(或收集起來)，然而這種作法非常耗時。
+  * 一個更簡單的算法是在目錄遍歷期間繞過link。
+  * ![general_graph_direct_with_circle](https://github.com/a13140120a/Operation_System/blob/main/imgs/general_graph_direct_with_circle.jpg)
+
+
+
 
 
 
