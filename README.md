@@ -1385,7 +1385,7 @@
     ```
 
 
-* Readers-Writers Problem：
+* #### Readers-Writers Problem：
   * first RW problem：
     * reader不需要等待其他的reader結束(reader可以pass lock給下一個reader)，而writer要等待reader結束，有可能會造成writer starvation。
     * init：
@@ -3064,17 +3064,67 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h1 id="012">File-System Interface</h1> 
 
+  * ## [File Concept](#0121) #
   * ## [ECC](#0111) #
   * ## [ECC](#0111) #
   * ## [ECC](#0111) #
   * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
 
 
 
 
+<h2 id="0121">File Concept</h2> 
 
 
+* File Attributes：
+  * Name：唯一人類看的懂的格式
+  * Identifie：獨一無二的標籤，通常是一個數字，標識檔案系統中的文件，它是文件的非人類可讀名稱。
+  * Type：不同類型文件的系統需要此信息。
+  * Location：此信息是一個指向設備和該設備上文件位置的pointer。
+  * Size：文件大小
+  * Protection：access的控制信息決定了誰可以進行讀、寫、執行等等。
+  * Timestamps and user identificatio：可以保留此信息以供創建、最後修改和最後使用。 這些數據可用於保護、安全和使用監控。 
+  * 所有檔案的資訊都存在目錄(directory)結構(structure)中，這些structure也存在與檔案相同的儲存體上，目錄的entry是由檔案的名稱以及id所組成的，可透過檔案id再查詢到檔案的其他資訊。
+  * 通常檔案跟目錄都會存在非揮發性裝置上，並且根據需求零碎地載入記憶體當中(像paging的概念)。
+
+* open file information：
+  * File-pointer：每個process都會有一個pointer指向現在的讀寫位置，因為每個process都不同，因此必須與硬碟上的檔案屬性分開。 
+  * File-open count：OS會記錄每個打開的檔案到底被多少個process打開，當File-open count為0的時候代表開檔案已經沒有在使用，則會被OS從system-wide table(見下)移除。
+  * Location of file：該訊息會指出檔案被保存在哪裡(可以是網路上，硬碟裡等等)，當檔案開啟後，這項資訊會保存在memory當中，這樣就不用每次操作都要從disk讀取目錄結構，再從目錄結構中搜尋到檔案的位置了。
+  * Access right：訪問權限，此訊息會存在open-file table(見下)裡面。
+
+* File Operations：
+  * Creating a file：分成兩個步驟，首先要先allocate一個空間(見13章)，再來必須在目錄中建立該file的entry。
+  * Opening a file：可以使用一個`open()`函數並返回一個句柄(handle)，這樣就不用每一次操作檔案都要進行查詢檔案名稱、定位檔案位置、檢查訪問權限等等一堆動作，`open()`還可以指定aceess的模式，例如創建、只讀、讀寫、僅附加等。
+  * Writing a file：要寫入檔案，我們必須使用system call，同時指定打開的檔案句柄和要寫入檔案的資料，如果是sequential的話，系統必須保留一個指向檔案中下一次寫入的位置的"**write pointer**"。 每當發生寫入時，必須更新write pointer。 
+  * Reading a file：要讀取檔案，我們使用system call來指定檔案句柄以及文件的下一個塊應該放在memory的哪裡。 同樣地，如果是sequential的話，系統需要保留一個"**read pointer**"，指向檔案中將發生下一次讀取的位置，每次發生讀取的動作，pointer就會更新，讀取和寫入操作都使用相同的poiter，可以節省空間並降低系統複雜性。 
+  * Repositioning with a file：把打開的文件的pointer重新定位到給定值，此操作不須涉及任何IO，此操作又稱為seek。
+  * Deleting a file：刪除檔案必須先找到所有與其有關的directory entry，刪除entry之後再釋放檔案空間，如果有hard link的話，實際檔案內容不會被刪除，直到最後一個link被刪除。 
+  * Truncating a file：使用者可能希望刪除檔案內容但保留其屬性，這種方法比起刪除並重新建立新的檔案還要方便的多。
+  * 這七個基本操作為最基本且必要的操作。其他常見操作包括append(加到文件尾端)和rename，可以透過組合這些原始操作來達成，例如，我們可以通過create一個新的file然後從舊的file讀取並寫入新file來成為copy的動作。
+  * 還有允許user獲取和設置檔案的各種屬性的操作。 例如，我們可能希望允許user確定檔案狀態（如檔案長度）和設置檔案屬性（如檔案的owner）的操作。 
+  * open-file table：每個process會有一個table來記錄所有打開文件的相關信息，當請求檔案操作時，文件是通過該表的索引指定的，因此不需要搜索，當process關閉檔案時，OS從open-file table中刪除它的entry，可能會釋放鎖，`open()`通常會return指向open-file table的entry的pointer。
+  * system-wide table：每個process的open-file table的entry又指向system-wide table的entry，通常system-wide table(原文書是寫open-file table，但我覺得不合理)都會有一個counter紀錄著多少個process打開了這個file，使用`close()`的時候這個counter會減1，當counter為0的時候，OS會從system-wide table刪除開檔案的entry。
+  * `create()`和`delete()`是用來處理已經關閉的檔案而不是打開的檔案。 
+
+* File locks：
+  * 一些OS提供了鎖定了開啟中的檔案（或檔案的一部分）的功能，File locks 提供類似於[readers-writers-problem](https://github.com/a13140120a/Operation_System/edit/main/README.md#readers-writers-problem)中介紹的功能，File locks又分成讀取鎖(reader lock)以及寫鎖(writer lock)。
+    * 讀取鎖類似於共享鎖(shared lock)，因為多個process可以同時獲取鎖。
+    * 寫鎖的行為類似於互斥鎖(mutex lock)，一次只有一個process可以獲得這樣的鎖。
+  * OS的鎖定機制又分成兩種：
+    * mandatory(強制性)：使用強制鎖定，一旦process獲得mutex lock，OS將阻止任何其他進process access鎖定的檔案。例如，假設一個process在system.log上獲得了mutex lock。如果我們嘗試從另一個process（例如，文本編輯器）打開 system.log，將會被OS阻止，直到鎖被釋放。
+    * advisory(建議性)：如果鎖定是建議性的，則OS不會阻止文本編輯器對system.log的訪access(但仍然會獲取鎖)，programmer必須自己決定開怎麼做。
+  * 在Java API中，要取得所需要先取得FileChannel才能將檔案上鎖。其API是`FileLock lock(long begin, long end, Boolean shared)`，begin和end決定檔案中被上鎖的區域起始點跟結束位置，shared決定鎖能不能被共享，[範例](https://github.com/a13140120a/Operation_System/blob/main/file_lock.java)
+
+* File Types：
+  * 如果OS識別出檔案的類型，它就可以以合理的方式對檔案進行操作。例如，當你cat一個二進制形式的file(例如可執行檔)的時候，就會產生垃圾(一堆亂碼)，但是，如果OS知道該檔案是二進制形式的可執行檔，則該嘗試可能會成功。
+  * 實現檔案類型的常用技術是將類型作為檔名的一部分包含在內。名稱分為兩部分——檔及副檔名，通常用句點分隔，如下圖所示。
+  * ![CommonFileTypes](https://github.com/a13140120a/Operation_System/blob/main/imgs/CommonFileTypes.jpg)
+  * 副檔名並不是必要的，user可以指定一個沒有副檔名的檔案，並且指定特定的應用程式來執行。
+  * macOS中，每個檔案都有一個類型，例如 .app（用於應用程式）。 每個文件還有一個 creator 屬性，其中包含創建它的process的名稱，該屬性由OS在呼叫`create()`的時候設置，因此系統強制使用並支持該屬性。例如，由文字處理器生成的文件以文字處理器的名稱作為其創建者。 當用戶打開該檔案時，通過在代表該檔案的圖標上雙擊鼠標，自動調用文字處理器，並加載該檔案，準備進行編輯。 
+  * UNIX 系統使用存儲在一些二進製文件開頭的"**magic number**"來指示文件中數據的類型（例如，shell script開頭的`#!`），使用text magic number可以告訴OS腳本是用哪種 shell 語言編寫的，並非所有文件都有magic number。另外，UNIX 也不記錄創建程序的名稱。 UNIX 確實允許副檔名提示，但既不強制也不依賴副檔名，它們主要用於幫助「user」確定檔案內容類型。
+    * 關於[magic number](https://go-compression.github.io/reference/magic_numbers/)的解釋
+    * [magic number表](https://en.wikipedia.org/wiki/List_of_file_signatures)
 
 
 
