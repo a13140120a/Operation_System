@@ -3065,10 +3065,10 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 <h1 id="012">File-System Interface</h1> 
 
   * ## [File Concept](#0121) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
-  * ## [ECC](#0111) #
+  * ## [Access Methods](#01) #
+  * ## [Directory Structure](#0123) #
+  * ## [Protection](#0124) #
+  * ## [Memory-Mapped Files](#0125) #
 
 
 
@@ -3098,7 +3098,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * Opening a file：可以使用一個`open()`函數並返回一個句柄(handle)，這樣就不用每一次操作檔案都要進行查詢檔案名稱、定位檔案位置、檢查訪問權限等等一堆動作，`open()`還可以指定aceess的模式，例如創建、只讀、讀寫、僅附加等。
   * Writing a file：要寫入檔案，我們必須使用system call，同時指定打開的檔案句柄和要寫入檔案的資料，如果是sequential的話，系統必須保留一個指向檔案中下一次寫入的位置的"**write pointer**"。 每當發生寫入時，必須更新write pointer。 
   * Reading a file：要讀取檔案，我們使用system call來指定檔案句柄以及文件的下一個塊應該放在memory的哪裡。 同樣地，如果是sequential的話，系統需要保留一個"**read pointer**"，指向檔案中將發生下一次讀取的位置，每次發生讀取的動作，pointer就會更新，讀取和寫入操作都使用相同的poiter，可以節省空間並降低系統複雜性。 
-  * Repositioning with a file：把打開的文件的pointer重新定位到給定值，此操作不須涉及任何IO，此操作又稱為seek。
+  * Repositioning with a file：把打開的文件的pointer重新定位到給定值，此操作不須涉及任何IO，此操作又稱為[seek](http://codewiki.wikidot.com/c:system-calls:lseek)。
   * Deleting a file：刪除檔案必須先找到所有與其有關的directory entry，刪除entry之後再釋放檔案空間，如果有hard link的話，實際檔案內容不會被刪除，直到最後一個link被刪除。 
   * Truncating a file：使用者可能希望刪除檔案內容但保留其屬性，這種方法比起刪除並重新建立新的檔案還要方便的多。
   * 這七個基本操作為最基本且必要的操作。其他常見操作包括append(加到文件尾端)和rename，可以透過組合這些原始操作來達成，例如，我們可以通過create一個新的file然後從舊的file讀取並寫入新file來成為copy的動作。
