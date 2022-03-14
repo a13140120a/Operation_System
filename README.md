@@ -371,7 +371,6 @@
 
 <h1 id="003">Process Concept</h1> 
 
-  * ## [Concept](#0031) #
   * ## [Process Creation](#0032) #
   * ## [Process Communication](#0033) #
 
@@ -581,8 +580,6 @@
 
 
 <h1 id="004">Thread</h1> 
-
-  * ## [Concept](#0041) #
   * ## [Mode](#0042) #
   * ## [Library](#0043) #
   * ## [Threading Issues](#0044) #
@@ -774,7 +771,6 @@
 
 <h1 id="005">CPU Scheduling</h1> 
 
-  * ## [Concept](#0051) #
   * ## [Scheduling Algorithms](#0052) #
   * ## [Thread Scheduling](#0053) #
   * ## [Multi-Processor Scheduling](#0054) #
@@ -981,10 +977,10 @@
   * ## [Monitor](#0066) #
   * ## [Classical Problem](#0067) #
   * ## [Example](#0068) #
-  * ## [替代方法](#0069) #
+  * ## [Alternative Approaches](#0069) #
 
 
-
+<h2>Concept</h2> 
 
 * race condition：
   * [process communication](#0033)裡頭提到的producer與consumer的例子可以修改如下：
@@ -1698,7 +1694,7 @@
       }
       ```
 
-<h2 id="0069">替代方法</h2> 
+<h2 id="0069">Alternative Approaches</h2> 
 
 * transaction memory：
   * 觀念源自於資料庫理念
@@ -3239,8 +3235,8 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 其他例如重新命名、複製和編輯檔案，這些higher-level functions也是由進行lower-level system call來實現。
   * 所有保護機制都有優缺點，例如，小型計算機系統可能不需要與大型公司計算機相同類型的保護。
 
-*	Access Control：
-  *	**access-control list(ACL)**：當user請求access特定檔案時，OS會檢查與ACL，如果符合權限則允許，否則將拒絕user access。
+* Access Control：
+  * **access-control list(ACL)**：當user請求access特定檔案時，OS會檢查與ACL，如果符合權限則允許，否則將拒絕user access。
   * 這項技術會遇到一些難題，一是如果系統中有很多user，那麼list將會變的很大，二是目錄的entry將會變的有些大有些小，這讓空間難以管理。
   * 解決這項難題的其中一種辦法是，壓縮ACL的長度，許多系統識別出與每個文件相關的三類用戶：
     * Owner：檔案擁有者
