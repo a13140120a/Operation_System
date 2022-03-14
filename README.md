@@ -3033,7 +3033,8 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 * 驅動程式必須接受並處理來自其設備的interrupt，如果相鄰module未準備好接受資料並且設備驅動程式的buffer已滿，則通常會丟棄資料，例如一個輸入緩衝區已滿的網卡。網卡必須丟棄消息。
 * 使用 STREAMS 的好處是他提供了一個"模組化"(modular，類似[OS Structure裡面的模組化概念](0026))以及可以隨時增加數量的方法去撰寫驅動程式以及network protocal。
 * module可以被不同的STREAM使用，也可以被不同的devices使用。System V UNIX 和 Solaris 使用 STREAMS 來實作socket。 
-* 詳細請參考[使用ioctl控制STREAMS file](https://linux.die.net/man/3/ioctl
+* 詳細請參考[使用ioctl控制STREAMS file](https://linux.die.net/man/3/ioctl)。
+
 
 <h2 id="0118">Performance</h2> 
 
@@ -3062,7 +3063,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 <h1 id="012">File-System Interface</h1> 
 
   * ## [File Concept](#0121) #
-  * ## [Access Methods](#01) #
+  * ## [Access Methods](#0122) #
   * ## [Directory Structure](#0123) #
   * ## [Protection](#0124) #
   * ## [Memory-Mapped Files](#0125) #
