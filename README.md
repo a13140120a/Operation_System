@@ -3260,6 +3260,58 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 * 使用這種方法可以讓process進行溝通，請見[winsos API producer](https://github.com/a13140120a/Operation_System/blob/main/windowsAPI_mmap_producer.c)、[winsos API consumer](https://github.com/a13140120a/Operation_System/blob/main/windowsAPI_mmap_consumer.c)
 
 
+****
+
+
+
+
+<h1 id="012">File-System Implementation</h1> 
+
+  * ## [File-System Structure](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+  * ## [](#0131) #
+
+
+
+
+<h2 id="0131">File-System Structure</h2> 
+
+* file control block(FCB)：(UNIX 檔案系統中就是一個 inode)包含有關檔案的信息，包括檔案內容的所有權、權限和位置。 
+* disks(HDD)傳統硬碟有著可以隨意修改、覆寫block以及隨機存取的特性，而NVM裝置(例如SSD)則不能覆寫但還是越來越常使用於儲存資料。
+* 為了提高效率，memory跟disk之間通常以block為單位傳輸資料，大小依驅動程式而不同，通常是512bytes或者4KB，NVM通常會有4KB的block。
+* 如下圖所示，檔案系統本身會由許多不同的layer所組成：
+  * ![]()
+  * The I/O control層：由 *驅動程式* 和 *interrupt handler(中斷處理器)* 所組成，負責memory與disk之間的信息傳遞，驅動程式就像一個translator(翻譯器)，它可以把由上層傳送過來指令(例如`retrieve block 123`)轉換成low-level的hardware-specific instructions(靈活度較小)，並傳送給硬體的controler。
+  * basic file system層(在Linux中亦稱為block I/O subsystem)：這層會根據logical block addresses向下一層的驅動程式發送 *通用命令(generic commands)* ，IO scheduling亦是在這層進行的，該層還管理保存各種檔案系統、目錄和data block的buffer和cache，這些cache跟buffer用於保存經常使用的檔案系統的metadata以提高性能。
+  * file-organizatio module層：這層負責管理檔案及其logical blocks，這層也包含了free-space manager。
+  * logical file system層：管理metadata的information(像是UID, GID, mode, dates等等)，即除數據本身之外的有關檔案的所有內容，該層管理目錄結構和"檔案名稱與FCB的mapping"，並且透過FCB維護檔案結構，其中包含所有metadata以及用於在disk上搜尋data block number的信息。
+  * 分層結構可以使code最小化，但分的越多層也會降低其效能
+* FUSE 檔案系統將檔案系統實現為用戶級而不是核心級代碼來實現和執行檔案系統，從而為檔案系統的開發和使用提供了靈活性，使用者可以將新的檔案系統添加到各種不同的OS，並可以使用該檔案系統來管理自己的檔案。 
+* UNIX 使用base-on Berkeley Fast File System(FFS) 的UNIX fil system(UFS)，儘管 Linux 支持超過 130 種不同的檔案系統，但標準的 Linux 檔案系統被稱為 *extended file system* ，最常見的版本是 ext3 和 ext4。
+
+
+<h2 id="0132">File-System Operations</h2> 
+
+* File system 由 *on-storage* 和 *in-memory* 的structure所維護：
+  * On storage，包含了包括 *how to boot an operating system* 、 *the total number of blocks* 、*the number and location of free blocks* 、 *the directory structure* 以及檔案的information：
+    * boot control block：每個volume一個(如果是開機碟或boot partition的話)，通常會在一個volume的第一個bolck，在 UFS 中，它被稱為 *boot block*。 在 NTFS 中，則被稱為 *partition boot sector*。 
+    * volume control block：每個volume一個，該block記載了volume的一些詳細資料，包括block的數量(in volume)、block size、free-block數量、 free-block pointers、free-FCB數量、FCB pointers，volume control block 在UFS中稱為superblock，在NTFS中，它存儲在master file table中。
+    * 
+
+
+
+
+
+
+
+
+
 
 
 
