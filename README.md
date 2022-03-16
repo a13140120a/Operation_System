@@ -3367,7 +3367,23 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 如果該block未被分配，則儲存的field為0，要分配新的block給檔案只需要找到第一個為0的block就可以了。
   * 通常FAT會被cache在memory裡面(如果不這麼做的話會導致大量的磁碟讀取)。
 
-
+* Indexed Allocation：
+  * 將所有block的pointer蒐集起來放在一個 *index block* 裡面，如下圖所示：
+    * ![file_Index_Allocation](https://github.com/a13140120a/Operation_System/blob/main/imgs/file_Index_Allocation.jpg)
+  * 優點：這既解決了Contiguous Allocation的分配問題，也解決了Linked Allocation的random access的問題。
+  * 缺點：如果file太小，則index block會有internal fragmentation的問題，如果file太大，則要許多個index block
+  * 關於需要許多個index block的問題，以下有幾種解決方案：
+    * Linked scheme：每個index block都包含下一個index block的pointer
+      * ![index_block_Linked_scheme](https://github.com/a13140120a/Operation_System/blob/main/imgs/index_block_Linked_scheme.PNG)
+    * Multilevel index：多層索引
+      * ![index_block_Multilevel_index](https://github.com/a13140120a/Operation_System/blob/main/imgs/index_block_Multilevel_index.PNG)
+    * Combined scheme：也就是UNIX檔案系統使用的方案，將index block的前 15 個pointer保留在檔案的inode中，前12個直接指向data block(假設每個block 4KB, 這邊可以存48KB)，第13個指向單個間接block(超過48KB的話才會到這裡，可以存4MB)，第14個指向雙重間接block(可以存4GB)，第15個指向三重間接block(4TB)，如下圖所示：
+      * ![combine_schema](https://github.com/a13140120a/Operation_System/blob/main/imgs/combine_schema.jpg)
+ 
+ 
+ 
+ 
+ 
 
 
 
