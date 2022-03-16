@@ -3300,15 +3300,59 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 * File system 由 *on-storage* 和 *in-memory* 的structure所維護：
   * On storage，包含了包括 *how to boot an operating system* 、 *the total number of blocks* 、*the number and location of free blocks* 、 *the directory structure* 以及檔案的information：
-    * boot control block：每個volume一個(如果是開機碟或boot partition的話)，通常會在一個volume的第一個bolck，在 UFS 中，它被稱為 *boot block*。 在 NTFS 中，則被稱為 *partition boot sector*。 
-    * volume control block：每個volume一個，該block記載了volume的一些詳細資料，包括block的數量(in volume)、block size、free-block數量、 free-block pointers、free-FCB數量、FCB pointers，volume control block 在UFS中稱為superblock，在NTFS中，它存儲在master file table中。
-    * 
+    * boot control block(per volume, 如果是開機碟或boot partition的話)：通常會在一個volume的第一個bolck，在 UFS 中，它被稱為 *boot block*。 在 NTFS 中，則被稱為 *partition boot sector*。 
+    * volume control block(per volume)：該block記載了volume的一些詳細資料，包括block的數量(in volume)、block size、free-block數量、 free-block pointers、free-FCB數量、FCB pointers，volume control block 在UFS中稱為superblock，在NTFS中，它存儲在master file table中。
+    * directory structure (per file system)：用於組織檔案，在UFS中，這包括檔名和相關的inode number，在NTFS中，它存儲在master file table。 
+    * FCB (per-file)：包含了一個不會重複的id，在NTFS中，FCB存在master file table當中，並且這個table使用關聯是資料庫的結構，每個row一個file。
+  * in-memory，同時用於管理檔案系統，以及增加檔案操作的效能，這些data在mount的時候載入，並且在unmount的時候丟棄：
+    * in-memory mount table：包含每個mount起來的volume的訊息。
+    * in-memory directory-structure(recently used)：把最近access過的directory訊息cache下來，就不用每次都去讀取硬碟，會包含一個指向volume table的pointer。
+    * system-wide open-file table：包含每個open file的FCB的copy以及其他訊息。
+    * per-process open-file table：包含指向system-wide open-file table的entry的pointer，以及該process已經open的file的其他訊息。
+    * buffer在從檔案系統讀取或寫入檔案系統時保存file-system block。 
+  * 當一個檔案被建立時，process會call logical file system，logical file system知道directory structures的格式，並且會幫它分配一個新的FCB（或者，如果檔案系統會在檔案系統建立時，建立所有的FCB，這時則從空閒FCB set中allocate一個FCB），然後將適當的目錄載入memory，用新的file name 更新它，再寫回檔案系統。
+  * 有些作業系統(例如UNIX)，會將檔案跟目錄視為相同的東西，並保留一個"type"的欄位來標示這是目錄還是檔案，而windows等等其他OS則會把檔案跟目錄當作完全不同的東西，並且使用不同的system call。
+  * 無論各種structure的差異有多大，logical file system都會call file-organization module去map上層的directory I/O到下層的storage block locations(也就是傳遞到basic file system和I/O control system)。(這邊應該是指logical file system會將各種structure的差異都封裝起來(藉由呼叫各種不同的file-organizatio module)傳遞到下層)
+
+* Usage：
+  * 當建立了一個檔案之後，現在它可以用於I/O，首先必須使用`open()`將檔名傳遞給logical file system層，`open()`會搜尋system-wide open-file table查看該檔案使否已經被其他process開啟，如果是的話則建立per-process open-file table的entry並指向system-wide open-file table的entry，
+  * 如果沒有任何process在使用的話，則在目錄結構中搜索給定的檔名，而這邊部份的目錄結構通常會cache起來(最近用過的)以加速目錄的操作，
+  * 找到檔案之後，其FCB就會被複製到memory中的system-wide open-file table中，該表不僅存儲FCB，還記錄了打開該file的process數量。
+  * `open()`system call會返回per-process open-file table的entry的pointer，檔名通常不會記錄在這個table上，因為檔案打開之後就不再需要檔名了，而這個pointer在UNIX系統稱為 *file descriptor(檔案描述符)* ，在Windosw則稱為 *file handle(檔案句柄)* 。
+  * 檔案被`open()`之後通常會被cache在memory當中，BSD UNIX system在可以保存disk I/O 的任何地方都使用cache，並且有高達85%的cache hit。
+
+<h2 id="0133">Directory Implementation</h2> 
+
+* 目錄分配和目錄管理演算法是設計上的一個很重要的方面，它影響效率、性能和可靠性。
+* Linear List：
+  * 實作目錄的最簡單方法是使用帶有指向data block的pointer的file name linear list。
+  * ![os_directory_implementation_linear_list](https://github.com/a13140120a/Operation_System/blob/main/imgs/os_directory_implementation_linear_list.png)
+  * 優點：實作起來非常容易
+  * 缺點：建立檔案與刪除檔案必須要先traverse整個linked list(建立檔案需要搜尋是否有同名的檔案)，會讓效能下降，
+    * 使用排序的list(sorted list)雖然可以增加搜尋效率，但會使新增及刪除節點變的更複雜
+    * 使用平衡樹也許會更有幫助。
+* Hash table：
+  * 使用一個linear list來儲存每個directory entry，並且hash table把file name轉換成linear list的節點
+  * ![os_directory_implementation_hash_table](https://github.com/a13140120a/Operation_System/blob/main/imgs/os_directory_implementation_hash_table.png)
+  * 優點：可以大幅減少搜尋目錄的時間，而且插入及刪除也相對簡單。
+  * 缺點：hash table的大小固定，缺乏靈活度，例如如果hash table裝了64個entry(等於使用mod 64)，因此，我們會需要一個新的hash function(變成mod 128之類的)。
+    * 可以使用chained-overflow hash table來解決這個問題，每個hash entry指向的不是單一的directory entry，而是一個由directory entry組成的linked list，但使用這種方法如果發生collision的話會降低效能，需要traverse linked list，但仍然比Linear List的方法要快。
 
 
+<h2 id="0133">Allocation Methods</h2> 
 
-
-
-
+* 三種幾本的secondary storage space allocation方法被廣泛的使用：*contiguous* 、 *linked*、 *indexed* ，儘管有些檔案系統同時支援這三種方法，但大多數都只支援一種。
+* Contiguous Allocation：
+  * ![]()
+  * 同時支援sequential 跟random access。
+  * 分配的方法可以參考前面提到的[contiguous memory allocation](https://github.com/a13140120a/Operation_System/edit/main/README.md#contiguous-memory-allocation-1)
+  * 優點：磁頭移動的距離最少
+  * 缺點：會導致大量的external fragmentation，而且難以幫新的檔案allocate空間，因為不知道檔案會漲到多大。
+    * 防止external fragmentation的方法之一是compacts(把所有的檔案都重新往前擺放，消除hole)，但這樣會消耗非常可觀的時間
+* Extent-Based File System：
+  * 檔案剛建立時，會先分配一塊contiguous的space給它
+  * 等到檔案長到space不夠用的時候，會給它一個link，指向另一塊contiguous的space，稱為 *extent*。
+  * [Symantec Veritas file system](https://en.wikipedia.org/wiki/Veritas_File_System)使用此項技術來做為性能的優化。
 
 
 
