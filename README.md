@@ -3283,10 +3283,11 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 <h2 id="0131">File-System Structure</h2> 
 
 * file control block(FCB)：(UNIX 檔案系統中就是一個 inode)包含有關檔案的信息，包括檔案內容的所有權、權限和位置。 
+  * ![FileControlBlock](https://github.com/a13140120a/Operation_System/blob/main/imgs/FileControlBlock.jpg)
 * disks(HDD)傳統硬碟有著可以隨意修改、覆寫block以及隨機存取的特性，而NVM裝置(例如SSD)則不能覆寫但還是越來越常使用於儲存資料。
 * 為了提高效率，memory跟disk之間通常以block為單位傳輸資料，大小依驅動程式而不同，通常是512bytes或者4KB，NVM通常會有4KB的block。
 * 如下圖所示，檔案系統本身會由許多不同的layer所組成：
-  * ![]()
+  * ![LayeredFileSystem](https://github.com/a13140120a/Operation_System/blob/main/imgs/LayeredFileSystem.jpg)
   * The I/O control層：由 *驅動程式* 和 *interrupt handler(中斷處理器)* 所組成，負責memory與disk之間的信息傳遞，驅動程式就像一個translator(翻譯器)，它可以把由上層傳送過來指令(例如`retrieve block 123`)轉換成low-level的hardware-specific instructions(靈活度較小)，並傳送給硬體的controler。
   * basic file system層(在Linux中亦稱為block I/O subsystem)：這層會根據logical block addresses向下一層的驅動程式發送 *通用命令(generic commands)* ，IO scheduling亦是在這層進行的，該層還管理保存各種檔案系統、目錄和data block的buffer和cache，這些cache跟buffer用於保存經常使用的檔案系統的metadata以提高性能。
   * file-organizatio module層：這層負責管理檔案及其logical blocks，這層也包含了free-space manager。
@@ -3320,7 +3321,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 找到檔案之後，其FCB就會被複製到memory中的system-wide open-file table中，該表不僅存儲FCB，還記錄了打開該file的process數量。
   * `open()`system call會返回per-process open-file table的entry的pointer，檔名通常不會記錄在這個table上，因為檔案打開之後就不再需要檔名了，而這個pointer在UNIX系統稱為 *file descriptor(檔案描述符)* ，在Windosw則稱為 *file handle(檔案句柄)* 。
   * 檔案被`open()`之後通常會被cache在memory當中，BSD UNIX system在可以保存disk I/O 的任何地方都使用cache，並且有高達85%的cache hit。
-
+  * ![FileSystemStructures](https://github.com/a13140120a/Operation_System/blob/main/imgs/FileSystemStructures.jpg)
 <h2 id="0133">Directory Implementation</h2> 
 
 * 目錄分配和目錄管理演算法是設計上的一個很重要的方面，它影響效率、性能和可靠性。
@@ -3343,17 +3344,28 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 * 三種幾本的secondary storage space allocation方法被廣泛的使用：*contiguous* 、 *linked*、 *indexed* ，儘管有些檔案系統同時支援這三種方法，但大多數都只支援一種。
 * Contiguous Allocation：
-  * ![]()
+  * ![file_ContiguousAllocation](https://github.com/a13140120a/Operation_System/blob/main/imgs/file_ContiguousAllocation.jpg)
   * 同時支援sequential 跟random access。
   * 分配的方法可以參考前面提到的[contiguous memory allocation](https://github.com/a13140120a/Operation_System/edit/main/README.md#contiguous-memory-allocation-1)
   * 優點：磁頭移動的距離最少
   * 缺點：會導致大量的external fragmentation，而且難以幫新的檔案allocate空間，因為不知道檔案會漲到多大。
-    * 防止external fragmentation的方法之一是compacts(把所有的檔案都重新往前擺放，消除hole)，但這樣會消耗非常可觀的時間
+    * 防止external fragmentation的方法之一是compact(把所有的檔案都重新往前擺放，消除hole)，但這樣會消耗非常可觀的時間
 * Extent-Based File System：
   * 檔案剛建立時，會先分配一塊contiguous的space給它
-  * 等到檔案長到space不夠用的時候，會給它一個link，指向另一塊contiguous的space，稱為 *extent*。
+  * 等到檔案長到space不夠用的時候，會給它一個link，指向另一塊contiguous的space，稱為 *extent*，某些系統允許使用者設定extent的大小。
   * [Symantec Veritas file system](https://en.wikipedia.org/wiki/Veritas_File_System)使用此項技術來做為性能的優化。
-
+* Linked Allocation：
+  * ![file_LinkedAllocation](https://github.com/a13140120a/Operation_System/blob/main/imgs/file_LinkedAllocation.jpg)
+  * 優點：解決了contiguous allocation的空間分配問題，不會有external fragmentation或者檔案長到塞不下的問題，也不用compact。
+  * 缺點：對於sequential-access還好，但對於random access的效能非常差，而且會有reliability的問題，因為只要中間有一個block斷掉(損毀)，整個檔案的後面資料都會損毀，還有一個缺點是每個block會浪費一個pointer的空間。
+    * 一種折衷的方法是使用 *cluster* ，例如，檔案系統可以將四個block定義成一個cluster，每次操作都是以clustser為單位，代價是增加了internal fragmentation
+    * reliability的問題可以使用doubly linked list來解決，但是會浪費更多的空間
+* file-allocatio table (FAT)：
+  * 早期MS-DOS使用的方法，每個volume的開頭會保留一個空間來儲存file-allocatio table，該表的每個entry的index是block number，而field儲存的則是指向下一個block的number。
+  * FAT如下圖所示：
+    * ![FAT_Table](https://github.com/a13140120a/Operation_System/blob/main/imgs/FAT_Table.jpg)
+  * 如果該block未被分配，則儲存的field為0，要分配新的block給檔案只需要找到第一個為0的block就可以了。
+  * 通常FAT會被cache在memory裡面(如果不這麼做的話會導致大量的磁碟讀取)。
 
 
 
