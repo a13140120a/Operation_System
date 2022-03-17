@@ -3342,7 +3342,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h2 id="0133">Allocation Methods</h2> 
 
-* 三種幾本的secondary storage space allocation方法被廣泛的使用：*contiguous* 、 *linked*、 *indexed* ，儘管有些檔案系統同時支援這三種方法，但大多數都只支援一種。
+* 三種基本的secondary storage space allocation方法被廣泛的使用：*contiguous* 、 *linked*、 *indexed* ，儘管有些檔案系統同時支援這三種方法，但大多數都只支援一種。
 * Contiguous Allocation：
   * ![file_ContiguousAllocation](https://github.com/a13140120a/Operation_System/blob/main/imgs/file_ContiguousAllocation.jpg)
   * 同時支援sequential 跟random access。
@@ -3377,24 +3377,104 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
       * ![index_block_Linked_scheme](https://github.com/a13140120a/Operation_System/blob/main/imgs/index_block_Linked_scheme.PNG)
     * Multilevel index：多層索引
       * ![index_block_Multilevel_index](https://github.com/a13140120a/Operation_System/blob/main/imgs/index_block_Multilevel_index.PNG)
-    * Combined scheme：也就是UNIX檔案系統使用的方案，將index block的前 15 個pointer保留在檔案的inode中，前12個直接指向data block(假設每個block 4KB, 這邊可以存48KB)，第13個指向單個間接block(超過48KB的話才會到這裡，可以存4MB)，第14個指向雙重間接block(可以存4GB)，第15個指向三重間接block(4TB)，如下圖所示：
+    * Combined scheme：也就是UNIX檔案系統使用的方案，將index block的前 15 個pointer保留在檔案的inode中，  
+                       前12個direct blocks直接指向data block(假設每個block 4KB, 這邊可以存48KB)，  
+                       第13個指向indirect blocks(超過48KB的話才會到這裡，可以存4MB)，  
+                       第14個指向double indirect block(可以存4GB)，  
+                       第15個指向triple indirect block(4TB)，如下圖所示：  
       * ![combine_schema](https://github.com/a13140120a/Operation_System/blob/main/imgs/combine_schema.jpg)
  
  
+<h2 id="0134">Free-Space Management</h2> 
+
+* 追蹤free space有以下幾種方法：
+* Bit Vector：
+  * 使用一個bitmap或bit vector來記錄free block，一個bit代表一個block，1為free block，0為allocated
+  * 例如，有block 2、3、4、5、8、9、10、11、12、13、17、18、25、26 和 27 是free，其餘的是allocated，則free-space bitmap將會是：
+    * `001111001111110001100000011100000 ...`
+  * 利用這種方法只要檢查每個word(字組)是否為0，只要不為0則代表找到free block
+  * 第一個free block number的計算方式是：
+    * `（每個word的位元數）×（為0的word的數量）+ 第一個不為0的word的第一個1的bit的offset `
+  * 優點：實現方法簡單，在硬碟上找到第一個free block或 n 個連續的free block的速度很快。
+  * 缺點：佔大量儲存空間，具有 4 KB 塊的 1 TB 硬碟需要 32 MB的空間來儲存bitmap。
+* Linked List：
+  * 將所有的free block串在一起。
+  * 如果需要找到連續空間的化這種方法會很沒有效率，幸好絕大多數時候OS都只需要一個block
+* Grouping：
+  * 是Linked List的修改版，list中的第一個block用來存放n個free block(其實是n-1個)的number，最後一個block則用來存放另外n個free block的number
+  * 使用這種方法可以快速找到大量的free block
+* Counting：
+  * 透過類似上述cluster的方法來實作free block list，list中的每個entry(或者說node)都包含了一個free block的number以及連續的free block的數量
+  * 這些entry可以存在平衡樹中，而不是linked list中，以實現高效的查找、插入和刪除。
+* Space Maps：
+  * 在管理可用空間時，ZFS 使用多種技術來控制數據結構的大小並最大限度地減少管理這些結構所需的 I/O。
+  * 首先，ZFS 建立 *metaslab* 以將設備上的空間劃分為可管理大小的塊。
+  * 一個volume可能包含數百個metaslab，而每個metaslab都會有一個相關聯的 *space map* ，space map是一種會記錄block活動的log。
+  * ZFS 使用計數演算法來存儲有free block的資訊，與傳統將計數結構寫入disk的方法不同，而是使用日 *log-structured file-system* 技術來記錄它們。
+  * 當ZFS決定要從metaslab allocate或者free空間的時候，他會把相關的space map載入到存在記憶體中的平衡樹(balanced tree)結構當中，按偏移量索引，並且"replay"這個space map。
+  * ZFS還透過將連續的free block結合成單一個entry來壓縮map
+  * 本質上，log加balanced tree 就是free-list。 
+  * [zfs 特色術語](https://docs.freebsd.org/zh-tw/books/handbook/zfs/#zfs-term)
+  * [zfs 架構圖](https://people.freebsd.org/~gibbs/zfs_doxygenation/html/d1/d4d/structmetaslab.html)
+  * [space map解說(英文)](https://sdimitro.github.io/post/zfs-lsm-flushing/)
+
  
+<h2 id="0135">Efficiency and Performance</h2> 
+
+* UNIX inode 是在volume上預先分配的，透過這種方法UNIX可以將檔案的data block放在檔案的inode附近，可以減少硬碟的seek time並提高檔案系統的效能，
+* BSD UNIX可以隨著檔案大小的增加而改變cluster的大小，來減少internal fragmentation
+* 有些檔案系統會記錄"後寫入日期"或"最後訪問日期"，這意味著任何時候只要打開檔案，也必須要跟著打開並修改他的FCB，這樣會造成效能下降。
+* **unified buffer cache**：硬碟map到一個buffer，而這個buffer又map到另一個buffer，這種現象稱為 *double caching* ，這種現象會降低效能，下圖代表`read()`、`write()`system call分別使用double caching 以及unified buffer cache：
+  * ![unified_buffer_cache](https://github.com/a13140120a/Operation_System/blob/main/imgs/unified_buffer_cache.jpg)
+* sequential read/write的檔案不使用LRU演算法，因為最近使用的page將最後使用，或者可能永遠不會再使用
+  * 可以使用 *free-behind* 或者 *read-ahead* 的技巧來來進行優化
+  * free-behind：訪問完page的buffer後，應該立即釋放它們，因為它們可能不會再次被訪問
+  * read-ahead：當從一個sequential的檔案中將一個block讀入buffer時，後面的幾個block也應該一起讀入，因為它們可能很快就會被訪問
+* 小資料量的傳輸，當寫入disk時，因為cpu只需要將要寫入的資料放進memory就好，剩下的就由DMA或device controler來處理就好，而讀取要等待disk把資料讀出來，因此小資料量的傳輸其實是write的速度會大於read的速度，這與直覺相反。而大量的資料傳輸則是read的速度會大於write。
+
+
  
- 
+<h2 id="0136">Recovery</h2> 
 
+* Consistency Checking：
+  * OS可以使用一個 *consistency checker* (例如Linux的[fsck](https://blog.gtwang.org/linux/linux-fsck-examples/))來檢查目錄結構與data block之間的一致性，
+  * 檔案系統實現的細節，例如分配演算法和free space管理演算法，決定了consistency checker可以檢測和糾正哪些類型的問題
+* Log-Structured File Systems：
+  * 基本思想是首先將metadata的更改按照順序寫入log，寫入的每個操作稱為 *transaction* ，寫入了之後system call就會return到user的process讓可以繼續執行，
+  * 同一時間，這些修改的log會在檔案系統實際進行，隨著更改的進行，pointer會更新以指示哪些操作已完成，哪些操作仍未完成。
+  * 這個log檔實際上是一個循環緩衝區(circular buffer)，循環緩衝區寫入其空間的末尾，然後從開頭繼續，並在進行時覆蓋舊值。
+  * log檔裡面存的都是沒有完成的transaction，所以如果系統發生崩潰，這些log檔裡面的紀錄就是必須完成的transaction。
+  * 使用metadata的log的另一個好處是，原本昂貴的同步隨機寫入metadata，變成了成本更低的同步循序寫入的metadata transaction log，而這些更改通過對適當結構的隨機寫入異步"replay"。
+* Other Solutions：
+  * WAFL檔案系統和 Solaris ZFS採用了Consistency Checking的另一種替代方法，這些系統永遠不會用新數據覆蓋舊的block，transaction(交易)將所有data和metadata更改寫入new block，當交易完成時，只指向舊的data block的pointer會指向新的data block，然後檔案系統可以刪除舊pointer和block，並使它們可以重使用。
+  * ZFS 採用了一種更具創新性的維持Consistency的方法。 與WAFL一樣，它從不覆蓋block，而且更進一步提供所有metadata和data block的checksum。此解決方案（與 RAID 結合使用時）可確保數據始終正確。 因此 ZFS 沒有consistency checker。
+  * Backup and Restore：
+    * 為了最大限度地減少所需的複制，我們可以使用每個file的directory的entry的信息，例如，如果備份程序知道檔案的最後一次備份是什麼時候完成的，並且該檔按在目錄中的最後寫入日期表明該檔案自該日期以來沒有更改，則不需要再次復制該檔案，典型的備份計劃可能如下所示： 
+      * 第 1 天。將檔案系統中的所有檔案複製到備份裝置，這稱為 *full backup* 。
+      * 第 2 天。將自第 1 天以來更改的所有檔案複製到另一個備份裝置。這是一個 *incremental backup*
+      * 第 3 天。將自第 2 天以來更改的所有檔案複製到另一個介質。
+      * 第 N 天。將自第 N-1 天以來更改的所有檔案複製到另一個儲存裝置。然後返回第 1 天。 
+    * 使用這種方法，我們可以通過使用full backup開始恢復並繼續執行每個incremental backup來恢復整個檔案系統。 
+    * N 的值越大，為完全恢復必須讀取的資料量就越多。此備份週期的另一個優點是，我們可以通過從前一天的備份中檢索已刪除的文件來恢復該週期中意外刪除的任何檔案。 
 
+<h2 id="013">Example: The WAFL File System</h2> 
 
-
-
-
-
-
-
-
-
+* WAFL(The write-anywhere file layout) 是一個針對隨機寫入進行了優化的檔案系統，由NetApp公司所開發。
+* 主要是為了分散式系統所設計的，它可以通過 NFS、CIFS、iSCSI、ftp 和 http protocal向客戶端提供檔案，儘管它只是為NFS和CIFS設計的，當許多客戶端使用這些協議與檔案的server 通信時，server對隨機讀取/寫入的需求會非常大。
+* WAFL 用於帶有"用於寫入的NVRAM緩衝"的檔案server。
+* 每個inode包含16個pointer指向blocks(或indirect block)，而由這些block組成的inode則用來描述檔案
+* 所有的inode都存在單一個檔案當中，每個檔案系統都有一個root inode，其結構如下所示：
+  * ![WAFL](https://github.com/a13140120a/Operation_System/blob/main/imgs/WAFL.jpg)
+* snapshot(快照)：可以在不同的時間點創建檔案系統的多個"只讀(read only)"副本，當資料發生損毀的時候就可以藉由快照來還原成拍攝快照的時候當下的狀態。
+  * 為了拍攝快照，WAFL 創建了root inode 的副本。 之後的任何檔案或metadata更新都會轉到新的block，而不是覆蓋其現有的block。
+  * 如果某個block被修改的話，新的root inode 指向這些被寫入而更改的metadata和data。同時，快照（舊的root inode）仍然指向舊的block(類似copy on write的概念)，其結構如下所示：
+    * ![WAFLsnapshts](https://github.com/a13140120a/Operation_System/blob/main/imgs/WAFLsnapshts.jpg)
+  * 每個block會有一個一連串的bit組成的bitmap，只要有一個snapshot正在使用這個block的話，這個bitmap就不會為0，當這個bitmap為0的時候，該block會被釋放，就可以被reuse
+* clone(克隆)：較新版本的WAFL 實際上允許讀寫快照，稱為clone
+  * 只讀快照捕獲檔案系統的狀態，而clone則引用該快照，對克隆的任何寫入都存儲在新的block中，並且克隆的pointer會更新以指向新塊，原始快照未修改，跟更新克隆之前一樣。
+  * 克隆對於測試和升級很有用，因為原始版本保持不變，並且在測試完成或升級失敗時刪除克隆。
+* replication：
+  * 通過網路將一組數據複製和同步到另一個系統。首先，將 WAFL 檔案系統的快照複製到另一個系統。當在源系統上拍攝另一個快照時，只需發送新快照中包含的所有block，就可以相對容易地更新遠程系統。
 
 
 
