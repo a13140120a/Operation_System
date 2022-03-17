@@ -12,7 +12,7 @@
 * ## [Mass-Storage Structure](#010) #
 * ## [I/O Systems](#011) # 
 * ## [File-System Interface](#012) # 
-* ## [pass](#013) # 
+* ## [File-System Implementation](#013) # 
 * ## [pass](#014) # 
 * ## [pass](#015) # 
 
@@ -3265,7 +3265,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 
 
-<h1 id="012">File-System Implementation</h1> 
+<h1 id="013">File-System Implementation</h1> 
 
   * ## [File-System Structure](#0131) #
   * ## [File-System Operations](#013) #
