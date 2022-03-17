@@ -3268,14 +3268,12 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 <h1 id="012">File-System Implementation</h1> 
 
   * ## [File-System Structure](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
-  * ## [](#0131) #
+  * ## [File-System Operations](#013) #
+  * ## [Directory Implementation](#0133) #
+  * ## [Free-Space Management](#0134) #
+  * ## [Efficiency and Performance](#0135) #
+  * ## [Recovery](#0136) #
+  * ## [Example: The WAFL File System](#0137) #
 
 
 
@@ -3322,6 +3320,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * `open()`system call會返回per-process open-file table的entry的pointer，檔名通常不會記錄在這個table上，因為檔案打開之後就不再需要檔名了，而這個pointer在UNIX系統稱為 *file descriptor(檔案描述符)* ，在Windosw則稱為 *file handle(檔案句柄)* 。
   * 檔案被`open()`之後通常會被cache在memory當中，BSD UNIX system在可以保存disk I/O 的任何地方都使用cache，並且有高達85%的cache hit。
   * ![FileSystemStructures](https://github.com/a13140120a/Operation_System/blob/main/imgs/FileSystemStructures.jpg)
+
 <h2 id="0133">Directory Implementation</h2> 
 
 * 目錄分配和目錄管理演算法是設計上的一個很重要的方面，它影響效率、性能和可靠性。
@@ -3457,7 +3456,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
     * 使用這種方法，我們可以通過使用full backup開始恢復並繼續執行每個incremental backup來恢復整個檔案系統。 
     * N 的值越大，為完全恢復必須讀取的資料量就越多。此備份週期的另一個優點是，我們可以通過從前一天的備份中檢索已刪除的文件來恢復該週期中意外刪除的任何檔案。 
 
-<h2 id="013">Example: The WAFL File System</h2> 
+<h2 id="0137">Example: The WAFL File System</h2> 
 
 * WAFL(The write-anywhere file layout) 是一個針對隨機寫入進行了優化的檔案系統，由NetApp公司所開發。
 * 主要是為了分散式系統所設計的，它可以通過 NFS、CIFS、iSCSI、ftp 和 http protocal向客戶端提供檔案，儘管它只是為NFS和CIFS設計的，當許多客戶端使用這些協議與檔案的server 通信時，server對隨機讀取/寫入的需求會非常大。
