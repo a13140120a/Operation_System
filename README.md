@@ -3477,6 +3477,116 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 
 
+****
+
+
+
+
+<h1 id="014">File-System Internals</h1> 
+
+  * ## [File Systems](#0141) #
+  * ## [File-System Mounting](#0142) #
+  * ## [File Systems](#0143) #
+  * ## [File Systems](#0144) #
+  * ## [File Systems](#0145) #
+  * ## [File Systems](#0146) #
+
+
+
+
+<h2 id="0141">File Systems</h2> 
+
+* 一個通用計算機系統可以有多個存儲設備，這些設備可以分割成partition，這些partition保存volume，而這些partition又保存file system。有了volume manager，一個volume也可以跨越多個partition。下圖顯示了一個典型的檔案系統組織。
+  * ![typical_storage_device_organization](https://github.com/a13140120a/Operation_System/blob/main/imgs/typical_storage_device_organization.PNG)
+* 例如，一個典型的 Solaris 系統可能有幾十個不同類型的檔案系統，如下圖中的檔案系統列表所示。
+  * ![sloaris_file_system](https://github.com/a13140120a/Operation_System/blob/main/imgs/sloaris_file_system.PNG)
+* 實際上還有許多特殊用途的檔案系統。考慮上面提到的 Solaris 示例中的檔案系統類型： 
+  * tmpfs：在易揮發性記憶體儲存裝置(NVMs)中創建的"臨時"檔案系統，如果系統重新啟動或崩潰，其內容將被刪除
+  * objfs：一個"虛擬"的檔案系統（本質上是一個看起來像檔案系統的kernel interface），它使調試器(debugger)能夠訪問[kernel symbols(可以在`/proc/ksyms`或`/proc/kallsyms`中看到)](https://www.oreilly.com/library/view/linux-device-drivers/0596000081/ch02s03.html)
+  * [ctfs](https://docs.oracle.com/cd/E88353_01/html/E37851/ctfs-4fs.html)：一個虛擬檔案系統，它維護"[contract](https://docs.oracle.com/cd/E88353_01/html/E37852/contract-5.html#REFMAN5contract-5) information"以管理哪些process在系統啟動時啟動並且必須在操作期間繼續運行
+  * lofs：一種"[loop back](http://liujunming.top/2018/01/17/%E5%9B%9E%E7%8E%AF%E8%AE%BE%E5%A4%87loopback-device/)" file system 
+  * procfs：為了讓kernel debug的時候能夠比較方便，而創造出來的虛擬的檔案系統，procfs是"行程檔案系統 (process file system)"的縮寫，這個檔案系統通常被掛載到 `/proc` 目錄。由於 `/proc` 不是一個真正的檔案系統，它也就不占用儲存空間，只是占用有限的記憶體。
+    * 用於通過核心存取process資訊，可以向user呈現kernel中的一些訊息，也可以當作一種從user space 向kernel發送訊息的管道，
+    * 此外這些特殊檔案中，大多數建立的時間及日期屬性是當前系統時間和日期。
+    * 事實上 ps, top這些SHELL命令就是從proc檔案系統中讀取信息的。[詳細command wiki](https://zh.wikipedia.org/wiki/Procfs#Linux)
+  * ufs, zfs：通用的檔案系統。
+
+
+<h2 id="0142">File-System Mounting</h2> 
+
+* 檔案系統必須先掛載，然後才能供系統上的process使用，而目錄結構可以由多個包含檔案系統的volume構建而成，掛載(mount)這些volume才可以使其在檔案系統命名空間中可用。 
+
+* mount point：file structure中要附加檔案系統的位置，通常，mount pointer必須是一個空目錄。
+  * 例如，在 UNIX 系統上，包含user的home目錄的檔案系統可能掛載為 /home， 然後，要訪問該檔案系統中的目錄結構，我們可以在目錄名稱前加上 /home，如 /home/jane
+  * 這麼一來如果在 /users 下掛載該檔案系統將產生路徑名 /users/jane，我們可以使用它來訪問同一目錄。 
+* OS會驗證device是否包含有效的檔案系統(藉由驗證該目錄是否具有預期的格式)，然後OS在其目錄結構中註明該檔按系統安裝在指定的安裝點，使OS能夠遍歷其目錄結構，在檔案系統之間切換。
+* masOS每當系統第一次遇到新的disk時（無論是在開機時還是在系統運行時），macOS都會在設備上搜索檔案系統。如果找到，它會自動將檔案系統掛載到 /Volumes 目錄下，並添加一個標有檔按系統名稱的文件夾圖標。然後，用戶可以單擊該圖標，從而顯示新安裝的檔案系統。
+* Windows 系列OS maintains了一個"extended two-level directory structure"，幫每個device和volume分配了一個drive letter(例如C槽)，並且採用`drive- letter:∖path∖to∖file`類似這樣的路徑格式。
+* UNIX，mount 命令是顯式(explicit)的。在開機時自動掛載的系統設備和mount point list，但其他掛載可以手動執行。
+
+
+<h2 id="0143">Partitions and Mounting</h2> 
+
+* 每個disk可以有很多個partitions，每個volume也可以有很多的partitions或disks，取決於OS或volume management的software。
+* 一個partition如果是raw的，代表他沒有檔案系統在上面，swap space使用自己的格式，並且不適合用於有檔案系統的partition，大部分的database也選擇使用raw partition來增強自己的效能。
+* 如果一個partition包含了bootable的partitino的話，那麼該partition也必須要包含boot information，這個boot information會有自己的格式，通常會是一連串連續的blocks，然後會從預定義的位置(譬如第一個bytes)load 到memory當中，而這一連串的blocks包含了一個image(映像檔)也就是我們所謂的bootstrap loader。
+* 有些系統可以dual-booted，使用這種技術通常boot loader會知道哪些partition有哪些OS或File system(且就是所謂的 *root partition* )，如果boot loader沒辦法解讀file system的格式的話，那麼存在這個file system裡面的OS就沒辦法被啟動，這也就是為什麼某些OS不支援某些檔案系統的原因。
+* boot loader會選擇一個有OS的partition來開機
+* 當mount的時候OS會透過driver去檢查該該device是否包含有效的檔案系統格式。
+* 如果格式無效，則必須檢查partition的consistency 並進行更正。
+* 最後，OS會在其in-memory mount table記錄已掛載的檔案系統以及檔案系統的類型。
+* Windows 將每個 volume掛載在單獨的名稱空間中，由字母和冒號表示，當一個process指定driver letter時，OS會找到適當的檔案系統指針並遍歷該設備上的目錄結構以找到指定的檔案或目錄。更高版本的 Windows 可以在現有目錄結構中的任何位置掛載檔案系統。
+* 在 UNIX 上，檔案系統可以掛載在任何目錄中，掛載是通過在該目錄的in-memory的inode的copy中設定一個flag來實現的。
+  * 該flag表明該目錄是一個mount point。然後會有一個field指向mount table中的一個entry，來記錄這個mount point掛載了哪個device。
+  * mount table entry包含一個指向該設備上檔案系統[superblock](#0132)的pointer，該方案使OS能夠遍歷其目錄結構，在不同類型的檔案系統之間無縫切換。 
+
+<h2 id="0144">File Sharing</h2> 
+
+* 為了實現共享和保護，系統必須維護比單用戶系統所需的更多的檔案和目錄屬性。
+* 大多數係統已經演變為使用檔案（或目錄）owner（或user）和group的概念。
+* 給定檔案（或目錄）的owner和group ID 與其他檔案屬性一起存儲。當用戶請求對檔案進行操作時，可以將user ID 與owner屬性進行比較，以確定請求user是否是檔案的owner。同樣，可以比較Group ID。
+* 如果有一個可以在系統之間移動的外部硬碟出現的話，當設備在它們之間移動時，必須注意確保系統之間的 ID 匹配，或者在發生此類移動時重置檔案所有權。
+
+
+<h2 id="0144">Virtual File Systems</h2> 
+
+* 每個檔案系統實現細節的方法都不相同，為了將基本system call的功能與細節隔離開來。因此，檔案系統實現由三個主要層組成，如下圖所示。 
+* ![Virtual_FS](https://github.com/a13140120a/Operation_System/blob/main/imgs/Virtual_FS.jpg)
+* 第一層是file system interface，base on `open()`、`read()`、`write()` 和 `close()` 以及檔案描述符。
+* 第二層稱為虛擬檔案系統（VFS, virtual file system layer）層。 VFS 層有兩個重要功能：
+  * 會有一個通用的interface來實現各種不同的細節。
+  * 它為整個空間中的檔案提供了唯一標識符 (vnode)，包括橫跨所有不同類型的檔案系統（UNIX inode 僅在單個檔案系統中是唯一的。），kernel為每個activity node（檔案或目錄）maintain一個 vnode 結構。 
+* VFS使用local file system來處理local requests，並且以呼叫NFS protocol procedures來處理remote的file system
+* 檔案句柄由相關的 vnode 構成，並作為參數傳遞給這些prodedures。
+
+* Linux VFS：
+  * 四種主要的object types：
+    * inode object：代表單個文件
+    * file object：代表打開的文件
+    * superblock object：代表整個file system
+    * dentry object：代表一個directory entry
+  * 對於這四種object types，每種類型的每個object都會有pointer指向一個 *function table* ，function table紀載了真正實現function的實際位址，
+  * 例如，檔案對象的一些操作的縮寫 API 包括：
+    * `int open(...)`：打開一個檔案。
+    * `int close(...)`：關閉一個已經打開的檔案。
+    * `ssize_t read(...)`：從檔案中讀取。
+    * `ssize_t write()`：寫入檔案。
+    * `int mmap(...)`：memory mapped file。 
+  * 對於file object操作的完整定義在`struct file_operations`中定義(位於/usr/include/linux/fs.h)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
