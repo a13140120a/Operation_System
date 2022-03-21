@@ -3486,11 +3486,11 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
   * ## [File Systems](#0141) #
   * ## [File-System Mounting](#0142) #
-  * ## [File Systems](#0143) #
-  * ## [File Systems](#0144) #
-  * ## [File Systems](#0145) #
-  * ## [File Systems](#0146) #
-
+  * ## [Partitions and Mounting](#0143) #
+  * ## [File Sharing](#0144) #
+  * ## [Virtual File Systems](#0145) #
+  * ## [Remote File Systems](#0146) #
+  * ## [Consistency Semantics](#0147) #
 
 
 
@@ -3548,7 +3548,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 * 如果有一個可以在系統之間移動的外部硬碟出現的話，當設備在它們之間移動時，必須注意確保系統之間的 ID 匹配，或者在發生此類移動時重置檔案所有權。
 
 
-<h2 id="0144">Virtual File Systems</h2> 
+<h2 id="0145">Virtual File Systems</h2> 
 
 * 每個檔案系統實現細節的方法都不相同，為了將基本system call的功能與細節隔離開來。因此，檔案系統實現由三個主要層組成，如下圖所示。 
 * ![Virtual_FS](https://github.com/a13140120a/Operation_System/blob/main/imgs/Virtual_FS.jpg)
@@ -3574,7 +3574,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
     * `int mmap(...)`：memory mapped file。 
   * 對於file object操作的完整定義在`struct file_operations`中定義(位於/usr/include/linux/fs.h)
 
-<h2 id="0144">Remote File Systems</h2> 
+<h2 id="0146">Remote File Systems</h2> 
 
 * 前言：
   * 隨著網絡和檔案技術的發展，遠端檔案共享方式發生了變化。第一個實現的方法涉及通過諸如 ftp 之類的程式在機器之間手動傳輸檔案。 第二種主要方法使用分散式檔案系統 (DFS)，其中遠端目錄可從本地計算機看到。
@@ -3600,7 +3600,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 除非檔案系統已遠程掛載並且檔案先前已打開，否則不允許發生客戶端讀取或寫入檔案的請求。 NFS 協議攜帶定位適當檔案和執行請求操作所需的所有信息，但此種方法會缺乏安全性。
 
 
-<h2 id="0144">Consistency Semantics</h2> 
+<h2 id="0147">Consistency Semantics</h2> 
 
 * 一致性語義(Consistency Semantics)代表了評估任何支援檔案共享的檔案系統的重要標準。這些語義(semantics)指定係統的多個用戶如何同時訪問共享檔案。
 * Consistency Semantics通常會直接在檔案系統implement。
@@ -3618,14 +3618,114 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 這些語義在分散式系統中的實現很簡單，因為共享是有規律的（只讀）。 
 
 
-<h2 id="0144">NFS</h2> 
+<h2 id="0148">NFS</h2> 
 
 * NFS 是一個廣泛使用、良好實現的客戶端-服務器網絡檔案系統的一個很好的例子，NFS 有多個版本，最新的是版本 4。以下我們描述版本 3。
 * NFS 將一組互連的工作站視為一組具有獨立檔案系統的獨立機器。目標是允許這些檔案系統進行某種程度的共享。共享base on client– server 關係。 一台機器可能而且經常既是客戶端又是服務器。
+* NFS 的設計目標之一是在不同機器、OS和網絡架構的異構環境中運行，NFS 規範獨立於這些媒體。這種獨立性是通過[使用外部數據表示 (external data representation, XDR)](#0033) 協議之上構建的 RPC primitive來實現的。
+
+
+****
 
 
 
 
+<h1 id="015">Security</h1> 
+
+  * ## [File Systems](#0151) #
+  * ## [File Systems](#0152) #
+  * ## [File Systems](#0153) #
+  * ## [File Systems](#0154) #
+  * ## [File Systems](#0155) #
+
+
+
+
+<h2 id="0151">The Security Problem</h2> 
+
+* 系統的安全違規（或濫用）可分為惡意或意外，防止意外誤用比防止惡意誤用更容易。在大多數情況下，保護機制是避免事故的核心，以下列表包括幾種形式的意外和惡意行為：
+  * Breach of confidentialit(機密的缺口)：這種類型的違規涉及未經授權的數據讀取（或信息盜竊）。通常，洩露機密是入侵者的目標。從系統或數據流中捕獲秘密數據，例如用於身份盜用的信用卡信息或身份信息，或未發布的電影或腳本，可能會直接為入侵者帶來金錢，並使被駭客入侵的機構感到尷尬。
+  * Breach of integrity(完整的缺口)：這種違規行為涉及未經授權的數據修改。例如，此類攻擊可能導致將責任轉移給無辜方或修改重要商業或開源應用程序的源代碼。
+  * Breach of availability(可用的缺口)：這種違規行為涉及未經授權的數據破壞。一些攻擊者寧願大肆破壞並獲得地位或吹噓的權利，也不願獲得經濟利益。網站污損是此類安全漏洞的常見示例。
+  * Theft of service(服務盜竊)：此違規行為涉及未經授權使用資源。例如，入侵者（或入侵程序）可能會在充當文件服務器的系統上安裝守護程序。
+  * Denial of service(DoS, 拒絕服務)：此違規行為涉及阻止系統的合法使用。拒絕服務 (DOS) 攻擊有時是偶然的。最初的 Internet worm(網路蠕蟲病毒) 在一個 bug 未能延緩其快速傳播時變成了 DOS 攻擊。
+
+* 攻擊者在嘗試破壞安全時使用了幾種標準方法。最常見的是 *偽裝(masquerading)* ，其中一個交流參與者假裝是另一個人（或另一台電腦）。
+* 另一種常見的攻擊是repeat捕獲的數據。 *重放攻擊(replay attack)* 包括對有效數據傳輸的惡意或欺詐性重複。有時重播包括整個攻擊，例如：重複轉賬請求。
+* 另一種攻擊是 *中間人攻擊(man-in-the-middle attack)* ，其中攻擊者位於通信的數據流中，偽裝成接收者的發送者，反之亦然。在網絡通信中，中間人攻擊之前可能會發生 *會話劫持(session hijacking)* ，其中活動的通信會話被攔截。 
+* 另一類廣泛的攻擊旨在* 提升權限(privilege escalation)* ，特權升級為攻擊者提供了比他們應該擁有的更多的特權。例如，包含執行的script或macro的電子郵件超出了電子郵件發件人的權限。上面提到的偽裝和消息修改通常用於提升權限。
+* 絕對保護系統免受惡意濫用是不可能的，但是可以使肇事者的成本足夠高以阻止大多數入侵者。
+
+* 為了保護一個系統，我們必須在四個層面上採取安全措施： 
+  * Physical：對包含計算機系統的站點進行物理保護，以防止入侵者進入。
+  * Network：大多數當代計算機系統(從伺服器到移動設備再到物聯網(IoT)設備)都是聯網的。網路為系統提供了一種訪問外部資源的方法，但也為未經授權訪問系統本身提供了潛在的載體，此外，現代系統中的計算機數據經常通過專用租用線路(private leased lines)、共享線路（shared lines，如 Internet）、無線連接(wireless connections)和撥號線路(dial-up lines)傳輸。
+  * Operating system：作業系統及其內置的應用程式和服務集構成了一個龐大的代碼庫，其中可能包含許多漏洞。不安全的預設設置、錯誤配置和安全漏洞等等潛在問題。因此，作業系統必須保持最新（通過持續修補）和強化配置和修改以減少攻擊面並避免滲透。 *attack surface* 是攻擊者可以嘗試侵入系統的一組點。
+  * Application：第三方應用程式也可能帶來風險，尤其是在它們擁有重要特權的情況下。一些應用程式本質上是惡意的，但即使是良性應用程式也可能包含安全漏洞。由於大量第三方應用程式及其不同的代碼庫，幾乎不可能確保所有此類應用程式都是安全的。 
+  * ![four_layered_model_of_security](https://github.com/a13140120a/Operation_System/blob/main/imgs/four_layered_model_of_security.PNG)
+* 還有一種攻擊手法稱為 *social engineering* ，social engineering使用欺騙手段說服人們放棄機密信息，social engineering的其中一個例子是網絡釣魚(phishing)，其中看起來合法的電子郵件或網頁會誤導用戶輸入機密信息，只需單擊瀏覽器頁面或電子郵件中的鏈接即可無意中下載惡意負載，而通常那台 PC 不是最終目標，而是一些更有價值的資源。從該受感染的系統開始，對 LAN 上的其他系統或其他用戶的攻擊隨之而來。 
+
+
+
+<h2 id="0152">Program Threats</h2> 
+
+* 入侵者常常會在入侵之後留下一個後門守護程序(back-door daemon)或遠程訪問工具（RAT, Remote Access Tool），即使原始漏洞被阻止，它也能提供信息或權限讓入侵者輕鬆訪問，以下將描述程式導致安全漏洞的常見方法。
+
+* Malware：
+  * 惡意軟件是旨在利用、禁用或破壞計算機系統的軟件。
+  * 特洛斯木馬(Trojan horse)：程式於提供使用者存取權限的領域中執行，其他使用者可能會濫用這些權限，以秘密或惡意的方式進行，稱為木馬程式，這種程式宣稱提供一些良性功能(例如手電筒應用程式)，但同時也秘密的存取使用者的聯絡人訊息。
+  * 特洛伊木馬的一個經典的變型，是模仿登入頁面(或程式)的"Trojan mule"，使用者於偽造的登入頁面上登入，第一次登入時會顯示輸入密碼錯誤，再次嘗試時才會成功，"假的登入畫面"把密碼存起來，顯示出登錄錯誤信息，退出，然後向使用者提供真正的登錄畫面。此時使用者的身分驗證密鑰以及密碼已經被攻擊者竊取。
+  * 這種類型的攻擊可以通過讓OS在交互式會話(interactive session)結束時顯示使用資訊來破解，方法是要求一個不可捕獲的鍵序列來進入登錄畫面(例如Windows使用的 control-alt-delete 組合)。
+  * 特洛伊木馬的另一個變形是spyware(間諜軟體)，這種軟體通常會附加在一些免費軟體或共享程式上(甚至有些會附加在商業軟體中)，這些間諜軟體可能會下載廣告，在存取某些節點時彈出瀏覽器視窗，或從使用者的系統捕獲資料，在windows上安裝看似無害的程式，可能會導致加載間諜軟體，取得受害者訊息及收件人位址列表，並從受害者的windows發送垃圾郵件，過程將一直持續直到受害者發現為止，而且百分之90通常都不會被發現，在大多數國家/地區，這種盜竊行為甚至不被視為犯罪。
+  * 最近出現的的勒索軟體(Ransomware)會加密目標電腦上的部份或全部資料，藉以強迫使用者支付贖金，當然並不保證可以返回存取權。
+  * 最小特權原則(The principle of least privilege)是指系統中的每個程式和每個特權使用者都應該使用完成工作所需最少特權來運作，在違反最小特權原則的情況下，會造成木馬及其他惡意軟體猖獗，Windows7 以及以下的版本使用者都是預設以管理員身分運作，這種情況下，作業系統本身的保護能力會沒有辦法啟動。
+  * 另一種形式的惡意軟體中，設計者會在軟體中留下一個漏洞，只有設計者本身才能使用，即暗門（trap door）或後門(back door)，例如該程式可能會檢查使用者的ID或密碼，並且在接收到ID或密碼時，繞過安全性檢查的過程。
+    * 使用back door的設計師可能偷偷地四捨五入錯誤，偶爾將半美分記入其帳戶來到用銀行，考慮到大型銀行執行的交易數量，此帳戶可能會增加大量金錢。
+    * 暗門可以設定為僅在一組邏輯條件下運作，這種情況稱為「邏輯炸彈(logic bomb)」，這種類型的後門非常難以檢測，因為他們在被檢測到之前(通常是已經遭到破壞之後)，可以休眠長達數年，例如當一名網管人員的程式偵測到他不再受雇於該公司時，對其公司網路進行破壞性重置。
+    * 聰明的暗門會包含在編譯器裡面，如以一來不管原始碼如何，都無法被搜尋到任何問題，2015年針對蘋果公司XCode編譯器套件(XCodeGhost)的惡意軟體，影響了所有未直接由Apple官方下載的XCode的軟體開發人員。
+    * 要檢測到暗門必須對系統所有組件的所有程式碼進行檢查，這可能包含幾百萬行的程式碼，因次可以用「程式碼檢查(code review)」的機制來解決此漏洞問題，編寫程式碼的開發人員將其提交給程式碼資料庫，審查人員批准並提供註解，一旦程式碼被批准，該程式將被收納到程式碼資料庫進行編譯。
+    * 一位好的程式開發人員通常是最好的程式碼審查者。
+
+* Code Injection(程式碼注入)：
+  * 大多數軟體並非惡意軟體，但由於程式碼注入攻擊(code-injection attack)，在其中修改或增加可執行程式碼，仍然可以對安全性構成嚴重威脅。
+  * 程式碼注入攻擊幾乎都是由於不良或不安全的程式碼所造成的，通常發生在低階語言(例如C/C++)，他們允許透過指標進行直接記憶體存取，如果未正確處理緩衝區，可能會造成記憶體損壞。
+  * 例如[緩衝區溢位](https://github.com/a13140120a/Operation_System/blob/main/overflow.c)就是一個是最簡單的例子，對於`strcpy()`函數不考慮所涉及的緩衝區大小而複製，僅在遇到"\0"(NULL)的時候才停止，溢位的結果取決於意味的長度和溢位的內容，因為編譯器會最佳化程式碼，因此對記憶體佈局的調整也會不同。
+    * overflow造成core dump的執行結果：
+      * ![overflow_coredump](https://github.com/a13140120a/Operation_System/blob/main/imgs/overflow_coredump.PNG)
+    * 如果溢位非常小，則可能沒有任何影響，這是因為BUFFER_SIZE位元組的分配通常會填充(padding)到該架構指定的邊界(boundary, 通常為8或16位元)，padding是未使用的記憶體，因此從技術上來說，雖然有溢位發生，但沒有超出範圍，所以不會造成影響。
+    * 如果溢位超出padding的範圍，則堆疊上的下一個自動變量會被溢位內容覆寫
+    * 如果溢位大幅度超過padding的範圍的話，則當前的stack frame 都會被覆蓋掉，在frame 的最頂端的記憶體位址是函數的return address，攻擊者可以藉由覆寫該address來將程式導向其他的地方，包括攻擊者可以控制的記憶體範圍，然後執行程式碼注入，就可以以有效的process ID執行任意程式碼。
+    * ![posible_outcome_of_buf_overflow](https://github.com/a13140120a/Operation_System/blob/main/imgs/posible_outcome_of_buf_overflow.PNG)
+    * 如上述例子可見，容易被攻擊的函數包括`strcpy()`、`sprintf()`、`gets()`等等
+    * 但即便是"size-aware"(會檢查size)的變數，在有限長度的整數運算時也可能存在漏洞，導致整數溢位。
+    * [smashing the stack for fun and profit](http://phrack.org/issues/49/14.html)
+  * [程式碼注入shellcode詳解](https://medium.com/@ktecv2000/%E7%B7%A9%E8%A1%9D%E5%8D%80%E6%BA%A2%E4%BD%8D%E6%94%BB%E6%93%8A%E4%B9%8B%E4%BA%8C-buffer-overflow-b0a33d43ba1d)：
+  * ```c
+    void func (void) {
+        execvp(“/bin/sh”, “/bin/sh”, NULL);
+    }
+    ```
+  * 使用 `execvp()` system call，此程式碼段創建一個 shell process。 如果被攻擊的程序以 root 權限運行，這個新創建的 shell 將獲得對系統的完全訪問權限。 當然，code segment可以做被攻擊進程權限允許的任何事情。 code segment接下來被編譯成它的彙編二進制操作碼形式，然後轉換成binary stream。 編譯後的形式通常被稱為 shellcode，因為它具有生成 shell 的經典功能，但該術語已發展到涵蓋任何類型的代碼，包括用於將新用戶添加到系統、重新啟動甚至連接的更高級代碼 通過網絡等待遠端指令（稱為"reverse shell"）。
+  * 此類攻擊可能發生在預期用於與目標機器通信的協議中，因此很難檢測和預防，他們甚至可以繞過防火牆
+  * 當溢出發生在 heap 中時，它們也可以被利用。在memory buffer被釋放之後繼續使用，以及過度釋放它們（調用 `free()` 兩次），也可能導致代碼注入。 
+
+
+* Viruses and Worms：
+  * 病毒跟蠕蟲(worm)的區別是，病毒需要人類的活動，蠕蟲可以靠網路進行複製，蠕蟲還會通過電子郵件將自己發送給用戶聯繫人列表中的其他人。
+  * 病毒是由自身複製並設計成可以感染其他程式，其在系統中造成的破壞包括修改、破壞檔案，造成系統損毀和程式不正常動作。
+  * 病毒非常特定於架構、作業系統和應用程式(移植性差)。
+  * UNIX 和其他multiuser作業系統通常不易感染病毒，因為可執行程式受到作業系統的保護，不會被寫入。即使病毒確實感染了這樣的程式，它的能力通常也是有限的，因為系統的其他方面受到保護。
+  * 有關病毒如何感染主機的示例：考慮 Microsoft Office 檔案。 這些文件可以包含 Office 套件（Word、PowerPoint 和 Excel）中的程序將自動執行的macros(巨集，大陸稱宏)（或 Visual Basic 程序），由於這些程式在使用者自己的帳戶下運行，因此巨集可以在很大程度上不受限制地運行（例如，隨意刪除檔案）。以下程式碼示例顯示了編寫 Visual Basic 巨集是多麼簡單，一旦打開包含巨集的檔案，蠕蟲就可以使用該巨集來格式化 Windows 計算機的硬碟：
+  * ```c
+    Sub AutoOpen()
+    Dim oFS
+    Set oFS = CreateObject(”Scripting.FileSystemObject”)
+    vs = Shell(”c: command.com /k format c:”,vbHide)
+    End Sub
+    ```
+  * 一旦病毒達到目標機器，一種稱為virus dropper(病毒注射器)的program就會在系統中注入病毒，virus dropper本身也是一個木馬程式，一旦病毒被載入就可以任意破壞，實際上有數千種病毒，但它們分為幾個主要類別：
+    * 檔案(file)：病毒改變程式的起始，當程式執行時，跳轉到病毒的程式碼，等到病毒的程式碼執行完畢之後，在跳轉回到原本的程式。所以病毒的執行並不會引起人的注意，病毒檔案又稱為寄生病毒，因為他們其實沒有留下完整的檔案，但主程式依然具有功能。
+    * 開機(boot)：開機病毒感染boot partition，於每次系統啟動和作業系統載入前執行，這些病毒也稱為記憶體病毒，因為他們不出現在檔案系統，下圖顯示一個開機病毒如何運作，開機病毒同樣可以感染韌體，例如網卡PXE和可擴展韌體接口(EFI)環境。
+      * ![boot_sector_computer_virus](https://github.com/a13140120a/Operation_System/blob/main/imgs/boot_sector_computer_virus.PNG)
 
 
 
