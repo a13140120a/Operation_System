@@ -3935,18 +3935,34 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 一個domain可以定義成<object, {access right set}>，例如D有一access right：<file F, {read, write}>，代表D有權對F做讀寫的操作。
   * Domain之間可以共用access right，下圖有三個domain，其中<O4,{PRINT}>被D2與D3所共用。
   * ![ThreeDomains](https://github.com/a13140120a/Operation_System/blob/main/imgs/ThreeDomains.jpg)
+  * Domain與process之間的關係可以是動態，也可以是靜態的。建立動態Domain會比靜態更複雜。
+    * 舉例來說，例如一個process分成兩個階段，一個階段只需要對file做讀取，另一個階段則必須要做寫入，則如果是靜態的話，在第一個階段就會同時擁有讀寫的權限，這違反了need to know principle。
+    * 如果是動態的話，我們可以把視Domain為以下三種型態：
+      * 視每個Domain為每個user，當使用者改變時，object的access right取決於user ID，代表改變了Domain，通常改變會發生在user log in/log out
+      * 視每個Domain為每個process，object的access right取決於process ID，當process send message到其他的process並且等待response時，代表改變了Domain
+      * 視每個Domain為每個procedure(function)，object的access right取決於local variables，當procedure被call或結束時，代表改變了Domain
+    * dual-mode (kernel– user mode) model也是一個Domain的例子，當呼叫system call(privileged instructions)的時候就進到kernel mode(也就是kernel domain)，而一般(non-privileged instructions)就只能在系統分配給他的memory space(user domain)執行。
+
+* UNIX Example：
+  * UNIX系統的[檔案的特殊屬性 SUID/SGID/SBIT](https://dywang.csie.cyut.edu.tw/dywang/linuxsecurity/node39.html)
+  * 例如 user 想要更改自己的密碼必須執行 /etc/passwd ，如果直接賦予user root的權利的話，萬一出現人為的意外，會造成很嚴重的後果，通過Set UID (SUID)，我們可以讓user在執行該檔案的時候擁有owner(這個例子也就是root)的權限，這樣就算發生了人為的意外，也可以將傷害降至最小。
+* Android Application IDs Example：
+  * 在 Android 中，為每個應用程式提供不同的user ID。安裝應用程式時，installd 這個deamon 為其分配一個不同的user ID (UID) 和group ID (GID)，以及一個私有數據目錄 (/data/data/<app-name>)，其所有權被授予此 UID /GID 的組合。
+  * 該機制通過修改kernel來擴展，以允許某些操作（例如 networking sockets）僅對特定 GID 的成員（例如，AID_INET，3003）。
 
 
+<h2 id="0164">Access Matrix</h2> 
+
+* 我們可以利用一個Access Matrix(存取矩陣)來表示Domain跟objects之間的關係，其中row代表domain，column則代表object，每個 entry 都代表一個access rights，entry access(i,j) 定義了在Domain Di 中執行的process可以對object Oj 執行的操作。
+* 下圖中代表四個domain(D1~D4)以及F1~F1、一個printer之間的關係，可以看到於D1內可以對F1、F3讀取，於D2內可以使用printer....以此類推。
+  * ![]()
+* 或者我們可以把 access matrix 中的每個 entry 都當成一個 object，並且加入一個switch的access right，switch 允許在 Domain 之間轉換。
+ * 下圖為上圖的access matrix 並且把 domain 視為 object 之後的結果：
+ * ![]()
+* 
 
 
-
-
-
-
-
-
-
-
+ 
 
 
 
