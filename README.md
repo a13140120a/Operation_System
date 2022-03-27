@@ -3959,7 +3959,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
  
 * 我們可以利用一個Access Matrix(存取矩陣)來表示Domain跟objects之間的關係，其中row代表domain，column則代表object，每個 entry 都代表一個access rights，entry access(i,j) 定義了在Domain Di 中執行的process可以對object Oj 執行的操作。
-* 下圖中代表四個domain(D1~D4)以及F1~F1、一個printer之間的關係，可以看到於D1內可以對F1、F3讀取，於D2內可以使用printer....以此類推。
+* 下圖中代表四個domain(D1\~D4)以及F1\~F1、一個printer之間的關係，可以看到於D1內可以對F1、F3讀取，於D2內可以使用printer....以此類推。
   * ![Access_Matrix](https://github.com/a13140120a/Operation_System/blob/main/imgs/Access_Matrix.jpg)
 * switch：或者我們可以把 access matrix 中的每個 entry 都當成一個 object，並且加入一個switch的 access right，switch 允許在 Domain 之間轉換。
  * 下圖為上圖的access matrix 並且把 domain 視為 object 之後的結果：
@@ -3971,22 +3971,57 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * ![AccessMatrixCopy](https://github.com/a13140120a/Operation_System/blob/main/imgs/AccessMatrixCopy.jpg)
 * owner：加入 owner right 之後，如果 access(i, j) 包含 owner right 的話則在 Di 中的 process 可以加入或移除 column j 中的任何 entry。
   * ![AccessMatrixOwner](https://github.com/a13140120a/Operation_System/blob/main/imgs/AccessMatrixOwner.jpg)
-* control：既然 owner 允許 process 可以改變 column，那我們還需要一個可以改變 row 的機制，這個機制可以利用 switch 中的圖片下去修改，如果 Di 中的process 可以移除任何 access right from row j
+* control：既然 owner 允許 process 可以改變 column，那我們還需要一個可以改變 row 的機制，這個機制可以利用 switch 中的圖片下去修改，如果 process 於 Di 中則可以移除任何 access right from row j。
   * 如下圖所示，access(D2, D4) 包含control right，所以 D2 可以修改 D4 的 access right。
   * ![AccessMatrix_control](https://github.com/a13140120a/Operation_System/blob/main/imgs/AccessMatrix_control.jpg)
 
+* 
+<h2 id="0165">Implementation of the Access Matrix</h2> 
+
+* Global Table：
+  * 最簡單的方式就是使用global table，每個 entry 都已 \<domain, object, rights\> 的方式儲存。
+  * 缺點是這個table可能會太大，以致於無法整個存在memory裡面，或者需要使用 virtual memory 的技術，後者則會導致 IO 造成效能低落。
+  * 如果有一個 object 可以被每個 Domain 存取，那麼所有的 Domain 都必須要有一個 entry 包含這個 object。
+* Access Lists for Objects：
+  * access matrix 的每個 column 都可以用一個 access list 來製作，空白元素省略不記，list 中的每個項目都以 \<domain, rights-set\> 的形式儲存。
+  * 可以使用 default set(access rights, 預設項目)的 list 來代表每個 Domain 所能夠獲得的 access right。
+  * 系統每次 access object 都必須要 search 整個 access list 來確定自己有沒有資格存取，這會浪費很多時間。
+  * 能夠藉由先尋找 default set list 找不到的話再找 Access Lists 的方式來提升效率。
+* Capability Lists for Domains：
+  * 類似的方式，Capability Lists 代表了每個 row，每個 list 裡面的 element 都是一個 *capability* 。
+  * Capability lists 雖然代表了一個 Domain，但不能經由 user process 直接存取 Capability。
+  * 為了幫 Capability 提供保護，我們可以利用以下兩種方式來區別 Capability 跟其他的 data：
+    * 使用一個 tag 來代表是否為 Capability(可以藉由硬體或韌體來達成)，當然 tag 本身也必須被保護，還能透過更多位元的 tag 來區別這是整數、浮點數、字元還是 Capability 等等。
+    * 另一種做法是將 process address space 劃分成兩個部份，其中一個部份是 process 可以存取的，包含 process instructions 以及 data，另一個部份則儲存 Capability lists，只能透過 OS 來存取，前面提到的 segmented memory space 很適合這種做法。
+  * 然而，如果想要取消一個 access right 的話，需要尋找整個系統的所有 Capability Lists 來做更動，這非常困難。
+* A Lock-Key Mechanism：
+  * 每個 object 都有一個獨特的 bit patterns list，稱為 locks，每個 domain 也都有一個獨特的 bit patterns list，稱為 keys
+  * 只有 keys 符合 locks 的時候才被批准使用 resource。
+  * user process 不能夠修改或查看 locks or keys。
+  * 是前面兩種做法的折衷方案，key 可以自由的傳遞於 domain 之間，而且要取消 access right 只需要改動 object 的 key 即可。
+
+<h2 id="0166">Revocation of Access Rights</h2> 
+
+* 在動態保護系統(dynamic protection system)中，我們常常會需要取消一個 domain 對 object 的access right，這就衍生出了以下幾種問題：
+  * Immediate versus delayed(立即和延後)：取消是立即發生的，或是延後發生的?如果是延後發生的，我們是否能夠察覺他是和時發生的?
+  * Selective versus general(選擇性及一般性)：當一個 object 的 access right 被取消時，他是否會影響所有此 object 的access right?或者我們是否能夠使用某一集合的 users，他們對此 object 的 access right 被取消?
+  * Partial versus total(部份或全部)：能否只有一部份集合對此 object 的 access right 被取消，或必須對此object 的全部 access right 都取消?
+  * Temporary versus permanent(暫時性與永久性)：顧名思義
+
+* access-list scheme 當中，取消相當容易，只要搜尋 list 並且將他 remove 就可以了，但在 Capability list 中就很麻煩，如上述所說，而用來 implement revocation(取消) for capabilities 的 schema 有包括：
+  * Reacquisition：capabilities 週期性的從 domain 中被刪除，當一個 process 想要使用 capabilities 並且發現已經被刪除了，該 process 會嘗試再次獲得 capabilities，如果 access 被 revoked(撤銷)，則無法再獲得 capabilities。
+  * Back-pointers：每個 object 都維護一個由 pointer 組成的 list，這些 pointer 指向與 object 相關的 capabilities，如此一來當需要 revoked 的時候只要順著這個 pointer 依序更改 capabilities 就可以了，這種方法很普遍使用
+  * indirection：capabilities 並不是直接指向 object 而是指向一個 global table，然後 table 中的每個 entry 再指向 object，如此一來當需要 revoked 的時候，只需要 search 該 table 並刪除其 entry 就可以了，當有人要 access 的時候，會發現這是一個 illegal table entry(非法存取)。
+  * key：
+    * 會有一個跟 capability 相關的 key，當 capabilities 被 create 的時候，該 key 也跟著被建立，這個 key 不能被任何 process 檢查或者修改，
+    * 然後會有一個跟 object 相關的 master key，
+    * 使用`set-key`可以修改或定義一個 master key，當使用`set-key`來修改 master key 的值時，所有相關的 capability 都會失效
+    * 當 capability 被 create 的時候，master key 的值會跟 capability 有關，如果 capability 被使用，則這個 capability 會被拿去跟 master key 做 match，如果 match 的話則 allow，反之亦然。
+    * 這種 schema 不允許選擇性的 Revocation，但如果我們將 key list 與每個 object 相關聯，則可以實現選擇性撤銷。
+    * 可以將所有 key 組合到一個 global table 當中。只有當它的 key 與 table 的某個 key 匹配時才有效，使用這種方案，一個 key 可以與多個 object 關聯，從而提供最大的靈活性。
 
 
-
-
-
-
-
-
-
-
-
-
+<h2 id="0167">Role-Based Access Control</h2> 
 
 
 
