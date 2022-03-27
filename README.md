@@ -3947,22 +3947,50 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * UNIX系統的[檔案的特殊屬性 SUID/SGID/SBIT](https://dywang.csie.cyut.edu.tw/dywang/linuxsecurity/node39.html)
   * 例如 user 想要更改自己的密碼必須執行 /etc/passwd ，如果直接賦予user root的權利的話，萬一出現人為的意外，會造成很嚴重的後果，通過Set UID (SUID)，我們可以讓user在執行該檔案的時候擁有owner(這個例子也就是root)的權限，這樣就算發生了人為的意外，也可以將傷害降至最小。
 * Android Application IDs Example：
-  * 在 Android 中，為每個應用程式提供不同的user ID。安裝應用程式時，installd 這個deamon 為其分配一個不同的user ID (UID) 和group ID (GID)，以及一個私有數據目錄 (/data/data/<app-name>)，其所有權被授予此 UID /GID 的組合。
+  * 在 Android 中，為每個應用程式提供不同的user ID。安裝應用程式時，installd 這個deamon 為其分配一個不同的user ID (UID) 和group ID (GID)，以及一個私有數據目錄(/data/data/\<app-name\>)，其所有權被授予此 UID/GID 的組合。
+
+* Android Application IDs Example：
+  * 
   * 該機制通過修改kernel來擴展，以允許某些操作（例如 networking sockets）僅對特定 GID 的成員（例如，AID_INET，3003）。
+
 
 
 <h2 id="0164">Access Matrix</h2> 
 
+ 
 * 我們可以利用一個Access Matrix(存取矩陣)來表示Domain跟objects之間的關係，其中row代表domain，column則代表object，每個 entry 都代表一個access rights，entry access(i,j) 定義了在Domain Di 中執行的process可以對object Oj 執行的操作。
 * 下圖中代表四個domain(D1~D4)以及F1~F1、一個printer之間的關係，可以看到於D1內可以對F1、F3讀取，於D2內可以使用printer....以此類推。
-  * ![]()
-* 或者我們可以把 access matrix 中的每個 entry 都當成一個 object，並且加入一個switch的access right，switch 允許在 Domain 之間轉換。
+  * ![Access_Matrix](https://github.com/a13140120a/Operation_System/blob/main/imgs/Access_Matrix.jpg)
+* switch：或者我們可以把 access matrix 中的每個 entry 都當成一個 object，並且加入一個switch的 access right，switch 允許在 Domain 之間轉換。
  * 下圖為上圖的access matrix 並且把 domain 視為 object 之後的結果：
- * ![]()
-* 
+ * ![Access_Matrix_switch](https://github.com/a13140120a/Operation_System/blob/main/imgs/Access_Matrix_switch.jpg)
+* 允許對 access right 的改變必須添加額外三個動作：copy、owner、control。
+* copy：我們可以在 entry 加上星號來表示這個entry可以被copy。
+  * transfer：如果一個 access(i, j) 轉換到另一個 access(k, j) 之後原本的 access(i, j) 被移除的話，稱為 transfer 而不是 copy
+  * limited copy：當 access(i, j) R* 被複製到 access(k, j) R 之後，這個複製出來的 R 不能擁有再複製的能力(也就是沒有星號)。
+  * ![AccessMatrixCopy](https://github.com/a13140120a/Operation_System/blob/main/imgs/AccessMatrixCopy.jpg)
+* owner：加入 owner right 之後，如果 access(i, j) 包含 owner right 的話則在 Di 中的 process 可以加入或移除 column j 中的任何 entry。
+  * ![AccessMatrixOwner](https://github.com/a13140120a/Operation_System/blob/main/imgs/AccessMatrixOwner.jpg)
+* control：既然 owner 允許 process 可以改變 column，那我們還需要一個可以改變 row 的機制，這個機制可以利用 switch 中的圖片下去修改，如果 Di 中的process 可以移除任何 access right from row j
+  * 如下圖所示，access(D2, D4) 包含control right，所以 D2 可以修改 D4 的 access right。
+  * ![AccessMatrix_control](https://github.com/a13140120a/Operation_System/blob/main/imgs/AccessMatrix_control.jpg)
 
 
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
