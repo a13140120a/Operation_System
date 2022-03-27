@@ -13,8 +13,13 @@
 * ## [I/O Systems](#011) # 
 * ## [File-System Interface](#012) # 
 * ## [File-System Implementation](#013) # 
-* ## [pass](#014) # 
-* ## [pass](#015) # 
+* ## [File-System Internals](#014) # 
+* ## [Security](#015) # 
+* ## [Protection](#016) # 
+* ## [pass](#017) # 
+* ## [pass](#018) # 
+
+
 
 
 ****
@@ -3632,11 +3637,10 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h1 id="015">Security</h1> 
 
-  * ## [File Systems](#0151) #
-  * ## [File Systems](#0152) #
-  * ## [File Systems](#0153) #
-  * ## [File Systems](#0154) #
-  * ## [File Systems](#0155) #
+  * ## [The Security Problem](#0151) #
+  * ## [Program Threats](#0152) #
+  * ## [System and Network Threats](#0153) #
+  * ## [Cryptography as a Security Tool](#0154) #
 
 
 
@@ -3678,7 +3682,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 特洛伊木馬的另一個變形是spyware(間諜軟體)，這種軟體通常會附加在一些免費軟體或共享程式上(甚至有些會附加在商業軟體中)，這些間諜軟體可能會下載廣告，在存取某些節點時彈出瀏覽器視窗，或從使用者的系統捕獲資料，在windows上安裝看似無害的程式，可能會導致加載間諜軟體，取得受害者訊息及收件人位址列表，並從受害者的windows發送垃圾郵件，過程將一直持續直到受害者發現為止，而且百分之90通常都不會被發現，在大多數國家/地區，這種盜竊行為甚至不被視為犯罪。
   * 最近出現的的勒索軟體(Ransomware)會加密目標電腦上的部份或全部資料，藉以強迫使用者支付贖金，當然並不保證可以返回存取權。
   * 最小特權原則(The principle of least privilege)是指系統中的每個程式和每個特權使用者都應該使用完成工作所需最少特權來運作，在違反最小特權原則的情況下，會造成木馬及其他惡意軟體猖獗，Windows7 以及以下的版本使用者都是預設以管理員身分運作，這種情況下，作業系統本身的保護能力會沒有辦法啟動。
-  * 另一種形式的惡意軟體中，設計者會在軟體中留下一個漏洞，只有設計者本身才能使用，即暗門（trap door）或後門(back door)，例如該程式可能會檢查使用者的ID或密碼，並且在接收到ID或密碼時，繞過安全性檢查的過程。
+  * 另一種形式的惡意軟體中，設計者會在軟體中留下一個漏洞，只有設計者本身才能使用，稱為暗門（trap door）或後門(back door)，以便之後利用。
     * 使用back door的設計師可能偷偷地四捨五入錯誤，偶爾將半美分記入其帳戶來到用銀行，考慮到大型銀行執行的交易數量，此帳戶可能會增加大量金錢。
     * 暗門可以設定為僅在一組邏輯條件下運作，這種情況稱為「邏輯炸彈(logic bomb)」，這種類型的後門非常難以檢測，因為他們在被檢測到之前(通常是已經遭到破壞之後)，可以休眠長達數年，例如當一名網管人員的程式偵測到他不再受雇於該公司時，對其公司網路進行破壞性重置。
     * 聰明的暗門會包含在編譯器裡面，如以一來不管原始碼如何，都無法被搜尋到任何問題，2015年針對蘋果公司XCode編譯器套件(XCodeGhost)的惡意軟體，影響了所有未直接由Apple官方下載的XCode的軟體開發人員。
@@ -3794,6 +3798,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
         * 鮑伯收到密文，用私鑰 d 對密文進行解密 d(c(x)) ，得到愛麗絲撰寫的明文 x
         * 由於伊夫沒有得到鮑伯的私鑰 d，所以無法得知明文 x
       * [RSA加密](https://ithelp.ithome.com.tw/articles/10215109)：
+        * 找到[李永樂老師的視頻](https://www.youtube.com/watch?v=D_kMadCtKp8)覺得講解的很好。
 * 認證(Authentication)：
   * 認證限制sender(防止有人假裝sender)
   * 認證演算法是由以下的元件所組成的：
@@ -3817,10 +3822,120 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
       * 數位簽章可以讓任何人驗證訊息的真偽
       * 一個使用RSA數位簽章的例子，它和RSA加密的鑰匙是相反的(公鑰跟私鑰的演算法相反)
       * 程式碼簽章(Code signing)可以用來對程式碼進行數位簽章
-      * 不幸的是，即使是公鑰的分發也需要一些小心。考慮中間人攻擊，想要接收加密消息的人發送了他的公鑰，但攻擊者也發送了他的"壞"公鑰（與她的私鑰匹配）。想要發送加密消息的人並不知道，因此使用壞密鑰對消息進行加密。攻擊者就可以輕鬆的解密它。
+      * 即使是公鑰的分發也需要一些小心。考慮中間人攻擊，想要接收加密消息的人發送了他的公鑰，但攻擊者也發送了他的"壞"公鑰（與她的私鑰匹配）。想要發送加密消息的人並不知道，因此使用壞密鑰對消息進行加密。攻擊者就可以輕鬆的解密它，數位簽章可以解決這個問題。
 
 * Implementation of Cryptography：
-  * 
+  * 網路協定以階層式的方式組織，每一層對他的下面一層就像是一個client，例如，TCP(傳輸層)就像IP(網路層)的client等等。
+  * 而密碼學可以用在任何一層上，
+    * 例如，TLS在傳輸層提供了安全性
+    * 而[IPSec](https://zh.wikipedia.org/wiki/IPsec) 則為網絡層提供了身份驗證器和加密封包的功能，IPSec常被用於[虛擬私人網路(virtual private network，VPN)](https://zh.wikipedia.org/wiki/%E8%99%9B%E6%93%AC%E7%A7%81%E4%BA%BA%E7%B6%B2%E8%B7%AF)當中。
+  * 密碼學應用在較低層的話可以提供較多的保護(會連同上面層一起加密)。
+* Transport Layer Security ([TLS](https://zh.wikipedia.org/wiki/%E5%82%B3%E8%BC%B8%E5%B1%A4%E5%AE%89%E5%85%A8%E6%80%A7%E5%8D%94%E5%AE%9A))：
+  * 傳輸層安全性協定顧名思義就是於傳輸層保護資料，是由SSL演變而來的
+  * TLS會建立一個安全的Session key(對話層鑰匙)，一旦對話結束，該鑰匙就會被遺忘，如果開啟了另一個通信，就需要產生新的鑰匙。
+  * TLS 協議由客戶端 c 發起，用於與伺服器進行安全通信。在協議使用之前，假定服務器 s 已經從受信任的憑證頒發機構(certification authority) CA 獲得了一個數位憑證(certificate)，表示為certs。 該證書是一個包含以下內容的結構：
+    * 伺服器的屬性attrs，例如伺服器例如它的唯一區別名稱及其通用 (DNS) 名稱
+    * 伺服器的非對稱加密算法 E() 
+    * 伺服器的public key
+    * 憑證的有效期時間unterval
+    * 由CA根據以上資料發給的數位簽章a，a由以上資料推算而來
+  * 客戶端在使用此協定之前，假設已經從CA取得公共驗證演算法Vkca，在網頁中，使用者的瀏覽器是從其供應商提供的，其中包含某些認證機構的驗證算法和公鑰。使用者可以刪除這些或添加其他。
+  * 其流程如下：
+    * 當 c 連接到 s 時，它會向伺服器發送一個 28 bytes的隨機值 nc，伺服器以它自己的隨機值 ns 和它的憑證certs作為響應。
+    * 客戶端驗證 VkCA(attrs, Eke, interval, a) = true 並確認當前時間在有效時間內。
+    * 然後客戶端生成一個隨機的 46 bytes的 premaster secret(管理員密碼) pms 並將 cpms = Eke(pms) 發送到服務器。
+    * 伺服器根據 pms = Dkd(cpms)反推出pms。現在客戶端和伺服器都擁有 nc、ns 和 pms，並且每個都可以計算共享的 48 bytes主密鑰 ms = H(nc, ns, pms)。
+    * 只有伺服器和客戶端可以計算 ms，因為只有他們知道 pms。此外，ms 對 nc 和 ns 的依賴確保了 ms 是一個新的值，換言之，他不會使用在先前的協定執行上。
+    * 此時，客戶端和服務器從 ms 計算以下密鑰：
+      * 對稱加密密鑰 k𝖼𝗋𝗒𝗉𝗍cs加密從客戶端到伺服器的消息
+      * 對稱加密密鑰 k𝖼𝗋𝗒𝗉𝗍sc於加密從伺服器到客戶端的消息
+      * MAC 生成密鑰 k𝗆𝖺𝖼cs從客戶端到伺服器的消息上生成認證 
+      * MAC 生成密鑰 k𝗆𝖺𝖼sc於在從伺服器到客戶端的消息上生成認證
+    * 客戶端送出密文 c = Ek𝖼𝗋𝗒𝗉𝗍kcs(⟨m, Sk𝗆𝖺𝖼cs(m)⟩)
+    * 伺服器在收到c之後使用⟨m, a⟩ = Dk𝖼𝗋𝗒𝗉𝗍cs(c)
+    * 如果V𝗆𝖺𝖼(m, a) = true的話就接受 m，同理，當伺服器要送出訊息m時，會一起送出c = Ek𝖼𝗋𝗒𝗉𝗍sc(⟨m, Sk𝗆𝖺𝖼sc(m)⟩)
+    * 而客戶根據⟨m, a⟩ = Dk𝖼𝗋𝗒𝗉𝗍sc(c)計算得出m，如果V𝗆𝖺𝖼(m,a) = true的話就接受 m
+  * 該協議使伺服器能夠將其消息的接收者限制為能夠生成 pms 的客戶端，並將它接受的消息的發送者限制為同一客戶端。同樣，客戶端可以將其發送的消息的接收者和接收的消息的發送者限制為知道kd的一方（即可以解密cpms的一方）。
+  * 在很多應用中，比如web交易，客戶端需要驗證知道kd的一方的身份。 這是certs的目的之一。 特別是，attrs 包含客戶端可以用來確定與它通信的伺服器的身份（例如，域名）的信息。 
+  * IPSec VPN 與 TLS VPN：IPSec 非常適合對流量進行點對點加密——例如，在兩個公司辦公室之間。 TLS VPN 更靈活但效率不高，因此可以在遠端工作的員工和公司辦公室之間使用。 
+  * [TLS詳解(全英)](https://www.comparitech.com/blog/information-security/tls-encryption/)
+
+* Firewalling to Protect Systems and Networks：
+  * Firewall(防火牆)是於可信任與不可信任的區域之間舉凡的電腦、路由器、process、應用程式等等
+  * 一個network firewall限制的對於security domains的存取，並記錄(log)、監控(monitor)一切access。
+  * network firewall可以把network 分成多個domain，舉一個最常用的例子，通常Internet(網際網路)會被分在untrusted domain，然後還會有一個半信任的network稱為[DMZ(demilitarized zone，非軍事區)](https://zh.wikipedia.org/wiki/DMZ)為另一個Domain，第三個domain則是在公司裡面的所有電腦。
+    * 從Internet連線到DMZ或者從公司的電腦連線到網際網路是允許的，但是從Internet直接連線到公司的電腦是不被允許的(簡單的說就是所有來自Internet的存取都必須要透過DMZ)
+    * 或者是在嚴格限制的條件下，DMA可以存取公司電腦，假如即便DMZ受到感染，也沒辦法access其他的公司電腦(降低傷害程度)。例如DMA上的web server可能只被允許對一個資料庫的server下query。
+  * ![DomainSeparation](https://github.com/a13140120a/Operation_System/blob/main/imgs/DomainSeparation.jpg)
+  * 防火牆本身不能防止以下攻擊：
+    * tunneling(穿透)：帶有溢位攻擊的正常管道(譬如http是被允許的，但裡面含有overflow的程式碼)
+    * spoofing：攻擊者假裝是其中一項經過認證的host(譬如藉由偽造IP)
+    * DoS攻擊
+  * 某些特殊的防火牆被開發用來保護電腦不受網路攻擊：
+    * personal firewall：於軟體層的保護，用來限制使用者的電腦能夠與哪些host溝通，以及不能夠與哪些host溝通，這樣可以避免木馬程式外洩資料。
+    * application proxy fire wall：application proxy fire wall本質上是網路上每個連接的中間人。網絡上的每台計算機都通過代理(proxy)建立連接，從而創建一個新的網絡連接。例如，如果user想要訪問外部網站，則封包在被轉發到請求的網站之前會通過 HTTP server進行過濾、監控、處理，來自網站的封包亦是，這種技術比傳統的防火牆更強的地方在於它不僅僅檢查封包的來源以及目的，還可以檢查整個封包的內容。
+    * XML firewal：分析xml的內容，並阻擋未經允許或畸形(不完整，malformed)的xml格式。
+    * System-call firewalls：檢查應用程式與kernel之間的溝通，監控system call的執行
+* Other Solutions：
+  * Address Space Layout Randomization (ASLR)：要使用程式碼注入攻擊的話，駭客必須了解目標的精準記憶體位址，ASLR技術會隨機分配諸如heap、stack的位址，雖然並不能完全阻擋關於此類的攻擊，但仍然可以增加攻擊的難度，此技術已經成為Windows, Linux, and macOS的標準功能之一.
+
+
+****
+
+
+
+
+<h1 id="016">Protevtion</h1> 
+
+  * ## [Goals of Protection](#0161) #
+  * ## [Goals of Protection](#0161) #
+  * ## [Goals of Protection](#0161) #
+  * ## [Goals of Protection](#0161) #
+
+
+
+
+<h2 id="0161">Goals of Protection</h2> 
+
+* 為了防止用戶或程序惡意濫用系統
+* 確保每個共享資源僅根據系統的policy使用，該policy可由系統設計者或系統管理員設置。
+* 確保錯誤的程式造成的損害盡可能小。
+* 基本上每個user都會有一個自己的account，並且都只能修改、更動自己的檔案
+* root 帳戶不應用於正常的日常活動。即便系統管理員也應該有一個普通帳戶，並保留使用 root 帳戶僅用於需要 root 權限的任務。
+
+<h2 id="0162">Protection Rings</h2> 
+
+* 將所有執行的動作定義成一個同心圓，每一層都是一個 *Ring* ，最裡面的Ring(Ring 0)，擁有最高的權限。
+* Ring之間的互動：
+  * 系統剛開機時，將會啟動最高level的權限，將必要的程式碼初始化之後再降回到較低的ring，如果需要使用較高權限的ring的話，必須要透過一些特殊指令(這些指令通常稱為 *gate* )，他在ring之間提供接口，例如Intel cpu的 [SYSCALL](https://www.felixcloutier.com/x86/syscall)，[SYSCALL補充](https://stackoverflow.com/questions/10583891/is-syscall-an-instruction-on-x86-64)，此呼叫會將執行的動作由使用者模式轉換到核心模式。
+  * 執行任何system call 或者產生trap 或 interrupt 都會使執行的動作轉換到更高權限的ring。
+* Intel and ARM：
+  * Intel 架構使用此模式，並且將user mode的程式碼放在ring3，kernel mode的程式碼放在ring 0，並使用EFLAGS 暫存器中的兩個bits來區分ring
+  * Intel 提供一個特殊的ring(Ring -1)來提供虛擬機使用。
+  * ARM一開始僅允許使用USR(for user) 和 SVC(for kernel or supervisor) mode,並且於ARMv7引入了TrustZone (TZ)，TZ是一個最高權限的執行環境(一個額外的Ring)，TZ可以access 硬體的加密功能(譬如[NFC](https://zh.wikipedia.org/wiki/%E8%BF%91%E5%A0%B4%E9%80%9A%E8%A8%8A) [Secure Element](https://nfc-forum.org/faq-items/what-is-a-secure-element/) 和晶片加密密鑰)，連kernel也必須透過TZ環境裡的 [Secure Monitor Call (SMC)](https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/The-System-Level-Programmers--Model/Exception-descriptions/Secure-Monitor-Call--SMC--exception?lang=en)才能夠請求加密和解密服務，與system call一樣，kernel只有透過register傳遞參數才能夠執行任務，如此一來就算kernel就算遭到攻擊，也無法從kernel memory中找到晶片密鑰。
+  * ![trust_zone](https://github.com/a13140120a/Operation_System/blob/main/imgs/trust_zone.PNG)
+  * 64-bit ARMv8 架構中，支援四種level的層級，稱為 *exception levels* ，分別是從EL0到EL3
+    * user mode 於EL0中執行
+    * kernel mode 於EL1中執行
+    * [hypervisors(虛擬機管理程式)](https://zh.wikipedia.org/wiki/Hypervisor)於EL1中執行
+    * 最後EL3就是TrustZone layer
+    * 下圖為ARM Exception架構圖
+    * ![ARM_Exception_architecture](https://github.com/a13140120a/Operation_System/blob/main/imgs/ARM_Exception_architecture.PNG)
+    * [ARM_architecture參考](http://wiki.csie.ncku.edu.tw/embedded/ARMv8#%E4%BE%8B%E5%A4%96%E5%B1%A4%E7%B4%9A-exception-levels)
+
+
+<h2 id="0163">Domain of Protection</h2> 
+
+* 電腦系統可以被視為是一個process與objects的集合，其中objects包含hardware object(例如cpu, memory)以及software object(file,semaphore,program)
+* 每個object只能由特定的方式操作，譬如cpu只能執行，memory可以讀寫，檔案可以建立、刪除、開啟關閉等等。
+* need to know principle：一個process只被允許access他需要用到的objects
+* Domain Structure：
+  * protection domain：限制了一個process可以access的resources。
+  * access right：一個process可以對這個object做的操作
+  * 一個domain可以定義成<object, {access right set}>，例如D有一access right：<file F, {read, write}>，代表D有權對F做讀寫的操作。
+  * Domain之間可以共用access right，下圖有三個domain，其中<O4,{PRINT}>被D2與D3所共用。
+  * ![ThreeDomains](https://github.com/a13140120a/Operation_System/blob/main/imgs/ThreeDomains.jpg)
+
 
 
 
