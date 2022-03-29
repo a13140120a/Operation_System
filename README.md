@@ -4017,13 +4017,13 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
     * 然後會有一個跟 object 相關的 master key，
     * 使用`set-key`可以修改或定義一個 master key，當使用`set-key`來修改 master key 的值時，所有相關的 capability 都會失效
     * 當 capability 被 create 的時候，master key 的值會跟 capability 有關，如果 capability 被使用，則這個 capability 會被拿去跟 master key 做 match，如果 match 的話則 allow，反之亦然。
-    * 這種 schema 不允許選擇性的 Revocation，但如果我們將 key list 與每個 object 相關聯，則可以實現選擇性撤銷。
+    * 這種 schema 不允許選擇性的 Revocation，但如果我們不使用 master key 而是將一個 key list 與每個 objects 相關聯，則可以實現選擇性撤銷。
     * 可以將所有 key 組合到一個 global table 當中。只有當它的 key 與 table 的某個 key 匹配時才有效，使用這種方案，一個 key 可以與多個 object 關聯，從而提供最大的靈活性。
 
 
 <h2 id="0167">Role-Based Access Control</h2> 
 
-
+* 
 
 
 
