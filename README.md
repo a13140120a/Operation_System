@@ -4023,7 +4023,71 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h2 id="0167">Role-Based Access Control</h2> 
 
-* 
+
+* RBAC模型是一套較MAC以及DAC更為中性且更具靈活性的存取控制技術。
+* role：以 *role(角色)* 為基礎的存取控制（Role-based access control，RBAC），是資訊安全領域中，一種較新且廣為使用的存取控制機制，其不同於強制存取控制(MAC)以及自由選定存取控制(DAC)，直接賦予使用者權限，而是將權限賦予 *role(角色)* 。
+* 用戶被分配了角色，或者可以根據分配給角色的密碼來扮演角色。通過這種方式，用戶可以扮演啟用特權的角色，允許用戶運行程序來完成特定任務。
+* [wiki](https://zh.wikipedia.org/wiki/%E4%BB%A5%E8%A7%92%E8%89%B2%E7%82%BA%E5%9F%BA%E7%A4%8E%E7%9A%84%E5%AD%98%E5%8F%96%E6%8E%A7%E5%88%B6)
+
+
+<h2 id="0168">Mandatory Access Control (MAC)</h2> 
+
+* 在 UNIX 系統中，[DAC](https://zh.wikipedia.org/wiki/%E8%87%AA%E4%B8%BB%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6) 採用檔案權限的形式（可通過 chmod、chown 和 chgrp 設置），而 Windows（和一些 UNIX 變體）通過訪問控制列表 (ACL) 允許更精細的粒度的控制。
+* DAC 有兩個關鍵的弱點，一是 resource 的 owner 可以任意修改該 resource 的權限，另一個是 root 擁有無限的權限。
+* 因此，需要一種更強大的保護形式。[MAC](https://zh.wikipedia.org/wiki/%E5%BC%BA%E5%88%B6%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6) 作為系統策略強制執行，即使是 root 用戶也無法修改（除非策略明確允許修改系統）。 MAC 策略規則的權限比 root 的能力更強大，可用於使除其預期所有者之外的任何人都無法訪問資源。
+* 每個現代的作業系統都同時提供 MAC 和 DAC ，Solaris 的 MAC 是 Trusted Solaris 的一部分，而 FreeBSD 將 DAC 作為其 TrustedBSD 的一部分，Linux 是 SELinux 等等。
+* MAC 的核心是標籤(label)的概念。標籤是分配給 object（檔案、設備等）的標識符(id)（通常是字符串）。標籤也可以應用於 subject（參與者，例如 process）。當 subject 請求對 object 執行操作時，作業系統會先執行策略中定義的檢查，該策略指示是否允許給定的標籤持有 subject 對標記的 object 執行操作。
+* 舉個簡單的例子，考慮一組簡單的標籤，按照特權級別排序： "unclassified" 、"secret"和"top secret"。具有"secret"權限的用戶將能夠建立類似標記的 process，然後這些 process 將可以存取"unclissified"和"secret"的檔案，但不能存取"top secret"的檔案。
+* 用戶及其 process 都不會意識到"top secret"檔案的存在，因為 OS 會將它們從所有檔案操作中過濾掉（例如，在列出目錄內容時不會顯示它們）。用戶 process 同樣會以這種方式受到保護，因此"unclissified"的 process 將無法查看或執行對"secret"（或"top secret"）process 的 IPC 請求。
+* MAC labels 是前面描述的訪問矩陣的 implement。
+
+
+<h2 id="0169">Capability-Based Systems</h2> 
+
+* Linux 將 root 的權力切成不同的區域，每個區域都由 bitmasks (掩碼中) 的一個 bit 表示
+* 通常會使用三個 bitmasks，分別表示 capabilities 允許(permitted), 有效(effective), 和可繼承(inheritable)
+* bitmask 可以用在每個 process 或 thread，此外，一旦撤銷(revoked)，就不能重新獲得 capability。
+* 一般的順序是 process 或 thread 以允許的全部能力集(permitted capabilities set)開始，並在執行期間慢慢減少該集。 例如，在打開一個網絡埠後，一個 thread 可能會刪除該功能，這樣就不能再打開更多 port 了。
+* Example： [Hydra、CAP system](https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/14_Protection.html)
+
+
+
+<h2 id="0169">Other Protection Improvement Methods</h2> 
+
+* System Integrity Protection (SIP)：
+  * Apple 於 masOS 10.11 中一個新的保護機制，稱為System Integrity Protection (SIP)
+  * Darwin-based 的 OS 使用這種機制來限制對系統檔案及資源的存取，就連 root 也不能隨意修改這些檔案及資源。
+  * SIP 使用一個額外的檔案屬性來保護系統的二進制檔案以防止他們被檢查或修改。
+  * 僅允許擁有程式碼簽章(code-signed)的核心擴展還有二進制檔案
+  * 使用 SIP 的話 root 雖然還是系統裡面最強大的使用者，但比起以前，他的能力範圍會減少許多，root 仍然可以管理其他使用者的檔案、設定、process 等等，但無法隨意更動有關 OS 的部分。 
+* system-call filtering：
+* sandboxing 
+* Code signing
+
+
+<h2 id="0169">Language-Based Protection</h2> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
