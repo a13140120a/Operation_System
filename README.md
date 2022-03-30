@@ -27,7 +27,6 @@
 
 
 
-
 <h1 id="001">Overview</h1> 
 
   * ## [Definition](#0011) #
@@ -3799,7 +3798,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
         * 由於伊夫沒有得到鮑伯的私鑰 d，所以無法得知明文 x
       * [RSA加密](https://ithelp.ithome.com.tw/articles/10215109)：
         * 找到[李永樂老師的視頻](https://www.youtube.com/watch?v=D_kMadCtKp8)覺得講解的很好。
-* 認證(Authentication)：
+* #### 認證(Authentication)：
   * 認證限制sender(防止有人假裝sender)
   * 認證演算法是由以下的元件所組成的：
     * 鑰匙的集合K
@@ -3984,8 +3983,8 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 如果有一個 object 可以被每個 Domain 存取，那麼所有的 Domain 都必須要有一個 entry 包含這個 object。
 * Access Lists for Objects：
   * access matrix 的每個 column 都可以用一個 access list 來製作，空白元素省略不記，list 中的每個項目都以 \<domain, rights-set\> 的形式儲存。
-  * 可以使用 default set(access rights, 預設項目)的 list 來代表每個 Domain 所能夠獲得的 access right。
   * 系統每次 access object 都必須要 search 整個 access list 來確定自己有沒有資格存取，這會浪費很多時間。
+  * 這種方法還可以衍伸出另一種方法：可以使用一個額外的 default set 的 list 來代表每個 Domain 所能夠獲得的 access right。
   * 能夠藉由先尋找 default set list 找不到的話再找 Access Lists 的方式來提升效率。
 * Capability Lists for Domains：
   * 類似的方式，Capability Lists 代表了每個 row，每個 list 裡面的 element 都是一個 *capability* 。
@@ -4008,23 +4007,23 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * Partial versus total(部份或全部)：能否只有一部份集合對此 object 的 access right 被取消，或必須對此object 的全部 access right 都取消?
   * Temporary versus permanent(暫時性與永久性)：顧名思義
 
-* access-list scheme 當中，取消相當容易，只要搜尋 list 並且將他 remove 就可以了，但在 Capability list 中就很麻煩，如上述所說，而用來 implement revocation(取消) for capabilities 的 schema 有包括：
+* access-list scheme 當中，取消相當容易，只要搜尋 list 並且將他 remove 就可以了，但在 Capability list 中就很麻煩，如上述所說，以下探討 implement revocation(取消) for capabilities 的 schema：
   * Reacquisition：capabilities 週期性的從 domain 中被刪除，當一個 process 想要使用 capabilities 並且發現已經被刪除了，該 process 會嘗試再次獲得 capabilities，如果 access 被 revoked(撤銷)，則無法再獲得 capabilities。
   * Back-pointers：每個 object 都維護一個由 pointer 組成的 list，這些 pointer 指向與 object 相關的 capabilities，如此一來當需要 revoked 的時候只要順著這個 pointer 依序更改 capabilities 就可以了，這種方法很普遍使用
   * indirection：capabilities 並不是直接指向 object 而是指向一個 global table，然後 table 中的每個 entry 再指向 object，如此一來當需要 revoked 的時候，只需要 search 該 table 並刪除其 entry 就可以了，當有人要 access 的時候，會發現這是一個 illegal table entry(非法存取)。
   * key：
     * 會有一個跟 capability 相關的 key，當 capabilities 被 create 的時候，該 key 也跟著被建立，這個 key 不能被任何 process 檢查或者修改，
-    * 然後會有一個跟 object 相關的 master key，
+    * 然後每個 object 會有一個相關的 master key，這個 per-object 的 master key 會對應到該 object 的所有 capabilities。
     * 使用`set-key`可以修改或定義一個 master key，當使用`set-key`來修改 master key 的值時，所有相關的 capability 都會失效
-    * 當 capability 被 create 的時候，master key 的值會跟 capability 有關，如果 capability 被使用，則這個 capability 會被拿去跟 master key 做 match，如果 match 的話則 allow，反之亦然。
-    * 這種 schema 不允許選擇性的 Revocation，但如果我們不使用 master key 而是將一個 key list 與每個 objects 相關聯，則可以實現選擇性撤銷。
-    * 可以將所有 key 組合到一個 global table 當中。只有當它的 key 與 table 的某個 key 匹配時才有效，使用這種方案，一個 key 可以與多個 object 關聯，從而提供最大的靈活性。
+    * 當 capability 被 create 的時候，master key 的值會跟 capability 有關，如果 capability 被使用，則這個 capability 會被拿去跟 master key 做 match，如果 match 成功的話則 allow，反之亦然。
+    * 這種 schema 不允許選擇性的 Revocation，但我們可以將每個 object 使用單一個 master key 改成每個 object 使用一個 key list ，則可以解決這個問題。
+    * 可以將所有 key 組合到一個 global table 當中。只有當它的 key 與 table 的某個 key 匹配時才有效，使用這種方案，一個 key 可以與多個 object 關聯，每個 object 也可以與多個 key 相關聯，從而提供最大的靈活性。
 
 
 <h2 id="0167">Role-Based Access Control</h2> 
 
 
-* RBAC模型是一套較MAC以及DAC更為中性且更具靈活性的存取控制技術。
+* RBAC(Role-Based Access Control)模型是一套較MAC以及DAC更為中性且更具靈活性的存取控制技術。
 * role：以 *role(角色)* 為基礎的存取控制（Role-based access control，RBAC），是資訊安全領域中，一種較新且廣為使用的存取控制機制，其不同於強制存取控制(MAC)以及自由選定存取控制(DAC)，直接賦予使用者權限，而是將權限賦予 *role(角色)* 。
 * 用戶被分配了角色，或者可以根據分配給角色的密碼來扮演角色。通過這種方式，用戶可以扮演啟用特權的角色，允許用戶運行程序來完成特定任務。
 * [wiki](https://zh.wikipedia.org/wiki/%E4%BB%A5%E8%A7%92%E8%89%B2%E7%82%BA%E5%9F%BA%E7%A4%8E%E7%9A%84%E5%AD%98%E5%8F%96%E6%8E%A7%E5%88%B6)
@@ -4032,11 +4031,13 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h2 id="0168">Mandatory Access Control (MAC)</h2> 
 
-* 在 UNIX 系統中，[DAC](https://zh.wikipedia.org/wiki/%E8%87%AA%E4%B8%BB%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6) 採用檔案權限的形式（可通過 chmod、chown 和 chgrp 設置），而 Windows（和一些 UNIX 變體）通過訪問控制列表 (ACL) 允許更精細的粒度的控制。
-* DAC 有兩個關鍵的弱點，一是 resource 的 owner 可以任意修改該 resource 的權限，另一個是 root 擁有無限的權限。
-* 因此，需要一種更強大的保護形式。[MAC](https://zh.wikipedia.org/wiki/%E5%BC%BA%E5%88%B6%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6) 作為系統策略強制執行，即使是 root 用戶也無法修改（除非策略明確允許修改系統）。 MAC 策略規則的權限比 root 的能力更強大，可用於使除其預期所有者之外的任何人都無法訪問資源。
-* 每個現代的作業系統都同時提供 MAC 和 DAC ，Solaris 的 MAC 是 Trusted Solaris 的一部分，而 FreeBSD 將 DAC 作為其 TrustedBSD 的一部分，Linux 是 SELinux 等等。
-* MAC 的核心是標籤(label)的概念。標籤是分配給 object（檔案、設備等）的標識符(id)（通常是字符串）。標籤也可以應用於 subject（參與者，例如 process）。當 subject 請求對 object 執行操作時，作業系統會先執行策略中定義的檢查，該策略指示是否允許給定的標籤持有 subject 對標記的 object 執行操作。
+* [DAC](https://zh.wikipedia.org/wiki/%E8%87%AA%E4%B8%BB%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6)：
+  * 在 UNIX 系統中，DAC 採用檔案權限的形式（可通過 chmod、chown 和 chgrp 設置），而 Windows（和一些 UNIX 變體）通過訪問控制列表 (ACL) 允許更精細的粒度的控制。
+  * 但是 DAC 有兩個關鍵的弱點，一是 resource 的 owner 可以任意修改該 resource 的權限，另一個是 root 擁有無限的權限。
+* [MAC](https://zh.wikipedia.org/wiki/%E5%BC%BA%E5%88%B6%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6)：
+  * 因此，需要一種更強大的保護形式。MAC 作為系統策略強制執行，即使是 root 用戶也無法修改（除非策略裡有明確允許修改系統）。 MAC 策略規則的權限比 root 的能力更強大，可用於使除其預期所有者之外的任何人都無法任意存取資源。
+* 幾乎每個現代的作業系統都同時提供 MAC 和 DAC ，Solaris 的 MAC 是 Trusted Solaris 的一部分，而 FreeBSD 將 DAC 作為其 TrustedBSD 的一部分，Linux 是 SELinux 等等。
+* MAC 的核心是標籤(label)的概念。標籤是分配給 object（檔案、設備等）的標識符(id)（通常是字符串）。標籤也可以應用於 subject（參與者，例如 process）。當 subject 請求對 object 執行操作時，作業系統會先標籤，確定是否允許 subject 對 object 執行操作。
 * 舉個簡單的例子，考慮一組簡單的標籤，按照特權級別排序： "unclassified" 、"secret"和"top secret"。具有"secret"權限的用戶將能夠建立類似標記的 process，然後這些 process 將可以存取"unclissified"和"secret"的檔案，但不能存取"top secret"的檔案。
 * 用戶及其 process 都不會意識到"top secret"檔案的存在，因為 OS 會將它們從所有檔案操作中過濾掉（例如，在列出目錄內容時不會顯示它們）。用戶 process 同樣會以這種方式受到保護，因此"unclissified"的 process 將無法查看或執行對"secret"（或"top secret"）process 的 IPC 請求。
 * MAC labels 是前面描述的訪問矩陣的 implement。
@@ -4044,7 +4045,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h2 id="0169">Capability-Based Systems</h2> 
 
-* Linux 將 root 的權力切成不同的區域，每個區域都由 bitmasks (掩碼中) 的一個 bit 表示
+* Linux 將 root 的權力切成不同的區域，每個區域都由 bitmasks 的一個 bit 表示
 * 通常會使用三個 bitmasks，分別表示 capabilities 允許(permitted), 有效(effective), 和可繼承(inheritable)
 * bitmask 可以用在每個 process 或 thread，此外，一旦撤銷(revoked)，就不能重新獲得 capability。
 * 一般的順序是 process 或 thread 以允許的全部能力集(permitted capabilities set)開始，並在執行期間慢慢減少該集。 例如，在打開一個網絡埠後，一個 thread 可能會刪除該功能，這樣就不能再打開更多 port 了。
@@ -4061,25 +4062,65 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 僅允許擁有程式碼簽章(code-signed)的核心擴展還有二進制檔案
   * 使用 SIP 的話 root 雖然還是系統裡面最強大的使用者，但比起以前，他的能力範圍會減少許多，root 仍然可以管理其他使用者的檔案、設定、process 等等，但無法隨意更動有關 OS 的部分。 
 * system-call filtering：
-* sandboxing 
-* Code signing
-
+  * system-call filtering 的其中一種方法是，向 kernel 添加檢查 system-call 的程式碼，將 caller 限制在安全的 system call set 裡面，例如可以為各個 process 構建特定的 system call config 檔。
+    * Linux 機制 SECCOMP-BPF 就是這樣做的，它利用 [Berkeley Packet Filter (BPF) syntax](https://biot.com/capstats/bpf.html) 通過 Linux 專有的 `prctl()` 這個 system call 來加載自定義配置檔(profile)，這種過濾可以有效地過濾來自 run-time library 或者 loader 的 system call。
+      * 註：`prctl()`是一個可以從各個層面檢查或更動 process 的 system call。
+  * 另一種方法是連 system call 的參數也要檢查，因為即使是看似良性的 system call 也可能隱藏嚴重的漏洞，Linux 的 [futex()](https://ryan0988.pixnet.net/blog/post/181245363-linux%E4%B8%AD%E7%9A%84%E5%90%8C%E6%AD%A5%E6%9C%BA%E5%88%B6----futex) system call 就是這種情況，攻擊者利用 race condition 來覆蓋掉 kernel memory 以破壞系統。
+* sandboxing：
+  * sandboxing(沙盒)是指對一個 process 實施非常嚴格的限制的做法，這種被施加的限制在 process 被 create(執行`main()`或 `fork()`之前) 之前就已經先定義好了。
+  * 在sandbox 裡面的 process 無法執行任何除了被允許以外的操作，也可以防止 process 與系統的其他部份溝通。
+  * 有許多實現 sandbox 的方法，例如 Java 和 .net 在虛擬機施加沙盒限制，Android 將沙盒作為其強制訪問控制 (MAC) 策略的一部分，它利用 [SELinux](https://zh.wikipedia.org/zh-tw/%E5%AE%89%E5%85%A8%E5%A2%9E%E5%BC%BA%E5%BC%8FLinux) 策略增強了安全性。
+* Code signing：
+  * 系統如何相信一個 process 或 script ?通常，如果該 process 或 script 是 OS 的一部分，那麼它應該是可以信任的，但如果它改變了呢?如果它是被系統更改的，那它仍然是可以被信任的，否則就是不可以被信任的，這些不被信任的修改在執行之前必須要經過特殊許可（來自用戶或管理員）。
+  * Code signing(程式碼簽章)是解決上述問題的最佳工具，它使用前面提到過的[authentication](https://github.com/a13140120a/Operation_System/edit/main/README.md#%E8%AA%8D%E8%AD%89authentication)的方式來保持程式碼的完整性以及真實性，以確認自作者創建它們以來它們沒有被更改。
+  * 代碼簽名用於 OS 發行版、補丁和第三方工具等。某些 OS（包括 iOS、Windows 和 macOS）拒絕運行未通過程式碼簽章檢查的程式。
+  * 它還可以通過其他方式增強系統功能。例如，Apple 可以禁用為現已過時的 iOS 版本編寫的所有程式，方法是在從 App Store 下載這些程序式停止對這些程式進行簽名。
 
 <h2 id="0169">Language-Based Protection</h2> 
 
+* OS kernel   層面的檢查，會對每次存取的嘗試都做檢查，這會對系統的效能造成很大的負擔，因此我們必須為其提供 hardware support 以降低每次檢查的開銷(overhead)，但我們很難去確保這些機制造成的額外開銷不會對效率及花費成本造成威脅。
+* 隨著作業系統變得越來越複雜，特別是當它們試圖提供更高級別的用戶界面時，保護的目標也變得更加精細。
+* 再者 resource 的使用取決於應用程式有許多不同的方法，
+* 因此保護不再只是作業系統設計者關心的問題。它還應該可以作為應用程式設計者使用的工具，從而可以保護 subsystem 的資源免受篡改或錯誤的影響。
 
-
-
-
-
-
-
-
-
-
-
-
-
+* Compiler-Based Enforcement
+  * 在 Compiler-Based Enforcement(基於編譯器的保護)中，程式設計師在宣告 resource 時直接指定不同 resource 所需的保護。
+  * 利用這種方法有以下幾種好處：
+    * 保護只需簡單的被宣告，而不是一系列複雜的 procedure call。
+    * 可以獨立於特定作業系統提供的支持來說明保護要求(簡單的說就是可以獨立於作業系統之外)。
+    * 執行方式不需要由開發商(子系統的設計者)直接提供。
+    * 宣告的表示法很自然，因為存取權限與數資料型態的概念密切相關。
+  * 編程語言實現可以提供多種技術來實施保護，但其中任何一種都必須依賴於底層機器及其作業系統的某種程度的支持。例如，假設使用一種語言撰寫的程式碼以在 Cambridge CAP 系統上運行
+  * 無論採用何種方式來實作，基於編譯器的保護都依賴於底層機器或者作業系統提供的保護機制，例如 Cambridge CAP 或 Hydra 系統，Cambridge CAP 系統中對所有 storage 都必須透過 capability 間接的來存取，這避免了 process 跑出了保護環境的範圍。
+  * Compiler-Based Enforcement 和 kernel 提供的保護相比，有以下優點：
+    * Security：kernel 提供的安全性比編譯器的安全性提供了更好的保護。Compiler-Based Enforcement 的安全性取決於編譯器本身的完整性，以及要求檔案在編譯後不被修改，kernel 有更好的手段來保護自己免受修改，以及保護對特定檔案的存去，如果有 hardware support，則保護更加強大。
+    * Flexibility：kernel 提供的保護系統不能靈活地提供單個 programmer 所需的特定保護，儘管它可以提供 programmer 可以使用的功能，Compiler-Based Enforcement 容易更改和更新編譯器以更改所提供的保護服務或其細節。
+    * Efficiency：最有效率的保護方法是直接提供hardware 或 microcode support，而就 software 而言，Compiler-Based 的系統具有以下優點：許多檢查可以在編譯時離線進行，而不是在執行期間(run-time)進行。
+  * 將保護機制納入編程語言的概念還處於起步階段，仍有待充分發展。 然而，總體目標是提供以下三個功能：
+    * 在 processes 之間安全有效地分配 capabilities ，尤其是一個 user process 應該只能訪問它被授予權限的資源。
+    * 指定 process 可以對資源執行的操作類型，例如讀取或寫入。
+    * 指定對資源執行操作的順序，例如先打開再讀取。
+* Run-Time-Based Enforcement--Protection in Java
+  * 因為 Java 被設計為在分散式環境中運行，所以 Java 虛擬機（JVM）具有許多內建的保護機制。
+  * Java programs 是由 class 所組成的，每個class 又是由 data fields 和 functions (或 methods，可以操作 data field) 所組成的
+  * Java 最新的特色之一是 support 透過網路 dynamically loading 不受信任的 class，也就是說它可以在同一個 JVM 中執行互相不信任的 class。
+  * 也由於這些特色，Protection 變成了 Java 最重要的課題，同一個 JVM 中運行的 class 可能來自於不同的來源，而且可能不受信任，所以以 process 等級的保護是不夠的，必須提供更細度的保護機制，例如，是否應該允許打開檔案的請求通常取決於是哪個 class 發出請求。
+  * 因此，此類保護決策是在 JVM 中處理的。 當 JVM load 一個 class 時，它會將該 class 分配給一個 protection domain，protection domain 提供該 class 的權限。
+  * 這個 protection domain 取決於該 class 是從哪個 URL 來的，以及它的數位簽章，並且會有一個 configurable policy file(可配置的策略檔)來決定並授予 domain 權限，例如，從被信任的伺服器載入的 class 可能被放置在允許它們存取用戶主目錄中的檔案的 protection domain，而從不被信任的伺服器載入的 class 可能根本沒有檔案存取權限。
+  * JVM 確定哪個 class 負責處理存取受保護資源的請求可能是一件很複雜的事，存取通常是通過 system libraries 或其他的 class 間接執行的，例如，考慮一個不允許打開網絡連接的 class，它可以調用 system libraries 來請求載入 URL 的內容。問題是，應該使用哪個 class 來確定是否應該允許連接，應用程式還是 system libraries？
+  * Java 採用的理念是要求 library class 明確允許網絡連接，為了存取受保護的資源，一連串的 calling 中的一些發起 request 的 method 必須要 explicitly assert the privilege to access the resource
+    * 註：[Java explicit](https://kknews.cc/zh-tw/education/r9apjro.html)、[Java assert](https://www.itread01.com/content/1547018948.html)
+  * 當然，並不是每個 method 都可以 assert privilege。 只有當一個 method 的 class 在一個本身被允許行使特權的 protection domain 時，一個 method 才能 assert privilege。
+  * stack inspection：此類 implementation 又稱為 *stack inspection* ，JVM 中的每個 thread 都有一個與正在進行的 method 相關的 stack，當 caller 不能被信任時，method 會被包在 doPrivileged() 的 block 中執行，以直接或間接的 access 受保護的資源。
+  * doPrivileged() 是 AccessController 類別中的一個靜態方法，它通過一個帶有 run() 方法的類別來調用，當進入 doPrivileged() block 時，該方法的 stack frame 會被 "annotated(標註)"，然後 block 裡面的內容才被執行。
+  * 當隨後通過此 method 或這個 method 調用的方法請求存取受保護的資源時，會有一個 `checkPermissions()` 來做 stack inspection 並決定這個 request 是否被允許存取資源。
+  * stack inspection 會檢查 call 這個 method 的 thread，如果有找到 doPrivileged() 的 "annotation(標註)"則 return 並允許存取，如果找到了不允許存取的 stack frame 就觸發 AccessControlException，如果都沒有找到的話就取決於每個版本的 JVM 而決定要怎麼做。
+  * Stack inspection 如下圖，在這裡，不受信任的小程式(applet)的 protection domain 中的 class 的 gui() 方法(method)執行兩個操作，首先是 get()，然後是 open()。
+  * 前者是在 URL loader protection domain 中調用的一個類別的 get() 方法，它被允許打開到 lucent.com 的會話(session)，
+  * 因此，不受信任的小程序的 get() 調用將成功：網絡庫中的 checkPermissions() 調用遇到 get() 方法的 Stack inspection，該方法在 doPrivileged block 中執行 open()。 
+  * 但是，不受信任的小程序的 open() 調用會導致異常，因為 checkPermissions() 調用在遇到 gui() 方法的 Stack inspection 之前沒有找到 doPrivileged 註解。
+  * ![Stack_Inspection](https://github.com/a13140120a/Operation_System/blob/main/imgs/Stack_Inspection.jpg)
+  * 當然，要使堆棧檢查起作用，程序必須不能修改其自己的堆 stach frame 上的 annotation 或以其他方式操縱  Stack inspection。 這是 Java 與許多其他語言（包括 C++）之間最重要的區別之一，Java program 不能直接 access 記憶體，它只能操作它有 reference 的對象。reference 不能被偽造，並且只能通過定義良好的 interface 進行操作。
 
 
 
