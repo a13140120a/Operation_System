@@ -4112,7 +4112,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
     * 註：[Java explicit](https://kknews.cc/zh-tw/education/r9apjro.html)、[Java assert](https://www.itread01.com/content/1547018948.html)
   * 當然，並不是每個 method 都可以 assert privilege。 只有當一個 method 的 class 在一個本身被允許行使特權的 protection domain 時，一個 method 才能 assert privilege。
   * stack inspection：此類 implementation 又稱為 *stack inspection* ，JVM 中的每個 thread 都有一個與正在進行的 method 相關的 stack，當 caller 不能被信任時，method 會被包在 doPrivileged() 的 block 中執行，以直接或間接的 access 受保護的資源。
-  * doPrivileged() 是 AccessController 類別中的一個靜態方法，它通過一個帶有 run() 方法的類別來調用，當進入 doPrivileged() block 時，該方法的 stack frame 會被 "annotated(標註)"，然後 block 裡面的內容才被執行。
+  * doPrivileged() 是 AccessController 類別中的一個靜態方法，它通過一個帶有 run() 方法的類別來調用，當進入 doPrivileged() block 時，該方法的 stack frame 會被 "annotated(標註，會被 mark 成 privileged)"，然後 block 裡面的內容才被執行。
   * 當隨後通過此 method 或這個 method 調用的方法請求存取受保護的資源時，會有一個 `checkPermissions()` 來做 stack inspection 並決定這個 request 是否被允許存取資源。
   * stack inspection 會檢查 call 這個 method 的 thread，如果有找到 doPrivileged() 的 "annotation(標註)"則 return 並允許存取，如果找到了不允許存取的 stack frame 就觸發 AccessControlException，如果都沒有找到的話就取決於每個版本的 JVM 而決定要怎麼做。
   * Stack inspection 如下圖，在這裡，不受信任的小程式(applet)的 protection domain 中的 class 的 gui() 方法(method)執行兩個操作，首先是 get()，然後是 open()。
@@ -4121,6 +4121,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 但是，不受信任的小程序的 open() 調用會導致異常，因為 checkPermissions() 調用在遇到 gui() 方法的 Stack inspection 之前沒有找到 doPrivileged 註解。
   * ![Stack_Inspection](https://github.com/a13140120a/Operation_System/blob/main/imgs/Stack_Inspection.jpg)
   * 當然，要使堆棧檢查起作用，程序必須不能修改其自己的堆 stach frame 上的 annotation 或以其他方式操縱  Stack inspection。 這是 Java 與許多其他語言（包括 C++）之間最重要的區別之一，Java program 不能直接 access 記憶體，它只能操作它有 reference 的對象。reference 不能被偽造，並且只能通過定義良好的 interface 進行操作。
+  * [參考資料](https://tech101.cn/2019/08/15/AccessController%E7%9A%84doPrivileged%E6%96%B9%E6%B3%95%E7%9A%84%E4%BD%9C%E7%94%A8)
 
 
 
