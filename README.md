@@ -1874,7 +1874,7 @@
     * compile出來與load到memory的都是所謂的logical-address(virtual address)
     * 是現在電腦大部分的作法
 * logical address： CPU發送出來的address，
-* phisycal adderss：memory真正看到的，也就是載入MBR(https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0041)的數值，而此數值通常是CPU發出來的address經由MMU轉換而來的
+* phisycal adderss：memory真正看到的，也就是載入[MBR](https://github.com/a13140120a/Computer_Organization_And_Architecture/blob/main/README.md#0041)的數值，而此數值通常是CPU發出來的address經由MMU轉換而來的
 * MMU(memory-managment unit 記憶體管理單元)：
   * ![MMU](https://github.com/a13140120a/Operation_System/blob/main/imgs/MMU.PNG)
   * 是一種硬體裝置
@@ -3887,9 +3887,14 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 <h1 id="016">Protevtion</h1> 
 
   * ## [Goals of Protection](#0161) #
-  * ## [Goals of Protection](#0161) #
-  * ## [Goals of Protection](#0161) #
-  * ## [Goals of Protection](#0161) #
+  * ## [Protection Rings](#0162) #
+  * ## [Domain of Protection](#0163) #
+  * ## [Access Matrix](#0164) #
+  * ## [Implementation of the Access Matrix](#0165) #
+  * ## [Revocation of Access Rights](#0166) #
+  * ## [Role-Based Access Control](#0167) #
+  * ## [Mandatory Access Control (MAC)](#0168) #
+  * ## [Language-Based Protection](#0169) #
 
 
 
@@ -3916,7 +3921,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 64-bit ARMv8 架構中，支援四種level的層級，稱為 *exception levels* ，分別是從EL0到EL3
     * user mode 於EL0中執行
     * kernel mode 於EL1中執行
-    * [hypervisors(虛擬機管理程式)](https://zh.wikipedia.org/wiki/Hypervisor)於EL1中執行
+    * [hypervisors(虛擬機管理程式)](#0171)於EL1中執行
     * 最後EL3就是TrustZone layer
     * 下圖為ARM Exception架構圖
     * ![ARM_Exception_architecture](https://github.com/a13140120a/Operation_System/blob/main/imgs/ARM_Exception_architecture.PNG)
@@ -4122,6 +4127,239 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * ![Stack_Inspection](https://github.com/a13140120a/Operation_System/blob/main/imgs/Stack_Inspection.jpg)
   * 當然，要使堆棧檢查起作用，程序必須不能修改其自己的堆 stach frame 上的 annotation 或以其他方式操縱  Stack inspection。 這是 Java 與許多其他語言（包括 C++）之間最重要的區別之一，Java program 不能直接 access 記憶體，它只能操作它有 reference 的對象。reference 不能被偽造，並且只能通過定義良好的 interface 進行操作。
   * [參考資料](https://tech101.cn/2019/08/15/AccessController%E7%9A%84doPrivileged%E6%96%B9%E6%B3%95%E7%9A%84%E4%BD%9C%E7%94%A8)
+
+
+
+
+****
+
+
+
+
+<h1 id="017">Virtual Machines</h1> 
+
+  * ## [Goals of Protection](#0171) #
+  * ## [Protection Rings](#0172) #
+  * ## [Domain of Protection](#0173) #
+  * ## [Access Matrix](#0174) #
+  * ## [Implementation of the Access Matrix](#0175) #
+  * ## [Revocation of Access Rights](#0176) #
+  * ## [Role-Based Access Control](#0177) #
+  * ## [Mandatory Access Control (MAC)](#0178) #
+  * ## [Language-Based Protection](#0179) #
+
+
+
+
+<h2 id="0171">Overview</h2> 
+
+
+* virtual machine: 在一台電腦裡面，把諸如 CPU, memory, disk, 網卡等硬體抽象化成許多不同的執行環境，造成每個執行環境都有好像自己有一台自己的電腦的錯覺
+* virtualization(虛擬化)：會有一個 layer，這個 layer 會創造一個 virtual system ，讓 OS 或 appliaction 可以在上面 run。
+* Host：用來執行 virtual machine 的底層硬體系統。
+* [virtual machine manager (VMM，或稱 hypervisor，虛擬機管理器，或稱虛擬機監視器)](https://zh.wikipedia.org/wiki/Hypervisor)：VMM 會提供一個與 host 相同的 interface 來給 vm 使用，讓 vm 可以在上面 run。
+* Guest：guest process 通常實際上就是一個 OS，在此，"作業系統"的定義變得模糊，例如 VMware ESX 是一個安裝在 hardware 的虛擬化軟體(virtualization software)，並且當電腦開機時會執行，而且也提供 service 給 application ，包括 scheduling、記憶體管理等功能，並且也提供額外的功能例如 migration(application 移植於多個系統之間，而這些 application 通常就是 OS)。
+
+* VMM 通常有以下幾種：
+  * type 0 hypervisors(類型 0 虛擬機管理器)：VMM 程式通常被嵌在 firmware 裡面，這種類型的 VMM 通常會在 mainframe 或一些大型系統中看到，例如 IBM LPARs and Oracle LDOMs 。
+  * type 1 hypervisors(類型 1 虛擬機管理器)：這種主要目的是提供虛擬化的 *類作業系統軟體(Operating-system-like software)* 包括了 VMware ESX 、 Joyent SmartOS、Citrix XenServer。
+    •	General-purpose operating systems：提供一些基本的 VMM functions，例如具有 [HyperV](https://blog.xuite.net/yh96301/blog/459512721) 的 Windows Server，還有 具有 [KVM](https://zh.wikipedia.org/wiki/%E5%9F%BA%E4%BA%8E%E5%86%85%E6%A0%B8%E7%9A%84%E8%99%9A%E6%8B%9F%E6%9C%BA) 的 Red Hat Linux，這些 General-purpose operating systems 也都屬於 type 0 hypervisors
+  * type 2 hypervisors(類型 2 虛擬機管理器)：這種類型的 VMM 會 run 在一般的作業系統之上，例如 VMware Workstation、Fusion、Parallels Desktop、Oracle VirtualBox。
+  •	Paravirtualization(準虛擬化)：一種會更動 guest OS 的技術，會把 guest OS 修改成可以以更加的效能配合 VMM 的樣子。
+  * Programming-environment virtualization(編譯環境虛擬化)：這種技術並不提供　hardware vitualization，而是提供一個優化的虛擬系統（virtual system），例如 Oracle Java、Microsoft.Net
+  * Emulators(模擬器)：這種技術允許一個專門為某種 hardware 撰寫的應用程式可以 run 在非常不一樣的硬體環境(例如cpu)之上。
+  * Application containment：這種技術並不能稱為虛擬化技術，但是這種技術可以把應用程式跟 OS 隔離開來，讓應用程式更安全，以及更好的被管理。
+
+
+<h2 id="0172">History</h2> 
+
+* Virtual machines 最早出現在 1972 年的 IBM mainframe，例如 IBM VM/370 mainframe system 上面可以 run 多個 VM，他使用一種 *virtual disks(虛擬硬碟)* 的技術(在BMI叫做minidisks)，minidisk 有除了 size 以外其他各方面都跟真實 disk 一樣的特性，這種技術藉由 allocating 多個磁軌來假裝成一個 disk 來達成。
+* 虛擬化力求以下幾點目標：
+  * Fidelity(真實度)：VMM  必須提供跟原本的機器一模一樣的環境。
+  * Performance：在虛擬環境中，效能必須只能有一點點的下降。
+  * Safety：VMM 必須能完全的掌握系統資源
+* 
+
+
+<h2 id="0172">Benefits and Features</h2> 
+
+* isolation：
+  * 優點是 VM 可以保護 host 不受傷害，因為就算 VM 中毒了，也很難入侵到 host 裡面。
+  * 缺點就是資源共享，但我們可以藉由以下兩種方式實現資源共享：
+    * 透過共享的 file-system volume 來共享檔案
+    * 透過網路來共享資源
+* freeze(or suspend)：
+  * 許多 OS 都會有這種功能來用在 process 上面(也就是有 suspend process 的功能的意思)。
+* snapshot
+  * VMM 除了這項功能之外還提供 snapshots 跟 copy 的功能，這種功能可以用來建立一個跟原本一模一樣的新 VM 或者把當前狀態的 VM 從一台機器移動到另一台機器上面。
+  * 之後就可以 *resume*，然後就可以恢復到拍 snapshit 時的狀態，
+* clone：
+  * clone 會複製一個一模一樣的 vm 出來，這對於測試升級很有用(版本控制)
+* VM 使得開發人員開法方便，節省大量時間，因為修改核心程式碼可能會造成整個作業系統毀損，但用 vm 的話就可以藉由 snapshot 或 clone 來達到快速復原的目的。
+* VM 也使得開發人員可以快速的把 program 移植到各種 OS ，同理，測試人員也可以在各種不同的 OS(VM) 上快速測試每個不同的環境。
+* consolidation(合併)：這是一種在 datacenter 裡面很常見的技術，該技術會把兩個不同的 system(VM) run 在同一台機器上，這樣做的目的是把多個較輕量級的系統合併成一個大型的系統
+* templating：VM 模板是虛擬機的 "master copy image"，包括 VM disks、虛擬設備和其他設置，一個 VM template 可以多次用於虛擬機 clone，template 建立後無法開機和編輯，這種設定使得任何人都不會意外編輯 template 虛擬機，這種方法為 VM clone 提供了更高的安全性，VM clone 並不會 link 到 VM template 並且是獨立的，如果要編輯 template，則應將 template 轉換為 VM，編輯 VM，然後將編輯後的 VM 轉換為新的 template。
+  * 在大型虛擬環境中手動部署許多類似的 VM 可能是一項無聊的任務。 VMware 在 vSphere 虛擬環境中提供了多種虛擬機 (VM) clone 方法，其中一種是使用 VM template。
+* live migration：此特色讓 guest os(或 process) 在 running 的時候也可以在實體機器之間移動，不須中斷並且一直保持 active 的狀態，如此一來，當 host hardware 需要維修或升級時，
+
+
+<h2 id="0172">Building Blocks</h2> 
+
+* virtual CPU (VCPU)：VCPU 並不執行指令，而是會顯示一個虛擬的 cpu 狀態，VMM 會 maintain 每個 guest 一個的 VCPU，當 guest 要做 context switch 的時候，存在 VCPU 裡面的資訊會被 load 出來，就像普通 OS 最 context switch 的時候會把 PCB load 出來一樣。
+* Trap-and-Emulate：因為 vitrual machine 與底層 system 都有 user mode 跟 kernel mode，但整個 VM 都是 run 在真實系統的 user mode 上的，這時候就要有一種辦法讓 VM 的 kernel(例如system call, interrupt, privileged instruction)被轉換成 physical 的 kernel mode，轉換的流程如下：
+  * 當 guest 的 kernel mode 嘗試執行 privileged instruction 的時候，會發出 trap 給 VMM，
+  * 這時候 VMM 得到這個 trap 並模擬他的動作然後執行，
+  * 執行完之後再把控制權還給 VM
+  * ![trap_and_emulate](https://github.com/a13140120a/Operation_System/blob/main/imgs/trap_and_emulate.PNG)
+* Binary Translation：
+  * special instructions：有些 cpu 當初在設計的時候就沒有考慮要支援 vm，甚至有一些 privileged instruction 在 kernel mdoe 跟 user mode 執行是不一樣的動作，例如有一個 `popf`的指令，在 kernel mode 的時候會把 stack 的狀態 load 到所有的 register，而在 user mode 執行的時候則只會把其中一些 load  到 register 裡面，因為這個指令不會發出 trap，所以 Trap-and-Emulate 的方法就不能使用，x86 裡面還有許多這種指令，稱為 *special instructions*。
+  * 其流程如下：
+    * 如果 guest 的 VCPU 是處於 user mode，那麼 guest 就可以直接把 instruction run 在真實 cpu 上。
+    * 如果 guest 的 VCPU 是處於 kernel  mode，那麼 VMM 會檢查 guest 接下來將要執行的幾個 instruscions ，並將他們轉換成可以達到相同效果的另一批 instructions(即轉譯)，例如更改 VCPU 的 flags。
+  * ![binary_translation](https://github.com/a13140120a/Operation_System/blob/main/imgs/binary_translation.PNG)
+  * 我們可以把每次轉譯(translation)的結果 cache 下來，藉此達到效能的增進。
+* nested page tables (NPTs，巢狀分頁表)：
+  * VMM maintain NPT 來代表每個 guest 的 page table 的狀態，就像 VCPU 來代表 guest 的 CPU 狀態一樣，當 guest run 在 CPU 上時，VMM 將指向適當 NPT 的 pointer 放入適當的 CPU register 中，以使該 table 成為 active page table。
+  * 如果 guest 需要修改 page table（例如執行 page fault），則該操作必須被 VMM 攔截，並對 nested page tables 和 system page table 進行適當的更改。
+  * NTB 會導致 cache miss 率上升，並且會降低效能
+* Hardware Assistance：
+  * 現今大多數 CPU 也都提供許多虛擬化技術，例如 AMD-V(AMD virtualization technology)，這項技術除了原本的 user mode 與 kerbel mode 之外，還額外定義了兩個 mode：host 和 guest
+    * 當 VMM  開啟 host mode  的時候，會定義 guest virtual machine 的特徵，然後轉換到 guest mode ，並將控制權轉換到 這個 guest 的 OS 上。
+    * 當轉換到 guest mode 時，guest OS 認為他是 run 在一個剛剛  host mode 已經事先定義好的 hardware 環境之上。當 guest 想要存取 virtualized resource 時，會將控制權轉換給 VMM 然後進行互動。
+  * Intel 於2005年加入了 VT-x 技術，讓 binary translation 不再被需要了。
+    * VT-x 技術提供了除了原本的 user mode 與 kerbel mode 之外的兩個 mode：root and nonroot，這兩個額外的 mode 相當於 AMD-V 的 host 和 guest。
+  * VT-x 和 AMD-V 都提供了 VCPU 來記錄 guest 的 cpu 狀態，並且當 context switch 發生時拿來使用。
+  * virtual machine control structures (VMCSs虛擬機控制結構)：除了上述提到的資料結構以外，還會有一個 VMCs 來記錄及管理 guest 和 host 的狀態，以及各種客戶執行控制(guest execution controls)、退出控制(exit controls)以及有關客戶退出回主機的原因的信息，例如，由於嘗試存取不可用 memory 而導致的 nested page tables violation  可能導致 guest 退出。
+  * AMD 和 Intel 還解決了虛擬環境中的 memory management 的問題。借助 AMD 的 RVI 和 Intel 的 EPT "記憶體管理增強功能"，VMM 不再需要實作 software 層面上的 NPT，因為 nested page tables 被實作到 hardware level，如此一來便可以加速 virtual 到 physical 位址的轉換，但 TLB miss 導致的 penalty 將會更大，因為系統必須要 traverse 更多的 table(包括 guest and host page tables)
+  * ##### IO 是另一個受到 hardware support 增益的部分，例如 有 hardware-assisted DMA 的 CPU(例如 Intel 有 VT-d 功能的 CPU)，VMM 會設置一個 protection domains 來告訴 CPU 那些 physical memory 屬於那些 guest，然後再 assigns I/O devices 給那個 protection domains，允許被 assigns 的記憶體區域可以直接被存取且不能存取其他區域。
+  * 擁有 interrupt remapping feature 的 CPU 會自動將發往 guest 的 interrupt 傳遞給當前正在運行該 guest 的 thread，如此一來便不需要 VMM 進行干預，如果沒有 interrupt remapping 的話，惡意的 guest 可能會生成可用於控制主機系統的 interrupt。
+  * ARM v8 (64-bit) 使用 EL2 層來讓 vm 可以 run 在上面。
+
+<h2 id="0172">Types of VMs and Their Implementations</h2> 
+
+* Type 0 Hypervisor：
+  * 又有其他的稱呼，例如 "partitions" 或者 "domains"。
+  * 這種 VMM 是燒在 firmware 裡面的，並且在開機時載入，然後他會把 guest images load 進來以在每個 partition 運行。
+  * 通常這類型的虛擬機功能會比其他類型少，因為他是直接 implement 在 hardware 上面的，每個 guest 都認為自己擁有專用硬體，因為它確實如此，從而簡化了許多細節。
+  * control partition：用來管理 share 的 access 以及授權 IO devices 的存取
+  * 本質上，Type 0 Hypervisor 中的每個 guest OS 都是一個 host OS，其中提供了一些個可用的硬體，所以每個 OS 又可以有他的 guest OS，其他類型的 Hypervisor 是沒辦法提供這種虛擬化再虛擬化的功能。
+* Type 1 Hypervisor：
+  * 常常被用於 data centers，並且有了"the data-center operating system"的別名
+  * 是一種"special-purpose operating systems"，並且因為 Type 1 Hypervisor 是直接 run 在硬體之上，所以它們不為運行程式提供 system call 和其他 interface，而是創建、運行和管理 guest OS，例如：VMware ESX
+  * 除了在標準硬體上運行之外，它們還可以在 Type 0 Hypervisor 上運行，但不能在其他 Type 1 Hypervisor 上運行。
+  * 因為 Type １ Hypervisor　也是一種 OS ，所以他們也提供　CPU scheduling, memory management, I/O management, protection, security。
+  * 可以把多個 guest OS consolidate(合併，上面有提到)在一起，假設今天有10台機器，每台分別負擔 10%(因為可能需要不同的環境)，就可以濃縮成一台，其他台就可以用來做別的事情，
+  * 負載降低之後，就可以把 guests 移動到負載較低的系統，並且不需要暫停或中斷服務。
+  * 這類型的 Hypervisor 還提供 clone、snapshot 等服務，讓開法者可以更快速開發及測試，還有備份。
+  * 一些其他類型的 Type 1 Hypervisor(例如 RedHat Enterprise Linux, Windows, Oracle Solaris)可以在提供一般作業系統服務的同時，也提供 VMM 的功能，不過也因為同時提供兩種服務，讓它們在　VMM 的功能上會比一般的 Type 1 Hypervisor 要少，這些 Hypervisor 把 guest OS 當成是一個 process 而已，並且會對special instruction 進行特殊處理。
+* Type 2 Hypervisor：
+  * 這些應用程式級的 VMM 中幾乎沒有 OS 參與。這種類型的 VMM 只是由 host 運行和管理的另一個 process，甚至 host 也不知道 VMM 內正在發生虛擬化。
+  * 通常 user 會需要管理員權限才能使用 hardware assistance 的功能，如果 VMM run 在普通的 user 上的話，就會失去這項優勢，所以通常 Type 2 Hypervisor 會比其他類型的效能還要低。
+  * 但這也有一些好處，Type 2 Hypervisor 在各種general-purpose OS 上運行，並且運行它們不需要對 host OS 進行任何更改。例如，學生可以使用 Type 2 Hypervisor 來測試非本地 OS，而無需替換本地 OS。事實上，在 Apple 筆記本電腦上，學生可以擁有 Windows、Linux、Unix 和不太常見的 OS 版本，所有這些版本都可用於學習和實驗。
+ * Paravirtualization(準虛擬化，半虛擬化)：
+   * 必須要修改 guest OS Kernel，並且增加Hypercall
+   * 由於某些 Non-Virtualizable OS 指令不能被 hypervisor trap，所以 Guest OS 利用 Hypercall 呼叫 Hypervisor 對缺少的指令進行更換，這也是為何要修改 OS 的核心
+   * Host OS則不用模擬CPU，Guest OS自行互相調配
+   * [參考資料](http://wiki.csie.ncku.edu.tw/embedded/xvisor)
+* Programming-Environment Virtualization：
+  * 例如，Java 虛擬機(JVM)
+  * 直譯語言（Interpreted language）也是透過這種技術運行的。
+* Emulation：
+  * 當需要非常不一樣的系統架構時，就可以使用模擬器(Emulation)
+  * 舊有的程式可以透過模擬器來模擬新的指令，以延長程式的壽命
+  * 缺點是速度非常慢，因為本質是就是使用軟體編寫了整個 cpu
+  * 即便如此，該技術在遊戲圈還是非常受歡迎。
+* Application Containment：
+  * 在某些情況下，虛擬化的主要目標是提供一種隔離 application 管理其效能和 resource use，並建立簡單的方法來啟動、移動、停止它們。
+  * 這種情況下不需要完整的虛擬化，可以改使用 application containment。
+  * 例如 Oracle Solaris 10版的 containers 或 zones，它在 OS 及 應用程式之間多了一層虛擬層，每個 container 都有自己的 applications, network stacks, network address, ports, user accounts 等等 
+  * CPU 跟 memory 等資源被劃分並且分給每個 container
+  * 這種虛擬化非常輕量級，使用資源更少，啟動及銷毀速度更快。
+  * FreeBSD 是第一個提供類似功能的作業系統(稱為 jails)
+  * Linux 於2014年增加 LXC container 功能。[The source code for LXC](https://linuxcontainers.org/lxc/downloads)
+
+
+<h2 id="0172">Virtualization and Operating-System Components</h2> 
+
+* CPU Scheduling
+  * VMM 會將 physical CPU 適當的分配給每個 guest OS，當有足夠多的 CPU 的時候，VMM 可以幫 guest 指定一個專用的 cpu，並且將這個 cpu 只排班給該 guest。
+  * VMM 本身需要一些 CPU 週期來進行 guest 管理和 I/O 管理 在沒有足夠多的 cpu 的情況下，VMM 可以使用標準調度算法在每個 thread 上取得進展，例如，如果有 6 個 CPU 但是要分12個給 guest，VMM 可以按比例分配 CPU 資源，給每個 guest 認為它擁有的 CPU 資源的一半。 VMM 仍然可以將所有 12 個虛擬 CPU 呈現給 guest，但在將它們映射到物理 CPU 時，VMM 可以使用其排班程式適當地分配它們。
+* Memory Management：
+  * VMware ESX 使用多種 memory 管理方法。VMM 必須確定每個 guest 應該使用多少實際 memory。為此，VMM 首先評估每個 guest 的最大 memory szie。通用作業系統不希望系統中的 memory size 發生變化，接下來，VMM 根據為每個 guest 配置的 memory 和其他因素（例如過度使用和系統負載）計算每個 guest 的 real-memory allocation 。然後它使用下面列出的三種 low-level  機制從 guest 那裡回收 memory：
+    * Double paging：guest 有自己的記憶體管理方法跟 page-replacement algorithms，VMM 也有自己的 page-replacement algorithms，並將 page 載入到客戶認為是 physical 的 backing store，會 swap out 兩次，因此會嚴重導致效能下降。
+    * 讓 VMM 在每個 guest 中安裝 pseudo– device driver(偽設備驅動程式)，偽設備驅動程式使用設備驅動程式的 interface，在 kernel 看來是設備驅動程式，但實際上並不控制設備。相反，這是一種無需直接修改 kernel 即可添加 kernel-mode code的簡單方法。例如：安裝一個 balloon memory manager(balloon driver)，當 balloon driver 被告知要 allocate memory 時(稱為 inflates the balloon，膨脹氣球)，會分配記憶體，並且將分配到的 page 鎖定在 guest 的記憶體上(不會被 swap out)，對於 guest 來說，這些鎖定的 page 似乎會減少其可用的 physical memory，從而產生記憶體壓力，但是因為 guest 偵測到自己的 physical memory(它以為的) 正在減少，就會開始釋放一些其他的記憶體位置，同時，VMM 知道被 balloon driver 鎖定的 page 將永遠不會被使用，從 guest 中刪除這些 physical memory 並將它們分配給另一個 guest(來膨脹氣球)。同時，guest 也可以使用自己的 memory management 和 page-replacement algorithms 來管理可用記憶體，這是最有效的方法。如果整個系統內的記憶體壓力降低，VMM 將告訴 guest 內的 balloon driver 取消鎖定並釋放部分或全部記憶體，允許 guest 使用更多 page。
+    * 第三種方法是，讓 VMM 確定同一個 page 是否已載入多次，然後將 page 的 copy 數減少為一個，並將該 page 的其他使用者 map 到該 copy。舉例來說，VMware 會隨機採樣 guest 的記憶體，並為每個採樣的 page 建立一個雜湊值，該雜湊值可以視為是該 page 的 thumbprint(縮略圖，指紋?)，並且儲存在一個 hash table 當中，每當採樣都會與 hash table 當中的雜湊值比較，如果 match 的話會再 byte by byte 的仔細檢查是否真的完全相同，如果完全相同的話，則釋放其中一個相同的 page，並且將釋放的 map 到另一個相同的 page，
+* IO：
+  * 虛擬化技術利用驅動程式可以 dynamically loaded and unloaded 的靈活性來向 guest OS 提供特定的虛擬化裝置。
+  * VMM 在提供 guest  的 IO 方式上有很大的差異：
+    * 一種方法是提供一個給某個 guest 專用的 IO device
+    * 或者 VMM 具有將 guest map 到 IO device 的 driver
+    * 第三種可能是 VMM 提供一個對 guest 來說很理想的驅動程式，在這種情況下 guest 看到的是 easy-to-control 的裝置，但事實上 VMM 提供的這個理想的驅動程式的 request 會再發送到更複雜的真實裝置裡的複雜的驅動程式，
+  * 雖然指定一個 IO device 只能被一個特定的 guest 存取，會造成其他 guest 無法存取這個 device，但是這種直接存取的方式卻可以更少的讓 VMM 介入，因此也就會有更好的效能。
+  * 類似 Intel 的 VT-d 的 hardware support 的技術可以讓 虛擬機的效能接近 host。
+  * 網路的方面，運行 VMM 的 server 可能會具有數十個 IP 位址，並且由 VMM 充當網路封包的虛擬交換機給 guest。
+    * bridging：客戶可以經由 IP 位址直接連到網路
+    * NAT：NAT 位址對於 running guest 的 derver 是區域性的。
+* Storage Management：
+  * 即使是標準的多重啟動(standard multiboot)方法，將 boot disk 分割成多個 partition，在一個 partition 中安裝 boot manager，並在另一個 partition 中安裝彼此的 OS 還是不夠的，因為 partitino 有一些限制，會阻止它一次運作數十或數百個虛擬機，解決此問題的方法取決於 VMM 的類型。
+    * Type 0 Hypervisor 通常允許對 root disk 進行分割，部分原因是這些系統往往比其他系統運行更少的 guest。或者， 可以是 control partition 可以充當 disk manager，並且該 disk manager 可以為其他 partition 提供磁碟空間（包括 boot disk）。
+    * Type 1 Hypervisor 將 guest 的 root disk 跟配置資訊儲存於一個或多個 VMM 提供的檔案系統上
+    * Type 2 Hypervisor 將相同的資訊儲存在 host 的檔案系統當中，一個 *disk image* 包含了所有 root disk 的內容，並被包含再一個 VMM 的檔案當中，這種方法簡化了移動和複製客戶機(guest)的動作。
+  * guest 有時需要比其 root disk image 中可用的更多磁碟空間。例如，非虛擬化資料庫伺服器可能使用分佈在許多 disk 上的多個檔案系統來存儲資料庫的各個部分。虛擬化這樣的資料庫通常涉及建立多個檔案並讓 VMM 將這些檔案作為 disk 呈現給 guest。guest 然後照常執行，VMM 將來自 guest 的 disk I/O request 轉換為檔案 I/O 命令到正確的檔案。
+  * physical-to-virtual (實體到虛擬，P-to-V)：這種轉換讀取物理系統 disk 的 block，並將它們存儲在 VMM 系統上的檔案中或 VMM 可以存取的共享存儲體上。
+  * virtual-to- physical (虛擬到磁體，V-to-P)：可以將 guest 轉換成實體系統，這可以用於 debug(例如排除虛擬化的問題原因)。
+* Live Migration
+  * live migration(即時遷移)不能實現於一般的作業系統，而只能實現於 type 0 和 type 1 hypervisors，這種功能可以讓正在 running 的 guest 從一個系統移動到另一個系統當中，並且受到的影響非常的小，以至於 user 不會發現。
+  * 通常 VMM 要 migrates 一個 guest 會有以下步驟：
+    * source VMM 跟 target VMM 建立連線，並且確認允許傳送 guest。
+    * target VMM 會建立一個新的 guest，包含了新的 VCPU、nested page table 以及 storage 的狀態。
+    * source VMM 傳送所有的 read-only memory pages 到 target。
+    * source 傳送所有的 read– write pages。
+    * 重複上一個步驟，因為傳送的過程中一些 page 可能會被 modify，那就要再傳送一次。
+    * 當上一個跟上上一個步驟的執行 cycle 少於一定的數量時，source VMM 會 freeze guest，然後傳送 VCPU’s final state, other state details, 還有 final dirty pages，並且告訴 target 可以開始 run guest 了，target 開始 run 之後會通知 source 然後 source 就會終止。
+  * 一些 details and limitations：
+    * physical MAC address 不能改變，但虛擬化的必須要可以，因此 migrate 的時候才不會需要重置網路，而較新的 switch 也會隨著 MAC 的變動跟著動態傳遞封包。
+    * 另外一個限制是不傳輸磁碟狀態，因為磁碟容量太巨大了，disk 必須透過網路來存取才能解決這個問題，通常 NFS, CIFS 或者 iSCSI 用於存儲虛擬機映像和 guest OS(process) 需要存取的任何其他存儲體。
+  * Live migration 這項技術可以為 database 帶來很多的好處，當一台機器的 loading 太重的時候就可以把一些 guest migrate 到另一個機器，這樣可以更好的冷卻機房，還有省電。
+
+<h2 id="0172">Examples</h2> 
+
+* VMware Workstation 和 Java 虛擬機通常可以在前面章節中討論的任何設計類型的作業系統之上運行。
+* VMware Workstation 
+  * 是一種流行的商業應用程式，它將 Intel x86 和兼容硬體抽象為獨立的虛擬機。
+  * 屬於 Type 2 hypervisor
+  * guest 看到的 "physical disk"其實就只是在 host 的 file system 上面的一個 file
+  * VMware Workstation 架構如下圖：
+    * ![vmware_workstation](https://github.com/a13140120a/Operation_System/blob/main/imgs/vmware_workstation.PNG)
+* The Java Virtual Machine：
+  * Java 屬於 programming-environment virtualization 的一個範例
+  * 對於每個 Java class，編譯器生成一個與體系結構無關的bytecode output (.class檔)，該檔案將在任何 JVM 上運行。
+  * JVM 由一個 class loader  和一個執行 .class檔的 Java 直譯器組成。
+  * 當載入一個 class 後，驗證程式會檢查 .class 檔是否是有效的 Java bytecode，並且它不會 overflow 或 underflow stack。它還確 bytecode 不執行指標運算，這可能會造成違規存取記憶體。如果通過驗證，則由 Java 直譯器運行。 
+  * JVM 還通過執行垃圾收集(garbage collection)來自動管理記憶體，從不再使用的 object 中回收記憶體並將其返回給系統。許多研究集中在垃圾收集算法上，以提高虛擬機中 Java 程式的性能。
+  * JVM 可以在 host 作業系統（例如 Windows、Linux 或 macOS）之上的軟體層中實現，或者作為 Web 瀏覽器的一部分實現。或者，JVM 可以在專門設計用於運行 Java 程序的晶片上的硬體中實現。
+  * 一種更快的技術是使用即時 (JIT) 編譯器。在這裡，第一次調用 Java 方法時，該方法的 bytecode 被轉換為主機系統的本地機器語言。然後把這些操作 cache 住，以便使用本機機器指令執行方法的後續調用，並且不需要重新編譯。在硬體中運行 JVM 可能比 JIT 更快。
+
+
+<h2 id="0172">Virtualization Research</h2> 
+
+* 函式庫作業系统（Library Operating System，LibOS）是應用程式的特殊需求，由某一高級程式語言將原本屬於作業系統 kernel 的某些資源管理功能，如檔案、硬碟 I/O、網路等，按照模組化的要求，以函式庫的形式提供给應用程式的特殊作業系统。
+* 虛擬化研究已經擴展到涵蓋機器虛擬化的許多其他用途，包括運行在 library operating systems (函式庫作業系統)上的 microservice(微服務)，以及在 embedded systems 上面的 secure partitioning of resources。
+* unikernels：
+  * 建立於 library operating systems 的一個專案，旨在提高這些環境中的效率和安全性。
+  * 它是一種特製的 "machine image"，使用單一地址空間，可縮小已部署應用程式的 attack surface 和資源佔用。
+  * 他們將應用程式、它調用的系統函式庫以及它使用的 kernel service 編譯成一個在虛擬環境中（甚至在裸機上）運行的二進製檔案。
+
+
+
+
+
+
+
+
+
+
+
 
 
 
