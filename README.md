@@ -4343,7 +4343,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h2 id="0172">Virtualization Research</h2> 
 
-* 函式庫作業系统（Library Operating System，LibOS）是應用程式的特殊需求，由某一高級程式語言將原本屬於作業系統 kernel 的某些資源管理功能，如檔案、硬碟 I/O、網路等，按照模組化的要求，以函式庫的形式提供给應用程式的特殊作業系统。
+* 函式庫作業系统（Library Operating System，LibOS）是應用程式的特殊需求，由某一高級程式語言將原本屬於作業系統 kernel 的某些資源管理功能，如檔案、硬碟 I/O、網路等，按照模組化的要求，以函式庫的形式提供给應用程式的特殊作業系统。[參考資料](https://getiot.tech/dictionary/libos.html)
 * 虛擬化研究已經擴展到涵蓋機器虛擬化的許多其他用途，包括運行在 library operating systems (函式庫作業系統)上的 microservice(微服務)，以及在 embedded systems 上面的 secure partitioning of resources。
 * unikernels：
   * 建立於 library operating systems 的一個專案，旨在提高這些環境中的效率和安全性。
