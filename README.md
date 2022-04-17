@@ -16,7 +16,7 @@
 * ## [File-System Internals](#014) # 
 * ## [Security](#015) # 
 * ## [Protection](#016) # 
-* ## [pass](#017) # 
+* ## [Virtual Machines](#017) # 
 * ## [pass](#018) # 
 
 
@@ -4138,15 +4138,14 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h1 id="017">Virtual Machines</h1> 
 
-  * ## [Goals of Protection](#0171) #
-  * ## [Protection Rings](#0172) #
-  * ## [Domain of Protection](#0173) #
-  * ## [Access Matrix](#0174) #
-  * ## [Implementation of the Access Matrix](#0175) #
-  * ## [Revocation of Access Rights](#0176) #
-  * ## [Role-Based Access Control](#0177) #
-  * ## [Mandatory Access Control (MAC)](#0178) #
-  * ## [Language-Based Protection](#0179) #
+  * ## [Overview](#0171) #
+  * ## [History](#0172) #
+  * ## [Benefits and Features](#0173) #
+  * ## [Building Blocks](#0174) #
+  * ## [Types of VMs and Their Implementations](#0175) #
+  * ## [Virtualization and Operating-System Components](#0176) #
+  * ## [Examples](#0177) #
+  * ## [Virtualization Research](#0178) #
 
 
 
@@ -4178,10 +4177,9 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * Fidelity(真實度)：VMM  必須提供跟原本的機器一模一樣的環境。
   * Performance：在虛擬環境中，效能必須只能有一點點的下降。
   * Safety：VMM 必須能完全的掌握系統資源
-* 
 
 
-<h2 id="0172">Benefits and Features</h2> 
+<h2 id="0173">Benefits and Features</h2> 
 
 * isolation：
   * 優點是 VM 可以保護 host 不受傷害，因為就算 VM 中毒了，也很難入侵到 host 裡面。
@@ -4203,7 +4201,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 * live migration：此特色讓 guest os(或 process) 在 running 的時候也可以在實體機器之間移動，不須中斷並且一直保持 active 的狀態，如此一來，當 host hardware 需要維修或升級時，
 
 
-<h2 id="0172">Building Blocks</h2> 
+<h2 id="0174">Building Blocks</h2> 
 
 * virtual CPU (VCPU)：VCPU 並不執行指令，而是會顯示一個虛擬的 cpu 狀態，VMM 會 maintain 每個 guest 一個的 VCPU，當 guest 要做 context switch 的時候，存在 VCPU 裡面的資訊會被 load 出來，就像普通 OS 最 context switch 的時候會把 PCB load 出來一樣。
 * Trap-and-Emulate：因為 vitrual machine 與底層 system 都有 user mode 跟 kernel mode，但整個 VM 都是 run 在真實系統的 user mode 上的，這時候就要有一種辦法讓 VM 的 kernel(例如system call, interrupt, privileged instruction)被轉換成 physical 的 kernel mode，轉換的流程如下：
@@ -4235,7 +4233,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 擁有 interrupt remapping feature 的 CPU 會自動將發往 guest 的 interrupt 傳遞給當前正在運行該 guest 的 thread，如此一來便不需要 VMM 進行干預，如果沒有 interrupt remapping 的話，惡意的 guest 可能會生成可用於控制主機系統的 interrupt。
   * ARM v8 (64-bit) 使用 EL2 層來讓 vm 可以 run 在上面。
 
-<h2 id="0172">Types of VMs and Their Implementations</h2> 
+<h2 id="0175">Types of VMs and Their Implementations</h2> 
 
 * Type 0 Hypervisor：
   * 又有其他的稱呼，例如 "partitions" 或者 "domains"。
@@ -4279,7 +4277,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * Linux 於2014年增加 LXC container 功能。[The source code for LXC](https://linuxcontainers.org/lxc/downloads)
 
 
-<h2 id="0172">Virtualization and Operating-System Components</h2> 
+<h2 id="0176">Virtualization and Operating-System Components</h2> 
 
 * CPU Scheduling
   * VMM 會將 physical CPU 適當的分配給每個 guest OS，當有足夠多的 CPU 的時候，VMM 可以幫 guest 指定一個專用的 cpu，並且將這個 cpu 只排班給該 guest。
@@ -4322,7 +4320,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
     * 另外一個限制是不傳輸磁碟狀態，因為磁碟容量太巨大了，disk 必須透過網路來存取才能解決這個問題，通常 NFS, CIFS 或者 iSCSI 用於存儲虛擬機映像和 guest OS(process) 需要存取的任何其他存儲體。
   * Live migration 這項技術可以為 database 帶來很多的好處，當一台機器的 loading 太重的時候就可以把一些 guest migrate 到另一個機器，這樣可以更好的冷卻機房，還有省電。
 
-<h2 id="0172">Examples</h2> 
+<h2 id="0177">Examples</h2> 
 
 * VMware Workstation 和 Java 虛擬機通常可以在前面章節中討論的任何設計類型的作業系統之上運行。
 * VMware Workstation 
@@ -4341,7 +4339,7 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 一種更快的技術是使用即時 (JIT) 編譯器。在這裡，第一次調用 Java 方法時，該方法的 bytecode 被轉換為主機系統的本地機器語言。然後把這些操作 cache 住，以便使用本機機器指令執行方法的後續調用，並且不需要重新編譯。在硬體中運行 JVM 可能比 JIT 更快。
 
 
-<h2 id="0172">Virtualization Research</h2> 
+<h2 id="0178">Virtualization Research</h2> 
 
 * 函式庫作業系统（Library Operating System，LibOS）是應用程式的特殊需求，由某一高級程式語言將原本屬於作業系統 kernel 的某些資源管理功能，如檔案、硬碟 I/O、網路等，按照模組化的要求，以函式庫的形式提供给應用程式的特殊作業系统。[參考資料](https://getiot.tech/dictionary/libos.html)
 * 虛擬化研究已經擴展到涵蓋機器虛擬化的許多其他用途，包括運行在 library operating systems (函式庫作業系統)上的 microservice(微服務)，以及在 embedded systems 上面的 secure partitioning of resources。
