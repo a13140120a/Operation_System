@@ -4349,17 +4349,104 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
   * 他們將應用程式、它調用的系統函式庫以及它使用的 kernel service 編譯成一個在虛擬環境中（甚至在裸機上）運行的二進製檔案。
 
 
+****
 
 
 
 
+<h1 id="018">Networks and Distributed Systems</h1> 
+
+  * ## [Advantages of Distributed Systems](#0181) #
+  * ## [Network Structure](#0182) #
+  * ## [Network and Distributed Operating Systems](#0183) #
+  * ## [DFS Naming and Transparency](#0184) #
 
 
 
 
+<h2 id="0181">Advantages of Distributed Systems</h2> 
+
+* Resource Sharing(資源共享)：可以共享各個節點之間的運算、檔案等等
+* Computation Speedup(提高運算速度)：在處理大規模資料時，可以藉由多個節點的運算能力來達到加速運算的目的，並且也提供負載平衡(load balacing)。
+* Reliability(可靠性)：分散式系統如果一個節點故障了，還有其他許多節點可以持續運作
+
+<h2 id="0182">Network Structure</h2> 
+
+* 一開始提出[OSI 七層網路模型](https://zh.wikipedia.org/wiki/OSI%E6%A8%A1%E5%9E%8B)，後來因為太複雜，所以現今大多使用[TCP/IP的五層(或四層)模型](https://zh.wikipedia.org/wiki/OSI%E6%A8%A1%E5%9E%8B)
+  * ![OSI_VS_TCPIP](https://github.com/a13140120a/Operation_System/blob/main/imgs/OSI_VS_TCPIP.PNG)
+* 網路又分成LAN(區域網路)以及WAN(廣域網路)，並且透過 router、switch、以及 hub 等等連線起來。
+* 區域網路的部分大份都是使用乙太網路(Ethernet CSMA/CD，data link layer)協定。
+* 廣域網路的 data link layer 則有 ATM(品質保證 QoS)、MPLS(speedup) 等等
+* ARP 協定是一個通過解析網路層位址來找尋資料鏈路層位址的網路傳輸協定，在區域網路內的 host 或 router 利用 arp 封包來找尋不在 cache 的 MAC address。
+* 傳輸層的 TCP 是 reliable 的且需要建連線，UDP 則相反。
+* 應用層協定包含 FTP、SSH、SMPT、HTTP、Telnet 等等。
+
+
+<h2 id="0183">Network and Distributed Operating Systems</h2> 
+
+* Network Operating Systems：
+  * 現今所有常用的作業系統都屬於網路作業系統(Network Operating Systems)，Network Operating Systems 是指可以經由遠端登入電腦操作以及存取資源。
+  * 其功能包括遠端登入(如使用 ssh)、遠端檔案傳輸(如使用 FTP、[SFTP](https://ithelp.ithome.com.tw/articles/10223897))
+
+* Distributed Operating Systems：
+  *	Data Migration：假設 A 節點要存取 B 節點上的檔案，有兩種方法，一種是將整個檔案傳送到 A 節點，如此一來 access 便是本地，可以增加效率，或者只傳輸檔案中需要用到那個部分(這個方法比傳輸整個檔案更有效率)。
+  *	Computation Migration：process P 可以藉由 RPC 來存取 A 節點上的檔案，或者 P 向 A 發送訊息，接著 A 建立 process Q，由 process Q 處理完之後將結果發送回給 Q(P跟Q可以同時進行)。
+  * Process Migration：執行此方案有以下幾個原因：
+    * Load balancing
+    * Computation speedup
+    * Hardware preference(首選硬體)：某些 process 可能更適合在某些 cpu 上面執行
+    * Software preference(首選軟體)：某些 process  可能會需要使用到 某些節點才有的軟體
+    * Data access：如果需要運算的資料很多，那麼遠端執行可能會比傳輸整個檔案到 local 再執行的效率高上許多。
+* World Wide Web 提供 data migration 以及 process migration(java applet/javascript) 的功能
+
+
+<h2 id="0184">Design Issues in Distributed Systems</h2> 
+
+* Robustness(強健性)：
+  * fault tolerant：系統必須要有容錯性(fault tolerant)
+  * Failure Detection：可以使用心跳(heartbeat)程式，每相隔一段時間，向另一個節點發送訊息，如果超過某個預定的時間沒有收到訊息，就代表某節點可能發生故障
+  * Reconfiguratio：例如如果路由中的某個節點發生故障，系統必須要可以快速的計算出其它的路徑，重新設定 router table。
+  * Recovery from Failure
+* Transparency(通透性)：
+  * 通透性就是可以不必顧慮細節
+  * 例如 transparent distributed system(通透的分散式系統)不應區分 local 或者 remote 的 resource。
+* Scalability：
+  * 必須要有可輕易擴展的能力
+
+<h2 id="0184">Distributed File Systems</h2> 
+
+* The Client– Server DFS Model：
+  * 如 NFS、OpenAFS 等等。
+* The Cluster-Based DFS Model：
+  * 例如 Hadoop、GFS 等等。
+
+<h2 id="0184">DFS Naming and Transparency</h2> 
+
+* 命名(naming)即邏輯和實體之間的映射(mapping)
+* 檔案名稱映射到磁碟區塊是經過多個階層的，例如使用者藉由檔案名稱"字串"來開啟檔案，檔案名稱右映射到較低層級的數字id，id又映射到磁碟區塊
+* 在 transparent DFS 當中，只是多增加一層到上述的階層當中，在一般的檔案系統當，命名的 mapping 範圍是磁碟區塊，而 DFS 命名範圍還包含了磁碟所在的那台電腦。
+* Naming Structures：
+  * Location transparency(通透性)：檔案名稱不包括檔案實體儲存位置
+  * Location independence(獨立性)：檔案的實體儲存位置更改時，無須更改檔名
+
+****
 
 
 
+
+<h1 id="019">Linux</h1> 
+
+  * ## [Advantages of Distributed Systems](#0191) #
+  * ## [Advantages of Distributed Systems](#0192) #
+  * ## [Advantages of Distributed Systems](#0193) #
+  * ## [Advantages of Distributed Systems](#0194) #
+
+
+
+
+<h2 id="0181">Advantages of Distributed Systems</h2> 
+
+* 
 
 
 
