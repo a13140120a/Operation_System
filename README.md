@@ -4436,17 +4436,49 @@ brw-rw---- 1 root disk 8, 3 Mar 16 09:18 /dev/sda3
 
 <h1 id="019">Linux</h1> 
 
-  * ## [Advantages of Distributed Systems](#0191) #
-  * ## [Advantages of Distributed Systems](#0192) #
-  * ## [Advantages of Distributed Systems](#0193) #
-  * ## [Advantages of Distributed Systems](#0194) #
+* ## [Advantages of Distributed Systems](#0191) #
+* ## [Kernel Modules](#0192) #
 
 
 
 
-<h2 id="0181">Advantages of Distributed Systems</h2> 
 
-* 
+<h2 id="0191">Component</h2> 
+
+* 是一個 multiuser、preemptive、multitasking 的系統
+* 其系統由下列三部分的程式碼所構成：
+  * kernel：Linux kernel 是一個單一的 binary 檔，主要是為了效率考量，負責維護例如記憶體管理、process 管理；、cpu 排班等等核心功能
+  * system library：一組可以讓應用程式與核心溝通的函式，這些函式不需要全部的權限(例如 kernel mode)就可以製作作業系統的功能，例如 C library(`libc`)，除了提供標準 C 程式庫以外，還提供 Linux 的 syste,call interface。
+  * system utility：是一種執行特殊管理工作的程式，某些 system utility 只會被呼叫一次，作一些初始化或設定的工作，Daemon(守護程序)也是一種 system utility，它可能會被一直執行，處理一些像是回應網路連線 request、接受 terminal(終端機)的 login request、或是更改系統 log 檔之類的工作。
+
+<h2 id="0192">Kernel Modules</h2> 
+
+* kernel modules 可以任意的修改 kernel code，也可以隨意存取任何資源，可以 implement driver、file system、network protocal。
+* Kernel modules 使得 kernel 的 size 可以縮到最小
+* 可以在 runtime 的時候動態載入或卸載 modules，例如 mouse driver 可以在滑鼠插入時才載入，在拔除時卸載
+* kernel module 使用以下四個部分來實作：
+  * module-management system：讓 module 可以載入記憶體，並且和核心的其他部分溝通
+    * load modules 的時候不只把 binary contents load 進記憶體，還要讓 kernel symbols(更新 kernel symbol table) 和 entry point 指向正確的記憶體位址。
+    * 
+  * module loader and unloader：是一個 user-mode utilities, 和 module-management system 協調 load module 到 memory.
+  * driver-registration system：告訴 kernel a new driver has become available
+  * conflict-resolutio mechanism：允許多個不同的 driver 使用相同 hardware resources，在產生衝突時保護資源。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
